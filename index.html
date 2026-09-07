@@ -21,6 +21,8 @@
         <form id="promptForm" class="controls">
           <div class="section-title"><span>01</span><h2>الصورة المرجعية</h2></div>
           <label class="upload-zone" for="referenceImage" id="uploadZone"><input id="referenceImage" type="file" accept="image/*" hidden /><span class="upload-icon">↑</span><strong>أرفق صورة الشخص المرجعية</strong><small id="fileStatus">تبقى الصورة في جهازك؛ أرفقها يدويًا مع الـPrompt في ChatGPT أو Gemini.</small></label>
+          <label class="upload-zone metadata-zone" for="metadataImage" id="metadataZone"><input id="metadataImage" type="file" accept="image/png" hidden /><span class="upload-icon">⌁</span><strong>استيراد بيانات Prompt من صورة SD (اختياري)</strong><small id="metadataStatus">قراءة محلية فقط لملفات PNG التي تحتوي metadata؛ لا تُرفع الصورة ولا تُعدّل.</small></label>
+          <textarea id="metadataPreview" class="metadata-preview" readonly hidden aria-label="Imported Stable Diffusion metadata"></textarea>
           <div class="section-title"><span>02</span><h2>اللحظة والتصوير</h2></div>
           <div class="grid two">
             <label>المحرك المستهدف<select id="engine"><option value="ChatGPT Images">ChatGPT Images</option><option value="Google Gemini Images">Google Gemini Images</option><option value="both">ChatGPT Images and Google Gemini Images</option></select></label>

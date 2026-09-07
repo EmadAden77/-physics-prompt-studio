@@ -1,1 +1,7 @@
-# -physics-prompt-studio
+# Physics Prompt Studio
+
+مولد برومبتات سيلفي واقعية موجّه لـ ChatGPT Images وGoogle Gemini. يركز على قفل الهوية من الصورة المرجعية، فيزياء السيلفي، مقصورة Range Rover Sport L494 بنظام قيادة يسار، والواقعية السياقية في السعودية.
+
+## التشغيل
+
+افتح `index.html` مباشرة في المتصفح، أو فعّل GitHub Pages من إعدادات المستودع لنشر التطبيق.

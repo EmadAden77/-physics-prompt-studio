@@ -30,7 +30,17 @@ function seatTopology(seat){
 }
 let outputMode='chatgpt';
 function armRule(pose){if(pose==='armless')return "ARMLESS LOCK: the phone, hand, wrist, forearm and elbow holding it are entirely outside the frame; only normal shoulder posture may imply the selfie. No cut-off limb, duplicate hand or distorted shoulder.";if(pose==='head')return "ARM LOCK: the phone-holding hand, forearm and elbow stay fully outside the crop. Only one free hand may naturally touch the hair; five anatomically normal fingers only.";return "ARM LOCK: the phone is held at plausible arm reach, but the phone-holding hand, forearm and elbow remain outside the crop. The free hand is relaxed or out of frame. Do not show a long diagonal selfie arm along the image edge; no extra arms, hands or cut-off joints."}
+function syncCaptureControls(){
+  const interior=$('captureType').value==='interior';
+  ['exteriorPose','exteriorFraming','doorState'].forEach(id=>{
+    const field=$(id),control=$(id+'Control');
+    field.disabled=interior;
+    control.classList.toggle('mode-hidden',interior);
+    control.setAttribute('aria-hidden',String(interior));
+  });
+}
 function resolveAutomaticScene(){
+  syncCaptureControls();
   const time=$('time').value,capture=$('captureType').value,seat=$('seat').value,pose=$('pose').value,place=$('place').value,exteriorPose=$('exteriorPose').value;
   let angle='driver-close',angleLabel='قريبة طبيعية من مقعد السائق';
   if(capture==='exterior'){

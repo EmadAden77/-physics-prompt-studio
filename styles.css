@@ -23,16 +23,24 @@ button,select,input,textarea{font:inherit}
 .status-badge strong{font:700 .9rem 'Space Grotesk',sans-serif;color:var(--accent);letter-spacing:.08em}
 .status-badge span{font-size:.84rem;color:var(--text);direction:rtl;text-align:right}
 .status-badge small{color:var(--muted);direction:rtl;text-align:right}
+.preset-bar{display:grid;grid-template-columns:minmax(220px,1fr) minmax(220px,320px) auto auto;gap:10px;align-items:center;margin-top:18px;padding:14px 16px;border:1px solid var(--line);background:#111411}
+.preset-bar>div{display:flex;flex-direction:column;gap:3px}
+.preset-bar strong{font-size:.86rem;color:var(--text)}
+.preset-bar small{font-size:.7rem;color:var(--muted)}
+.preset-bar button{min-height:42px;border:1px solid var(--accent);background:var(--accent);color:#11150d;border-radius:4px;padding:8px 13px;cursor:pointer;font-weight:700}
+.preset-bar button.ghost{background:transparent;color:var(--accent)}
 .workspace{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(390px,.92fr);gap:24px;margin-top:24px;align-items:start}
 .controls,.result-panel{border:1px solid var(--line);background:var(--panel)}
 .controls{padding:0 24px}
 .form-section{padding:25px 0 27px;border-bottom:1px solid var(--line)}
 .form-section:last-child{border-bottom:0}
 .compact-section{padding-bottom:22px}
-.section-title{display:flex;gap:12px;align-items:flex-start;margin-bottom:18px}
+.section-title{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:start;margin-bottom:18px}
 .section-title>span{direction:ltr;min-width:30px;color:var(--accent-2);font:700 .72rem 'Space Grotesk',sans-serif;padding-top:4px}
 .section-title h2{margin:0;font-size:1.08rem}
 .section-title p{margin:5px 0 0;color:var(--muted);font-size:.78rem;line-height:1.6}
+.section-reset{border:1px solid #414740;background:transparent;color:var(--muted);border-radius:4px;padding:6px 9px;cursor:pointer;font-size:.7rem;white-space:nowrap}
+.section-reset:hover{border-color:var(--accent);color:var(--accent)}
 .grid{display:grid;gap:13px}
 .grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
 .grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -40,8 +48,12 @@ button,select,input,textarea{font:inherit}
 .field,.upload-zone{display:flex;flex-direction:column;gap:7px;color:#dad8d1;font-size:.84rem}
 .field small,.hint{color:var(--muted);font-size:.72rem;line-height:1.5}
 select,input,textarea{width:100%;border:1px solid #373d36;background:#0f120f;color:var(--text);border-radius:5px;padding:11px 12px;min-height:44px;outline:0}
+input[type="search"]{background:#111611;border-color:#4b5744}
+input[type="search"]::placeholder{color:#777d74}
 textarea{min-height:92px;resize:vertical;line-height:1.65}
 select:focus,input:focus,textarea:focus{border-color:#6f8452;box-shadow:0 0 0 2px rgba(200,239,115,.08)}
+.custom-field{border-right:2px solid var(--accent-2);padding-right:10px}
+.custom-field[hidden]{display:none!important}
 .upload-zone{cursor:pointer;border:1px dashed #55634a;background:#111610;padding:14px 15px;min-height:100%;display:grid;grid-template-columns:34px 1fr;column-gap:10px;align-items:center}
 .upload-zone:hover,.upload-zone.has-file{border-color:var(--accent);background:#151d11}
 .upload-zone strong{font-size:.86rem}
@@ -82,6 +94,8 @@ pre{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-word;bac
 @media(max-width:760px){
   .masthead{flex-direction:column}
   .status-badge{width:100%}
+  .preset-bar{grid-template-columns:1fr 1fr}
+  .preset-bar>div{grid-column:1/-1}
   .grid.three{grid-template-columns:1fr}
   .module-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
@@ -89,9 +103,13 @@ pre{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-word;bac
   .shell{padding:22px 12px 50px}
   .controls{padding:0 16px}
   .result-panel{padding:16px}
+  .preset-bar{grid-template-columns:1fr}
+  .preset-bar>div{grid-column:auto}
   .grid.two{grid-template-columns:1fr}
   .full{grid-column:auto}
   .module-grid{grid-template-columns:1fr}
   .masthead h1{font-size:2.7rem}
   .output-tabs #copy{margin-left:0}
+  .section-title{grid-template-columns:auto 1fr}
+  .section-reset{grid-column:2;justify-self:start}
 }

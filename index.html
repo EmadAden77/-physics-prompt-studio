@@ -1,96 +1,166 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="مولد برومبتات سيلفي واقعية لسيارة Range Rover Sport 2017" />
-    <title>Physics Prompt Studio</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <main class="shell">
-      <header class="masthead">
-        <div><p class="eyebrow">PHYSICS PROMPT STUDIO / V5</p><h1>سيلفي يبدو كأنه حدث فعلًا</h1><p class="intro">محرك مشهد فيزيائي مخصص لـ ChatGPT Images: يحل الكاميرا والضوء والمقعد والكادر قبل كتابة البرومبت.</p></div>
-        <div class="car-badge"><span>2017</span><strong>RANGE ROVER<br/>SPORT L494</strong><small>Ebony / Ivory · LHD</small></div>
-      </header>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Prompt Studio بدون قواعد أو قيود تلقائية" />
+  <title>Prompt Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">PROMPT STUDIO</p>
+        <h1>منشئ Prompt بسيط</h1>
+        <p class="intro">لا توجد قواعد تلقائية، ولا Realism Engine، ولا Locks، ولا أولوية مخفية. الناتج مبني فقط على اختياراتك وما تكتبه.</p>
+      </div>
+    </header>
 
-      <section class="workspace">
-        <form id="promptForm" class="controls">
-          <div class="section-title"><span>01</span><h2>الصورة المرجعية</h2></div>
-          <label class="upload-zone" for="referenceImage" id="uploadZone"><input id="referenceImage" type="file" accept="image/*" hidden /><span class="upload-icon">↑</span><strong>أرفق صورة الشخص المرجعية</strong><small id="fileStatus">تبقى الصورة في جهازك؛ أرفقها يدويًا مع الـPrompt في ChatGPT.</small></label>
-          <label class="upload-zone metadata-zone" for="metadataImage" id="metadataZone"><input id="metadataImage" type="file" accept="image/png" hidden /><span class="upload-icon">⌁</span><strong>استيراد بيانات Prompt من صورة SD (اختياري)</strong><small id="metadataStatus">قراءة محلية فقط لملفات PNG التي تحتوي metadata؛ لا تُرفع الصورة ولا تُعدّل.</small></label>
-          <textarea id="metadataPreview" class="metadata-preview" readonly hidden aria-label="Imported Stable Diffusion metadata"></textarea>
-          <div class="section-title"><span>02</span><h2>اللحظة والتصوير</h2></div>
-          <div class="grid two">
-            <div class="auto-control"><span>المحرك المستهدف</span><strong>ChatGPT Images</strong><small>مخصص حصريًا لتوليد الصور في ChatGPT</small></div>
-            <label>نوع السيلفي<select id="captureType"><option value="interior">داخل السيارة</option><option value="exterior">بجانب السيارة</option></select></label>
-            <label>وقت المشهد<select id="time"><option value="morning">الصباح</option><option value="noon">الظهر</option><option value="afternoon">العصر</option><option value="day">النهار العام</option><option value="night">الليل</option></select></label>
-            <div class="auto-control"><span>الإضاءة الفيزيائية</span><strong id="autoLightingLabel">تُحدّد تلقائيًا</strong><small>بحسب الوقت والمكان ونوع المشهد</small><input id="lightingProfile" type="hidden" value="window" /></div>
-            <label>موضع الشخص<select id="seat"><option value="driver">مقعد السائق</option><option value="passenger">مقعد الراكب الأمامي</option><option value="rear-left">المقعد الخلفي الأيسر</option><option value="rear-right">المقعد الخلفي الأيمن</option></select></label>
-            <div class="auto-control"><span>زاوية السيلفي</span><strong id="autoAngleLabel">تُحدّد تلقائيًا</strong><small>بحسب المشهد والمقعد والوضعية</small><input id="angle" type="hidden" value="driver-side" /></div>
-            <label>الوضعية<select id="pose"><option value="holding">يمسك الهاتف خارج الإطار</option><option value="armless">ذراع الهاتف خارج الإطار تمامًا</option><option value="head">اليد الحرة قرب الشعر</option><option value="door">يميل طبيعيًا نحو الباب</option></select></label>
-            <label id="exteriorPoseControl">وضعية بجانب السيارة<select id="exteriorPose"><option value="closed-door">واقف بجانب باب السائق المغلق</option><option value="open-door">واقف بجانب باب السائق المفتوح</option><option value="front-quarter">بجانب الرفرف الأمامي</option><option value="rear-quarter">عند الربع الخلفي</option><option value="locking">يستعد لإغلاق السيارة والذهاب</option></select></label>
-            <label id="exteriorFramingControl">الإطار الخارجي<select id="exteriorFraming"><option value="close">رأس وكتف مع جزء من الباب</option><option value="half">نصف جسم والسيارة خلف الكتف</option><option value="low">زاوية منخفضة خفيفة</option><option value="wide">أوسع من مسافة ذراع</option></select></label>
-            <label id="doorStateControl">حالة باب السائق<select id="doorState"><option value="closed">مغلق</option><option value="open">مفتوح</option></select></label>
-            <label>التعبير<select id="expression"><option value="neutral">محايد وهادئ</option><option value="softSmile">ابتسامة خفيفة مغلقة</option><option value="focused">تركيز طبيعي</option><option value="thoughtful">شرود هادئ</option><option value="midBlink">رمشة طبيعية خفيفة</option></select></label>
-            <label>نسبة الصورة<select id="ratio"><option>9:16 vertical</option><option>4:5 vertical</option><option>1:1 square</option></select></label>
-          </div>
+    <section class="workspace">
+      <form id="promptForm" class="controls">
+        <div class="section-title"><span>01</span><h2>الصورة المرجعية</h2></div>
+        <label class="upload-zone" for="referenceImage" id="uploadZone">
+          <input id="referenceImage" type="file" accept="image/*" hidden />
+          <span class="upload-icon">↑</span>
+          <strong>أرفق صورة مرجعية اختياريًا</strong>
+          <small id="fileStatus">الصورة تبقى على جهازك ولا تفرض أي قواعد على الـPrompt.</small>
+        </label>
 
-          <div class="section-title"><span>03</span><h2>الهوية والمظهر</h2></div>
-          <div class="grid two">
-            <label>العمر الظاهر<input id="age" value="35" inputmode="numeric" maxlength="2" /></label>
-            <label>تسريحة الشعر<select id="hair"><option value="reference">كما هي بالصورة المرجعية</option><option value="side-sweep">تمشيط جانبي طبيعي</option><option value="textured">ملمس قصير مرتب بالأصابع</option><option value="french-crop">French crop قصير طبيعي</option><option value="back-swept">مرفوع للخلف بشكل خفيف</option><option value="wavy">تموجات قصيرة طبيعية</option></select></label>
-            <label>الملابس<select id="clothing"><optgroup label="رسمي"><option value="navy-suit">بدلة كحلية وقميص أزرق فاتح</option><option value="charcoal-suit">بدلة فحمية وقميص أبيض</option><option value="light-suit">بدلة رمادية فاتحة</option><option value="blazer">بليزر كحلي وتيشيرت أبيض</option></optgroup><optgroup label="قمصان وطبقات"><option value="blue-shirt">قميص أكسفورد أزرق وبنطال بيج</option><option value="white-shirt">قميص بوبلين أبيض</option><option value="striped-shirt">قميص قطني مخطط هادئ</option><option value="linen-shirt">قميص كتان بيج فاتح</option><option value="denim-shirt">قميص دنيم أزرق</option><option value="overshirt">Overshirt رملي قطني</option></optgroup><optgroup label="كاجوال"><option value="black-tee">تيشيرت أسود قطني ثقيل</option><option value="white-tee">تيشيرت أوف وايت قطني ثقيل</option><option value="olive-tee">تيشيرت زيتوني هادئ</option><option value="polo">بولو قطني داكن</option><option value="light-polo">بولو حجري فاتح</option><option value="hoodie">هودي رمادي داكن</option><option value="sweatshirt">سويت شيرت رمادي مغسول</option><option value="knit">كنزة محبوكة زيتونية</option><option value="bomber">جاكيت بومبر أسود مطفي</option><option value="leather">جاكيت جلد بني داكن مطفي</option></optgroup><optgroup label="سعودي"><option value="thobe-white">ثوب سعودي أبيض</option><option value="thobe-cream">ثوب سعودي كريمي</option><option value="thobe-navy">ثوب سعودي كحلي</option><option value="thobe-ghutra">ثوب أبيض مع شماغ أحمر وعقال</option><option value="thobe-white-ghutra">ثوب أبيض مع غترة بيضاء وعقال</option><option value="bisht">ثوب أبيض مع بشت أسود</option></optgroup></select></label>
-            <label>النظارة<select id="glasses"><option value="reference">كما بالصورة المرجعية</option><option value="none">بدون نظارة</option><option value="black">إطار أسود مستطيل</option></select></label>
-          </div>
-          <p class="lock">قفل دائم: لا يتغير شكل الوجه أو العمر أو خط الشعر أو الكثافة أو الفراغات أو اللحية عن الصورة المرجعية.</p>
+        <div class="section-title"><span>02</span><h2>المشهد</h2></div>
+        <div class="grid two">
+          <label>نوع التصوير
+            <select id="captureType">
+              <option value="interior car selfie">داخل السيارة</option>
+              <option value="exterior car selfie">بجانب السيارة</option>
+              <option value="selfie">سيلفي عام</option>
+              <option value="third-person photo">تصوير شخص ثالث</option>
+            </select>
+          </label>
 
-          <div class="section-title"><span>04</span><h2>المكان والإضاءة</h2></div>
-          <div class="grid two">
-            <label>الموقع<select id="place"><option value="street">موقف شارع تجاري</option><option value="mall">موقف مول خارجي</option><option value="villa">مدخل فيلا سكنية</option><option value="garage">كراج فيلا سكنية خاص</option><option value="quiet">حي سكني هادئ</option><option value="gas-station">محطة وقود</option><option value="cafeteria">أمام كافتيريا شعبية</option><option value="restaurant">موقف مطعم محلي</option><option value="supermarket">أمام سوبرماركت</option><option value="mosque">موقف مسجد حي</option><option value="corniche">واجهة بحرية أو كورنيش</option><option value="desert-road">طريق صحراوي</option><option value="rest-area">استراحة طريق</option><option value="hospital">موقف مستشفى</option><option value="airport-road">طريق المطار</option><option value="office">موقف مبنى مكاتب</option></select></label>
-            <div class="auto-control"><span>كثافة الحياة</span><strong id="autoLifeLabel">واقعية حقيقية تلقائية</strong><small>أشخاص وسيارات وحركة مناسبة للمكان والوقت، بلا ازدحام مصطنع</small><input id="life" type="hidden" value="adaptive" /></div>
-          </div>
-          <label class="notes">تفاصيل إضافية اختيارية<textarea id="notes" placeholder="مثال: بعد حلاقة جديدة، بدون ابتسامة، أو قميص بلون محدد..."></textarea></label>
-          <div id="warnings" class="warnings" aria-live="polite"></div>
-          <section class="engine-map" aria-labelledby="engineMapTitle">
-            <div class="engine-map-head">
-              <div><span class="engine-kicker">REALISM ENGINE</span><h3 id="engineMapTitle">مسار التنفيذ والموديولات</h3></div>
-              <span class="engine-status" id="engineStatus">جاهز</span>
-            </div>
-            <ol class="workflow-strip" id="workflowStrip"></ol>
-            <div class="module-summary"><strong>الموديولات النشطة</strong><div class="module-chips" id="activeModules"></div></div>
-            <details class="priority-details"><summary>طبقات الأولوية عند التعارض</summary><ol id="priorityTiers"></ol></details>
-          </section>
-          <button type="submit" class="generate">توليد الـ Prompt <span>↗</span></button>
-        </form>
+          <label>وقت المشهد
+            <select id="time">
+              <option value="morning">الصباح</option>
+              <option value="noon">الظهر</option>
+              <option value="afternoon">العصر</option>
+              <option value="daytime">النهار</option>
+              <option value="night">الليل</option>
+            </select>
+          </label>
 
-        <aside class="result-panel">
-          <div class="result-head"><div><p class="eyebrow">READY TO GENERATE</p><h2>الـ Prompt الناتج</h2></div></div>
-          <div class="output-tabs" role="tablist"><button class="tab active" id="chatgptTab" type="button">ChatGPT Images</button><button class="tab" id="variationsTab" type="button">3 تنويعات</button><button id="copy" type="button">نسخ</button></div>
-          <pre id="output" aria-live="polite"></pre>
-          <div class="checks"><strong>Prompt Doctor — فحص الاتساق</strong><ul id="checklist"></ul></div>
-          <p class="tip">أرفق صورة مرجعية للشخص، ثم الصق النص كاملًا. جرّب 3–5 توليدات مع تغيير زاوية واحدة فقط كل مرة.</p>
-        </aside>
-      </section>
-    </main>
-    <script src="app.js"></script>
-    <script src="wardrobe-options.js"></script>
-    <script src="interior-master-lock.js"></script>
-    <script src="saudi-scene-engine.js"></script>
-    <script src="realism-engine.js"></script>
-    <script src="output-guard.js"></script>
-    <script src="rules/priority-rules.js"></script>
-    <script src="rules/identity-rules.js"></script>
-    <script src="rules/selfie-physics.js"></script>
-    <script src="rules/vehicle-lhd.js"></script>
-    <script src="rules/lighting-rules.js"></script>
-    <script src="rules/saudi-context.js"></script>
-    <script src="rules/clothing-contact.js"></script>
-    <script src="rules/contradiction-checker.js"></script>
-    <script src="rules/output-lock.js"></script>
-    <script src="rules/master-rules-integration.js"></script>
-  </body>
+          <label>موضع الشخص
+            <select id="seat">
+              <option value="driver seat">مقعد السائق</option>
+              <option value="front passenger seat">مقعد الراكب الأمامي</option>
+              <option value="rear-left seat">المقعد الخلفي الأيسر</option>
+              <option value="rear-right seat">المقعد الخلفي الأيمن</option>
+              <option value="not applicable">غير مطبق</option>
+            </select>
+          </label>
+
+          <label>زاوية التصوير
+            <select id="angle">
+              <option value="natural eye-level angle">طبيعية بمستوى العين</option>
+              <option value="slightly low angle">منخفضة قليلًا</option>
+              <option value="slightly high angle">مرتفعة قليلًا</option>
+              <option value="three-quarter angle">ثلاثة أرباع</option>
+              <option value="off-center handheld angle">عفوية خارج المنتصف</option>
+            </select>
+          </label>
+
+          <label>الوضعية
+            <select id="pose">
+              <option value="natural relaxed pose">طبيعية ومرتاحة</option>
+              <option value="standing">واقف</option>
+              <option value="seated">جالس</option>
+              <option value="walking">يمشي</option>
+              <option value="leaning casually">متكئ</option>
+            </select>
+          </label>
+
+          <label>التعبير
+            <select id="expression">
+              <option value="neutral calm expression">محايد وهادئ</option>
+              <option value="small closed-mouth smile">ابتسامة خفيفة مغلقة</option>
+              <option value="focused expression">تركيز طبيعي</option>
+              <option value="thoughtful expression">شرود هادئ</option>
+            </select>
+          </label>
+
+          <label>نسبة الصورة
+            <select id="ratio">
+              <option value="9:16 vertical">9:16 عمودي</option>
+              <option value="4:5 vertical">4:5 عمودي</option>
+              <option value="1:1 square">1:1 مربع</option>
+              <option value="16:9 horizontal">16:9 أفقي</option>
+            </select>
+          </label>
+
+          <label>الموقع
+            <select id="place">
+              <option value="Saudi commercial street">شارع تجاري سعودي</option>
+              <option value="shopping mall parking area">موقف مول</option>
+              <option value="residential villa entrance">مدخل فيلا</option>
+              <option value="private villa garage">كراج فيلا</option>
+              <option value="quiet residential neighborhood">حي سكني هادئ</option>
+              <option value="gas station">محطة وقود</option>
+              <option value="roadside cafeteria">كافتيريا</option>
+              <option value="restaurant parking area">موقف مطعم</option>
+              <option value="supermarket parking area">سوبرماركت</option>
+              <option value="seafront or corniche">كورنيش</option>
+              <option value="custom location in notes">موقع مخصص في الملاحظات</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="section-title"><span>03</span><h2>الشخص والمظهر</h2></div>
+        <div class="grid two">
+          <label>العمر الظاهر<input id="age" value="35" inputmode="numeric" maxlength="3" /></label>
+          <label>الشعر
+            <select id="hair">
+              <option value="same as reference">كما في المرجع</option>
+              <option value="natural side sweep">تمشيط جانبي</option>
+              <option value="short textured hair">قصير بملمس طبيعي</option>
+              <option value="French crop">French crop</option>
+              <option value="short wavy hair">متموج قصير</option>
+            </select>
+          </label>
+          <label>الملابس
+            <select id="clothing">
+              <option value="plain navy shirt and black trousers">قميص كحلي وبنطال أسود</option>
+              <option value="plain white T-shirt">تيشيرت أبيض</option>
+              <option value="plain black T-shirt">تيشيرت أسود</option>
+              <option value="light blue shirt">قميص أزرق فاتح</option>
+              <option value="white Saudi thobe">ثوب سعودي أبيض</option>
+              <option value="navy Saudi thobe">ثوب سعودي كحلي</option>
+              <option value="custom clothing in notes">ملابس مخصصة في الملاحظات</option>
+            </select>
+          </label>
+          <label>النظارة
+            <select id="glasses">
+              <option value="same as reference">كما في المرجع</option>
+              <option value="no glasses">بدون نظارة</option>
+              <option value="black rectangular glasses">إطار أسود مستطيل</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="notes">تفاصيل إضافية<textarea id="notes" placeholder="اكتب أي تفاصيل تريدها. لن يضيف التطبيق قواعد من عنده."></textarea></label>
+        <div id="warnings" class="warnings" aria-live="polite"></div>
+        <button type="submit" class="generate">توليد الـ Prompt <span>↗</span></button>
+      </form>
+
+      <aside class="result-panel">
+        <div class="result-head"><div><p class="eyebrow">OUTPUT</p><h2>الـ Prompt الناتج</h2></div></div>
+        <div class="output-tabs"><button id="copy" type="button">نسخ</button></div>
+        <pre id="output" aria-live="polite">اختر الإعدادات ثم اضغط توليد الـ Prompt.</pre>
+        <div class="checks"><strong>الحالة</strong><ul id="checklist"><li>لا توجد قواعد تلقائية مفعلة.</li></ul></div>
+      </aside>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
 </html>

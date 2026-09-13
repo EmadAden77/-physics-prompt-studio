@@ -55,6 +55,15 @@
           </div>
           <label class="notes">تفاصيل إضافية اختيارية<textarea id="notes" placeholder="مثال: بعد حلاقة جديدة، بدون ابتسامة، أو قميص بلون محدد..."></textarea></label>
           <div id="warnings" class="warnings" aria-live="polite"></div>
+          <section class="engine-map" aria-labelledby="engineMapTitle">
+            <div class="engine-map-head">
+              <div><span class="engine-kicker">REALISM ENGINE</span><h3 id="engineMapTitle">مسار التنفيذ والموديولات</h3></div>
+              <span class="engine-status" id="engineStatus">جاهز</span>
+            </div>
+            <ol class="workflow-strip" id="workflowStrip"></ol>
+            <div class="module-summary"><strong>الموديولات النشطة</strong><div class="module-chips" id="activeModules"></div></div>
+            <details class="priority-details"><summary>طبقات الأولوية عند التعارض</summary><ol id="priorityTiers"></ol></details>
+          </section>
           <button type="submit" class="generate">توليد الـ Prompt <span>↗</span></button>
         </form>
 
@@ -69,5 +78,6 @@
     </main>
     <script src="app.js"></script>
     <script src="interior-master-lock.js"></script>
+    <script src="realism-engine.js"></script>
   </body>
 </html>

@@ -29,6 +29,7 @@ const REALISM_MODULES = {
   daylight:{label:'Daylight',when:c=>['morning','noon','afternoon','day'].includes(c.time),prompt:'DAYLIGHT MODULE: derive illumination from the selected time, sun position, sky fill, surface orientation and real environmental bounce. Maintain one coherent sun direction and exposure response.'},
   practicalLight:{label:'Practical Light',when:c=>['practical','parking','quiet'].includes(c.lightingProfile),prompt:'PRACTICAL-LIGHT MODULE: every bright region, cast shadow and reflection must trace to a believable source with correct direction, occlusion, color and distance falloff.'},
   windowLight:{label:'Window Light',when:c=>c.lightingProfile==='window',prompt:'WINDOW-LIGHT MODULE: illumination follows window geometry, glass transmission, occlusion and gradual cross-cabin falloff; exposure may reveal signal but may not invent fill.'},
+  environmentLife:{label:'Contextual Life',when:()=>true,prompt:'ENVIRONMENT LIFE MODULE: derive people, vehicles, pedestrian behavior, business activity and ambient movement from the selected Saudi place and time. Use independent identities, purposeful actions, natural spacing, correct occlusion and depth hierarchy. Avoid decorative crowds, artificial emptiness, cloned people and repeated vehicles.'},
   multiPerson:{label:'Multi-person',when:c=>/people|persons|group|أشخاص|شخصين|مجموعة/i.test(c.notes||''),prompt:'MULTI-PERSON MODULE: give every person a distinct identity, anatomy, pose and clothing response; preserve correct occlusion and prohibit cloned faces or fused bodies.'}
 };
 

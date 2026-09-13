@@ -9,8 +9,7 @@ export const PRESETS = [
       clothing: 'navy-shirt', angle: 'eye-level', framing: 'chest-up', focalLength: '24', distance: '50',
       yaw: '0', pitch: '0', roll: '2', lightSource: 'parking-lights',
       lightDirection: 'front-side natural direction', lightFalloff: 'natural distance-based falloff',
-      exposure: 'natural', hdr: 'low', whiteBalance: 'neutral with small natural error',
-      idea: 'A 35-year-old man is seated inside a white 2017 Range Rover Sport parked at night in a generic Saudi parking area.'
+      exposure: 'natural', hdr: 'low', whiteBalance: 'neutral with small natural error'
     }
   },
   {

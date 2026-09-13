@@ -87,6 +87,11 @@ function fillSelect(id, items, defaultValue, preserveValue) {
   select.value = hasWanted ? wanted : (defaultValue || select.options[0]?.value || '');
 }
 
+function restoreFullSearchCatalogs() {
+  fillSelect('location', LOCATIONS, DEFAULTS.location, value('location'));
+  fillSelect('clothing', CLOTHING_OPTIONS, DEFAULTS.clothing, value('clothing'));
+}
+
 function buildCatalogs() {
   fillSelect('referenceRole', REFERENCE_ROLES, DEFAULTS.referenceRole);
   fillSelect('captureType', CAPTURE_TYPES, DEFAULTS.captureType);
@@ -120,9 +125,9 @@ function buildCatalogs() {
     title.textContent = label;
     const select = document.createElement('select');
     select.id = `module_${key}`;
-    MODULE_LEVELS.forEach(([value, text]) => {
+    MODULE_LEVELS.forEach(([moduleValue, text]) => {
       const option = document.createElement('option');
-      option.value = value;
+      option.value = moduleValue;
       option.textContent = text;
       select.appendChild(option);
     });
@@ -229,7 +234,7 @@ function restoreLocalState() {
   Object.entries(saved).forEach(([id, savedValue]) => {
     const el = $(id);
     if (!el) return;
-    if (el.tagName === 'SELECT' && ![...el.options].some((o) => o.value === String(savedValue))) return;
+    if (el.tagName === 'SELECT' && ![...el.options].some((option) => option.value === String(savedValue))) return;
     el.value = savedValue;
   });
 }
@@ -243,6 +248,14 @@ function resetFields(ids) {
 }
 
 function resetSection(section) {
+  if (section === 'scene') {
+    $('locationSearch').value = '';
+    fillSelect('location', LOCATIONS, DEFAULTS.location, DEFAULTS.location);
+  }
+  if (section === 'subject') {
+    $('clothingSearch').value = '';
+    fillSelect('clothing', CLOTHING_OPTIONS, DEFAULTS.clothing, DEFAULTS.clothing);
+  }
   if (section === 'realism') {
     REALISM_MODULES.forEach(([key]) => { const el = $(`module_${key}`); if (el) el.value = 'auto'; });
   } else {
@@ -254,18 +267,18 @@ function resetSection(section) {
     $('uploadZone').classList.remove('has-file');
     $('fileStatus').textContent = 'تبقى الصورة على جهازك؛ التطبيق يستخدم فقط اختيارك لدورها في البرومبت.';
   }
-  if (section === 'scene') $('locationSearch').value = '';
-  if (section === 'subject') $('clothingSearch').value = '';
   saveLocalState();
   render();
 }
 
 function resetAll() {
+  $('locationSearch').value = '';
+  $('clothingSearch').value = '';
+  fillSelect('location', LOCATIONS, DEFAULTS.location, DEFAULTS.location);
+  fillSelect('clothing', CLOTHING_OPTIONS, DEFAULTS.clothing, DEFAULTS.clothing);
   Object.keys(DEFAULTS).forEach((id) => { if ($(id)) $(id).value = DEFAULTS[id]; });
   REALISM_MODULES.forEach(([key]) => { const el = $(`module_${key}`); if (el) el.value = 'auto'; });
   $('referenceImage').value = '';
-  $('locationSearch').value = '';
-  $('clothingSearch').value = '';
   referenceAttached = false;
   $('uploadZone').classList.remove('has-file');
   $('fileStatus').textContent = 'تبقى الصورة على جهازك؛ التطبيق يستخدم فقط اختيارك لدورها في البرومبت.';
@@ -287,6 +300,9 @@ function filterCatalog(selectId, items, query, defaultValue) {
 function applyPreset() {
   const preset = PRESETS.find((item) => item.id === value('preset'));
   if (!preset) return;
+  $('locationSearch').value = '';
+  $('clothingSearch').value = '';
+  restoreFullSearchCatalogs();
   Object.entries(preset.values).forEach(([id, presetValue]) => {
     const el = $(id);
     if (el) el.value = presetValue;

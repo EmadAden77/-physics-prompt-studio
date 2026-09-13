@@ -16,7 +16,7 @@
       <div>
         <p class="eyebrow">PROMPT STUDIO</p>
         <h1>منشئ Prompt بسيط</h1>
-        <p class="intro">لا توجد قواعد تلقائية، ولا Realism Engine، ولا Locks، ولا أولوية مخفية. الناتج مبني فقط على اختياراتك وما تكتبه.</p>
+        <p class="intro">لا توجد قواعد تلقائية أو تعليمات سيارة أو Locks. الناتج مبني فقط على اختياراتك وما تكتبه.</p>
       </div>
     </header>
 
@@ -34,10 +34,11 @@
         <div class="grid two">
           <label>نوع التصوير
             <select id="captureType">
-              <option value="interior car selfie">داخل السيارة</option>
-              <option value="exterior car selfie">بجانب السيارة</option>
-              <option value="selfie">سيلفي عام</option>
+              <option value="selfie">سيلفي</option>
               <option value="third-person photo">تصوير شخص ثالث</option>
+              <option value="mirror selfie">سيلفي مرآة</option>
+              <option value="portrait photo">صورة بورتريه</option>
+              <option value="candid photo">صورة عفوية</option>
             </select>
           </label>
 
@@ -48,16 +49,6 @@
               <option value="afternoon">العصر</option>
               <option value="daytime">النهار</option>
               <option value="night">الليل</option>
-            </select>
-          </label>
-
-          <label>موضع الشخص
-            <select id="seat">
-              <option value="driver seat">مقعد السائق</option>
-              <option value="front passenger seat">مقعد الراكب الأمامي</option>
-              <option value="rear-left seat">المقعد الخلفي الأيسر</option>
-              <option value="rear-right seat">المقعد الخلفي الأيمن</option>
-              <option value="not applicable">غير مطبق</option>
             </select>
           </label>
 
@@ -101,15 +92,15 @@
 
           <label>الموقع
             <select id="place">
-              <option value="Saudi commercial street">شارع تجاري سعودي</option>
-              <option value="shopping mall parking area">موقف مول</option>
+              <option value="commercial street">شارع تجاري</option>
+              <option value="shopping mall">مول</option>
               <option value="residential villa entrance">مدخل فيلا</option>
-              <option value="private villa garage">كراج فيلا</option>
+              <option value="private home interior">داخل منزل</option>
               <option value="quiet residential neighborhood">حي سكني هادئ</option>
               <option value="gas station">محطة وقود</option>
               <option value="roadside cafeteria">كافتيريا</option>
-              <option value="restaurant parking area">موقف مطعم</option>
-              <option value="supermarket parking area">سوبرماركت</option>
+              <option value="restaurant">مطعم</option>
+              <option value="supermarket">سوبرماركت</option>
               <option value="seafront or corniche">كورنيش</option>
               <option value="custom location in notes">موقع مخصص في الملاحظات</option>
             </select>

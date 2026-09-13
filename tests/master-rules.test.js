@@ -1,0 +1,16 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+global.window=global;
+['priority-rules','identity-rules','selfie-physics','vehicle-lhd','lighting-rules','saudi-context','clothing-contact','contradiction-checker','output-lock'].forEach(name=>vm.runInThisContext(fs.readFileSync(`rules/${name}.js`,'utf8'),{filename:name}));
+const base={capture:'interior',scene:'inside-car',seat:'driver',role:'driver',time:'night',lighting:'window',place:'gas-station',clothing:'white-shirt',glasses:'black',identityReference:true,windowAvailable:true,exteriorControlsActive:false,directSun:false,hiddenCamera:false,fullDashboard:false,glassesOnEyes:false,glassesOnHead:false};
+let audit=MasterRules.evaluate(base);
+assert(audit.active.some(r=>r.id==='driver-seat-lhd'));
+assert(!audit.active.some(r=>r.id==='exterior-visible-only'));
+assert.equal(audit.conflicts.length,0);
+audit=MasterRules.evaluate({...base,directSun:true,exteriorControlsActive:true});
+assert(audit.conflicts.some(c=>c.id==='night-sun-conflict'));
+assert(audit.conflicts.some(c=>c.id==='interior-exterior-controls'));
+const exterior=MasterRules.evaluate({...base,capture:'exterior',scene:'outside-car',seat:'driver',time:'day',lighting:'practical',windowAvailable:false});
+assert(exterior.active.some(r=>r.id==='exterior-visible-only'));
+assert(!exterior.active.some(r=>r.id==='driver-seat-lhd'));
+assert(MasterRules.output(base).includes('MUST:'));
+console.log('Master Rules V4 tests passed');

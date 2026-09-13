@@ -1,0 +1,5 @@
+(function(M){
+  M.register({id:'physical-light-causality',priority:M.levels.PHYSICAL,when:()=>true,enforce:['Every bright area, shadow and reflection has a physical source and path','Exposure and processing reveal existing signal but never create illumination','Falloff, occlusion and material response remain source-dependent'],avoid:['cinematic fill','HDR-created light','unowned highlights or shadows'],reason:'universal physical lighting'});
+  M.register({id:'night-light-lock',priority:M.levels.PHYSICAL,when:s=>s.time==='night',enforce:['Use only plausible street, building, vehicle or screen sources selected by the scene','Unlit regions remain dark with phone-appropriate noise and detail loss'],avoid:['direct sunlight','strong unexplained frontal light'],reason:'selected time is night'});
+  M.register({id:'window-light-lock',priority:M.levels.PHYSICAL,when:s=>s.capture==='interior'&&s.lighting==='window',enforce:['Window light follows glass position, transmission, sun angle and cabin occlusion'],avoid:['direct sun patch without a geometrically reachable window path'],reason:'interior window-light profile'});
+})(window.MasterRules);

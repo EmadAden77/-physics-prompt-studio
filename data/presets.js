@@ -1,5 +1,19 @@
 export const PRESETS = [
   {
+    id: 'rrs-2017-night-selfie',
+    label: 'داخل رنج روفر 2017 بيضاء / سيلفي ليلي',
+    values: {
+      vehicleScene: 'rrs-2017-white-interior',
+      captureType: 'front-selfie', time: 'night', location: 'public-parking',
+      people: '1', ratio: '9:16 vertical', age: '35', pose: 'natural-seated', expression: 'neutral',
+      clothing: 'navy-shirt', angle: 'eye-level', framing: 'chest-up', focalLength: '24', distance: '50',
+      yaw: '0', pitch: '0', roll: '2', lightSource: 'parking-lights',
+      lightDirection: 'front-side natural direction', lightFalloff: 'natural distance-based falloff',
+      exposure: 'natural', hdr: 'low', whiteBalance: 'neutral with small natural error',
+      idea: 'A 35-year-old man is seated inside a white 2017 Range Rover Sport parked at night in a generic Saudi parking area.'
+    }
+  },
+  {
     id: 'night-selfie',
     label: 'سيلفي ليلي عفوي',
     values: {

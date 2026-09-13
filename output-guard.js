@@ -9,11 +9,12 @@ function hardOutputGuard(prompt,ctx={}){
 3. SELFIE ARM: phone, holding hand, wrist, forearm and elbow remain outside the crop. Never show a long diagonal arm along the frame edge.
 4. EXPRESSION: ${prompt.subject.expression}. This is a hard facial-state lock; do not replace it with a direct-to-camera smile.
 5. HAIR: ${prompt.subject.hair} Do not add curl, height, volume or density beyond the identity reference.
-6. ${interior?'STEERING WHEEL: only a thin partial upper rim arc may occupy 5–8% of the bottom edge. No full wheel, hub, lower spoke, metallic center insert or oversized foreground rim':'VEHICLE: keep the parked vehicle secondary to the face and preserve correct ground contact'}.
+6. ${interior&&get('seat')==='driver'?"DRIVER-SEAT PROOF: Saudi LHD vehicle. Subject must occupy the physical front-left seat on the steering-column and pedal axis. Driver door beside his anatomical LEFT shoulder; center console beside his RIGHT thigh; empty passenger seat beyond the console. Show a small, unmistakable steering-rim segment directly ahead of his torso at the bottom edge, but crop the hub and spokes. Never infer the seat from viewer-left/viewer-right and never place him in the front-right passenger seat":interior?'PASSENGER/REAR SEAT PROOF: preserve the selected seat using door, console, headrest and steering-column topology; never relocate the steering column':'VEHICLE: keep the parked vehicle secondary to the face and preserve correct ground contact'}.
 7. LIGHT: use one coherent afternoon/day/night source direction visible in both exterior and face shading. No unexplained frontal fill; cabin shade must remain darker than sunlit exterior surfaces.
 8. TEXT AND BRANDING: all distant signs, fuel-station branding, plates, pump labels and storefront text must be soft and unreadable. Do not generate a clear Aramco or other company logo.
 9. VISIBLE SCENE EVIDENCE: ${visibleElements||'only contextually necessary objects'}. Keep background secondary and depth-appropriate.
 10. MATERIAL: honor the selected garment fabric. Cotton poplin must look tightly woven, smooth-matte and lightly creased, never loose slubby linen.
+11. OCCUPANCY QA: before finalizing, trace one physical chain: subject pelvis → driver-seat cushion → steering column ahead → pedals below; subject LEFT shoulder → driver door; subject RIGHT thigh → center console → empty passenger seat. If this chain fails, reject and rebuild the cabin.
 
 If any later instruction competes with this lock, this lock wins.`;
 }

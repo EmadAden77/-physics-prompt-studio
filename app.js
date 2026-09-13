@@ -17,7 +17,6 @@
     const fields = [
       ['Capture type', value('captureType')],
       ['Time', value('time')],
-      ['Seat / position', value('seat')],
       ['Camera angle', value('angle')],
       ['Pose', value('pose')],
       ['Expression', value('expression')],
@@ -44,7 +43,7 @@
 
   function renderStatus() {
     if (warnings) warnings.textContent = '';
-    if (checklist) checklist.innerHTML = '<li>لا توجد قواعد تلقائية مفعلة.</li><li>لا توجد Locks أو Realism Engine أو أولوية مخفية.</li><li>الناتج يعتمد فقط على اختياراتك وملاحظاتك.</li>';
+    if (checklist) checklist.innerHTML = '<li>لا توجد قواعد تلقائية مفعلة.</li><li>لا توجد تعليمات سيارة أو مقاعد أو نظام قيادة مضافة تلقائيًا.</li><li>الناتج يعتمد فقط على اختياراتك وملاحظاتك.</li>';
   }
 
   form?.addEventListener('submit', (event) => {

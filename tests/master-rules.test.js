@@ -13,4 +13,14 @@ const exterior=MasterRules.evaluate({...base,capture:'exterior',scene:'outside-c
 assert(exterior.active.some(r=>r.id==='exterior-visible-only'));
 assert(!exterior.active.some(r=>r.id==='driver-seat-lhd'));
 assert(MasterRules.output(base).includes('MUST:'));
+const sample={reference_image:'Attach face.jpg as the only identity reference.',subject:{expression:'a closed-mouth smile; no teeth.',hair:'reference hair.',clothing:'navy cotton shirt.',eyewear:'black rectangular glasses.'},photography:{aspect_ratio:'9:16 vertical',angle:'slightly low selfie angle.'}};
+const compiled=MasterRules.compile(sample,{...base,age:'35'});
+assert(compiled.includes('NIGHT ONLY'));
+assert(compiled.includes('ZERO teeth'));
+assert(!compiled.includes('CONFIDENCE AUDIT'));
+assert(!compiled.includes('afternoon/day/night'));
+const json=MasterRules.compileJson(sample,{...base,age:'35'});
+assert.equal(json.selected_state.time,'night');
+assert.equal(json.internal_audit.status,'consistent');
+assert(!JSON.stringify(json).includes('MASTER REALISM ENGINE'));
 console.log('Master Rules V4 tests passed');

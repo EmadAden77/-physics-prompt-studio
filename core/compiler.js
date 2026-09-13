@@ -86,9 +86,23 @@ function referenceInstruction(state) {
   return 'REFERENCE: use the attached image as a broad visual reference, while following the current scene selections whenever they differ.';
 }
 
+function locationBase(state) {
+  return customOrMap(state.location, state.customLocation, locationMap, 'a generic location in Saudi Arabia');
+}
+
 function locationInstruction(state) {
-  const base = customOrMap(state.location, state.customLocation, locationMap, 'a generic location in Saudi Arabia');
-  return `${base}. Keep the place ordinary and non-iconic: no recognizable landmark, famous building, named venue, city-defining skyline, or tourist icon.`;
+  return `${locationBase(state)}. Keep the place ordinary and non-iconic: no recognizable landmark, famous building, named venue, city-defining skyline, or tourist icon.`;
+}
+
+function vehicleInstruction(state) {
+  if (state.vehicleScene !== 'rrs-2017-white-interior') return null;
+  return {
+    model: '2017 Range Rover Sport L494',
+    exterior: 'white',
+    line: `A white 2017 Range Rover Sport is parked and stationary at ${locationBase(state)}.`,
+    cabin: 'Visible cabin details should match a 2017 Range Rover Sport L494: Ivory leather seats, dark wood trim, panoramic roof, black-and-Ivory steering wheel.',
+    constraints: 'Keep the vehicle interior realistic and period-appropriate. Do not redesign the cabin as a newer model. No newer Range Rover interior.'
+  };
 }
 
 function cameraInstruction(state) {
@@ -134,6 +148,7 @@ export function validateState(state) {
   if (Number.isFinite(distance) && distance < 20 && ['half-body','three-quarter-body','full-body','waist-up','environmental-portrait'].includes(state.framing)) warnings.push('المسافة قصيرة جدًا مقارنة بالكادر المختار.');
   if (Number.isFinite(focal) && (focal < 12 || focal > 150)) warnings.push('البعد البؤري غير معتاد لهذا النوع من الصور.');
   if (state.captureType === 'cctv' && ['close-head-shoulders','face-dominant'].includes(state.framing)) warnings.push('الكادر القريب جدًا غير معتاد لكاميرا مراقبة ثابتة.');
+  if (state.vehicleScene === 'rrs-2017-white-interior' && ['natural-standing','walking','waiting'].includes(state.pose)) warnings.push('تم اختيار مشهد داخل السيارة مع وضعية غير جلوس؛ راجع الوضعية إذا لم يكن ذلك مقصودًا.');
   [['location','customLocation','الموقع'],['pose','customPose','الوضعية'],['hair','customHair','الشعر'],['beard','customBeard','اللحية'],['glasses','customGlasses','النظارة'],['clothing','customClothing','الملابس'],['angle','customAngle','الزاوية'],['framing','customFraming','الكادر'],['lightSource','customLightSource','مصدر الضوء']].forEach(([key,custom,label]) => {
     if (state[key] === 'custom' && !state[custom]?.trim()) warnings.push(`اخترت ${label} مخصصًا لكن الوصف فارغ.`);
   });
@@ -141,10 +156,10 @@ export function validateState(state) {
 }
 
 export function compileDetailed(state) {
-  const light=lightingInstruction(state), realism=realismInstructions(state), a=appearance(state);
+  const light=lightingInstruction(state), realism=realismInstructions(state), a=appearance(state), vehicle=vehicleInstruction(state);
   const lines=[
     'GENERATE ONE PHOTOREALISTIC IMAGE','',
-    `CORE SCENE: ${state.idea.trim() || 'Create the selected scene.'}`,
+    `CORE SCENE: ${state.idea.trim() || (vehicle ? `A ${state.age || 35}-year-old man is seated inside a white 2017 Range Rover Sport at the selected Saudi location.` : 'Create the selected scene.')}`,
     `LOCATION: ${locationInstruction(state)}`,
     `TIME: ${timeMap[state.time] || state.time}.`,
     `CAPTURE: ${cameraInstruction(state)}.`,
@@ -156,6 +171,9 @@ export function compileDetailed(state) {
     `CLOTHING: ${a.clothing}.`,
     `GLASSES: ${a.glasses}.`,
     `ASPECT RATIO: ${state.ratio}.`,
+    vehicle ? `VEHICLE: ${vehicle.line}` : '',
+    vehicle ? `VISIBLE CABIN DETAILS: ${vehicle.cabin}` : '',
+    vehicle ? `VEHICLE CONSTRAINTS: ${vehicle.constraints}` : '',
     referenceInstruction(state),'',
     `PHYSICAL LIGHTING: ${light.physical}. Physical illumination alone determines which surfaces receive light, shadow direction, highlights, and local brightness.`,
     `CAMERA PROCESSING: ${light.processing}. Exposure, ISO-like gain, HDR, and computational processing may reveal captured signal but must not invent physical illumination that never reached the subject.`
@@ -166,11 +184,12 @@ export function compileDetailed(state) {
 }
 
 export function compileConcise(state) {
-  const ref=referenceInstruction(state), light=lightingInstruction(state), realism=realismInstructions(state).join(' '), a=appearance(state);
+  const ref=referenceInstruction(state), light=lightingInstruction(state), realism=realismInstructions(state).join(' '), a=appearance(state), vehicle=vehicleInstruction(state);
   return [
-    `Create one photorealistic image of ${state.idea.trim() || 'the selected scene'} in ${locationInstruction(state)}`,
+    `Create one photorealistic image of ${state.idea.trim() || (vehicle ? `a ${state.age || 35}-year-old man seated inside a white 2017 Range Rover Sport` : 'the selected scene')} in ${locationInstruction(state)}`,
     `Time: ${timeMap[state.time] || state.time}. Capture: ${cameraInstruction(state)}.`,
     `Subject: ${state.people} person${String(state.people)==='1'?'':'s'}, apparent age ${state.age || 'unspecified'}, ${a.pose}, ${expressionMap[state.expression] || state.expression}, hair: ${a.hair}, facial hair: ${a.beard}, clothing: ${a.clothing}, glasses: ${a.glasses}.`,
+    vehicle ? `Vehicle: ${vehicle.line} ${vehicle.cabin} ${vehicle.constraints}` : '',
     ref,
     `Physical lighting: ${light.physical}. Camera processing: ${light.processing}. Do not use processing to invent light that did not physically reach the scene.`,
     realism,
@@ -182,16 +201,19 @@ export function compileConcise(state) {
 export function compileNegative(state) {
   const negatives=['recognizable landmark','famous building','named tourist attraction','city-defining skyline','impossible anatomy','extra fingers or limbs','floating objects','impossible contact','inconsistent reflections','light without a physical source','plastic skin','over-smoothed skin','excessive HDR','artificial sharpening'];
   if (state.referenceAttached && state.referenceRole === 'identity-only') negatives.push('copying reference clothing','copying reference background','copying reference pose');
+  if (state.vehicleScene === 'rrs-2017-white-interior') negatives.push('newer Range Rover interior','incorrect SUV cabin','redesigned dashboard','vehicle in motion');
+  if (state.vehicleScene === 'rrs-2017-white-interior' && state.captureType === 'front-selfie') negatives.push('third-person camera');
   return negatives.join(', ');
 }
 
 export function compileJson(state) {
-  const a=appearance(state);
+  const a=appearance(state), vehicle=vehicleInstruction(state);
   const payload={
     scene:{idea:state.idea,location:locationInstruction(state),time:state.time,aspect_ratio:state.ratio},
     reference:{attached:state.referenceAttached,role:state.referenceRole},
     capture:{type:state.captureType,angle:customOrMap(state.angle,state.customAngle,angleMap),framing:customOrMap(state.framing,state.customFraming,framingMap),focal_length_equivalent_mm:Number(state.focalLength),distance_cm:Number(state.distance),yaw_deg:Number(state.yaw),pitch_deg:Number(state.pitch),roll_deg:Number(state.roll)},
     subject:{people:Number(state.people),apparent_age:Number(state.age),pose:a.pose,expression:expressionMap[state.expression]||state.expression,hair:a.hair,facial_hair:a.beard,clothing:a.clothing,glasses:a.glasses},
+    vehicle: vehicle ? {enabled:true,scene:state.vehicleScene,model:vehicle.model,exterior_color:vehicle.exterior,cabin:vehicle.cabin,constraints:vehicle.constraints} : {enabled:false,scene:'none'},
     lighting:{physical_source:customOrMap(state.lightSource,state.customLightSource,lightMap),direction:state.lightDirection,falloff:state.lightFalloff},
     processing:{exposure:state.exposure,hdr:state.hdr,white_balance:state.whiteBalance},
     realism_modules:state.modules,notes:state.notes

@@ -25,6 +25,10 @@ h2{font-size:1.15rem;margin:0}
 label{display:flex;gap:8px;flex-direction:column;color:#d6d4cd;font-size:.87rem}
 select,input,textarea{background:#11130f;border:1px solid #3a3d37;color:var(--ink);border-radius:4px;padding:11px 12px;font:inherit;min-height:45px}
 select:focus,input:focus,textarea:focus{outline:2px solid var(--lime);outline-offset:1px}
+.auto-control{display:flex;flex-direction:column;justify-content:center;gap:4px;min-height:72px;padding:10px 12px;border:1px solid #52613d;border-radius:4px;background:#171d12}
+.auto-control span{color:#d6d4cd;font-size:.78rem}
+.auto-control strong{color:var(--lime);font-size:.88rem;line-height:1.45}
+.auto-control small{color:var(--muted);font-size:.7rem}
 .notes{margin-bottom:22px}
 textarea{resize:vertical;min-height:74px}
 .lock{font-size:.82rem;line-height:1.7;border-right:2px solid var(--lime);color:var(--muted);padding-right:10px;margin:-17px 0 30px}

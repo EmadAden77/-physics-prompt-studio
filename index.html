@@ -13,7 +13,7 @@
   <body>
     <main class="shell">
       <header class="masthead">
-        <div><p class="eyebrow">PHYSICS PROMPT STUDIO / V1</p><h1>سيلفي يبدو كأنه حدث فعلًا</h1><p class="intro">أنشئ Prompt محكومًا بالهوية، فيزياء السيلفي، ومقصورة Range Rover L494 — جاهز لـ ChatGPT Images وGemini.</p></div>
+        <div><p class="eyebrow">PHYSICS PROMPT STUDIO / V2</p><h1>سيلفي يبدو كأنه حدث فعلًا</h1><p class="intro">أنشئ Prompt محكومًا بالهوية، فيزياء السيلفي، ومقصورة Range Rover L494 — جاهز لـ ChatGPT Images وGemini.</p></div>
         <div class="car-badge"><span>2017</span><strong>RANGE ROVER<br/>SPORT L494</strong><small>Ebony / Ivory · LHD</small></div>
       </header>
 
@@ -27,10 +27,10 @@
           <div class="grid two">
             <label>المحرك المستهدف<select id="engine"><option value="ChatGPT Images">ChatGPT Images</option><option value="Google Gemini Images">Google Gemini Images</option><option value="both">ChatGPT Images and Google Gemini Images</option></select></label>
             <label>نوع السيلفي<select id="captureType"><option value="interior">داخل السيارة</option><option value="exterior">بجانب السيارة</option></select></label>
-            <label>وقت المشهد<select id="time"><option value="night">ليل سعودي واقعي</option><option value="day">نهار سعودي واقعي</option><option value="golden">قبل الغروب</option><option value="dusk">الشفق بعد الغروب</option></select></label>
-            <label>فيزياء الإضاءة<select id="lightingProfile"><option value="practical">عملية وطبيعية</option><option value="window">ضوء نافذة جانبي</option><option value="parking">إنارة موقف ليلي</option><option value="quiet">إضاءة هادئة داخل فيلا</option></select></label>
+            <label>وقت المشهد<select id="time"><option value="morning">الصباح</option><option value="noon">الظهر</option><option value="afternoon">العصر</option><option value="day">النهار العام</option><option value="night">الليل</option></select></label>
+            <div class="auto-control"><span>الإضاءة الفيزيائية</span><strong id="autoLightingLabel">تُحدّد تلقائيًا</strong><small>بحسب الوقت والمكان ونوع المشهد</small><input id="lightingProfile" type="hidden" value="window" /></div>
             <label>موضع الشخص<select id="seat"><option value="driver">مقعد السائق</option><option value="passenger">مقعد الراكب الأمامي</option><option value="rear-left">المقعد الخلفي الأيسر</option><option value="rear-right">المقعد الخلفي الأيمن</option></select></label>
-            <label>زاوية السيلفي<select id="angle"><option value="driver-close">قريبة من مقعد السائق</option><option value="driver-low">منخفضة من السائق</option><option value="driver-side">ثلاثة أرباع جانبية</option><option value="driver-roof">تميل للسقف البانورامي</option><option value="passenger-close">قريبة من مقعد الراكب</option><option value="rear-seat">المقعد الخلفي</option></select></label>
+            <div class="auto-control"><span>زاوية السيلفي</span><strong id="autoAngleLabel">تُحدّد تلقائيًا</strong><small>بحسب المشهد والمقعد والوضعية</small><input id="angle" type="hidden" value="driver-side" /></div>
             <label>الوضعية<select id="pose"><option value="holding">يمسك الهاتف خارج الإطار</option><option value="armless">ذراع الهاتف خارج الإطار تمامًا</option><option value="head">اليد الحرة قرب الشعر</option><option value="door">يميل طبيعيًا نحو الباب</option></select></label>
             <label>وضعية بجانب السيارة<select id="exteriorPose"><option value="closed-door">واقف بجانب باب السائق المغلق</option><option value="open-door">واقف بجانب باب السائق المفتوح</option><option value="front-quarter">بجانب الرفرف الأمامي</option><option value="rear-quarter">عند الربع الخلفي</option><option value="locking">يستعد لإغلاق السيارة والذهاب</option></select></label>
             <label>الإطار الخارجي<select id="exteriorFraming"><option value="close">رأس وكتف مع جزء من الباب</option><option value="half">نصف جسم والسيارة خلف الكتف</option><option value="low">زاوية منخفضة خفيفة</option><option value="wide">أوسع من مسافة ذراع</option></select></label>

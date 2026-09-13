@@ -7,6 +7,6 @@
   const previousDoctor=promptDoctor;
   promptDoctor=function(){const result=previousDoctor(),audit=M.evaluate(state());result.ruleAudit=audit.results;result.verified.push(`V4: فُحصت ${audit.active.length} قواعد نشطة داخليًا؛ لا تُضاف تقارير المحرك إلى البرومبت.`);audit.conflicts.forEach(c=>result.verified.push(`${c.id}: صُحح تلقائيًا لصالح ${c.winner}`));return result};
   const previousRender=render;
-  render=function(){syncCaptureControls();previousRender();if(outputMode==='gemini'){const prompt=buildExteriorAware();$('output').textContent=JSON.stringify(M.compileJson(prompt,state()),null,2)}};
+  render=function(){syncCaptureControls();previousRender()};
   render();
 })(window);

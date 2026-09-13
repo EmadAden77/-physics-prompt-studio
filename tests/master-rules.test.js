@@ -19,8 +19,4 @@ assert(compiled.includes('NIGHT ONLY'));
 assert(compiled.includes('ZERO teeth'));
 assert(!compiled.includes('CONFIDENCE AUDIT'));
 assert(!compiled.includes('afternoon/day/night'));
-const json=MasterRules.compileJson(sample,{...base,age:'35'});
-assert.equal(json.selected_state.time,'night');
-assert.equal(json.internal_audit.status,'consistent');
-assert(!JSON.stringify(json).includes('MASTER REALISM ENGINE'));
 console.log('Master Rules V4 tests passed');

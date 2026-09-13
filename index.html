@@ -13,19 +13,19 @@
   <body>
     <main class="shell">
       <header class="masthead">
-        <div><p class="eyebrow">PHYSICS PROMPT STUDIO / V4.1</p><h1>سيلفي يبدو كأنه حدث فعلًا</h1><p class="intro">محرك واقعية تنفيذي بمخرج مختصر، وقت واحد مقفل، وفيزياء سيلفي وواقع سعودي — جاهز لـ ChatGPT Images وGemini.</p></div>
+        <div><p class="eyebrow">PHYSICS PROMPT STUDIO / V4.2</p><h1>سيلفي يبدو كأنه حدث فعلًا</h1><p class="intro">محرك واقعية مخصص لـ ChatGPT Images بمخرج مختصر، وقت واحد مقفل، وفيزياء سيلفي وواقع سعودي.</p></div>
         <div class="car-badge"><span>2017</span><strong>RANGE ROVER<br/>SPORT L494</strong><small>Ebony / Ivory · LHD</small></div>
       </header>
 
       <section class="workspace">
         <form id="promptForm" class="controls">
           <div class="section-title"><span>01</span><h2>الصورة المرجعية</h2></div>
-          <label class="upload-zone" for="referenceImage" id="uploadZone"><input id="referenceImage" type="file" accept="image/*" hidden /><span class="upload-icon">↑</span><strong>أرفق صورة الشخص المرجعية</strong><small id="fileStatus">تبقى الصورة في جهازك؛ أرفقها يدويًا مع الـPrompt في ChatGPT أو Gemini.</small></label>
+          <label class="upload-zone" for="referenceImage" id="uploadZone"><input id="referenceImage" type="file" accept="image/*" hidden /><span class="upload-icon">↑</span><strong>أرفق صورة الشخص المرجعية</strong><small id="fileStatus">تبقى الصورة في جهازك؛ أرفقها يدويًا مع الـPrompt في ChatGPT.</small></label>
           <label class="upload-zone metadata-zone" for="metadataImage" id="metadataZone"><input id="metadataImage" type="file" accept="image/png" hidden /><span class="upload-icon">⌁</span><strong>استيراد بيانات Prompt من صورة SD (اختياري)</strong><small id="metadataStatus">قراءة محلية فقط لملفات PNG التي تحتوي metadata؛ لا تُرفع الصورة ولا تُعدّل.</small></label>
           <textarea id="metadataPreview" class="metadata-preview" readonly hidden aria-label="Imported Stable Diffusion metadata"></textarea>
           <div class="section-title"><span>02</span><h2>اللحظة والتصوير</h2></div>
           <div class="grid two">
-            <label>المحرك المستهدف<select id="engine"><option value="ChatGPT Images">ChatGPT Images</option><option value="Google Gemini Images">Google Gemini Images</option><option value="both">ChatGPT Images and Google Gemini Images</option></select></label>
+            <div class="auto-control"><span>المحرك المستهدف</span><strong>ChatGPT Images</strong><small>مخصص حصريًا لتوليد الصور في ChatGPT</small></div>
             <label>نوع السيلفي<select id="captureType"><option value="interior">داخل السيارة</option><option value="exterior">بجانب السيارة</option></select></label>
             <label>وقت المشهد<select id="time"><option value="morning">الصباح</option><option value="noon">الظهر</option><option value="afternoon">العصر</option><option value="day">النهار العام</option><option value="night">الليل</option></select></label>
             <div class="auto-control"><span>الإضاءة الفيزيائية</span><strong id="autoLightingLabel">تُحدّد تلقائيًا</strong><small>بحسب الوقت والمكان ونوع المشهد</small><input id="lightingProfile" type="hidden" value="window" /></div>
@@ -69,7 +69,7 @@
 
         <aside class="result-panel">
           <div class="result-head"><div><p class="eyebrow">READY TO GENERATE</p><h2>الـ Prompt الناتج</h2></div></div>
-          <div class="output-tabs" role="tablist"><button class="tab active" id="chatgptTab" type="button">ChatGPT Images</button><button class="tab" id="geminiTab" type="button">Gemini JSON</button><button class="tab" id="variationsTab" type="button">3 تنويعات</button><button id="copy" type="button">نسخ</button></div>
+          <div class="output-tabs" role="tablist"><button class="tab active" id="chatgptTab" type="button">ChatGPT Images</button><button class="tab" id="variationsTab" type="button">3 تنويعات</button><button id="copy" type="button">نسخ</button></div>
           <pre id="output" aria-live="polite"></pre>
           <div class="checks"><strong>Prompt Doctor — فحص الاتساق</strong><ul id="checklist"></ul></div>
           <p class="tip">أرفق صورة مرجعية للشخص، ثم الصق النص كاملًا. جرّب 3–5 توليدات مع تغيير زاوية واحدة فقط كل مرة.</p>

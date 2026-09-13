@@ -18,7 +18,7 @@ function l494InteriorEnabled(ctx = {}) {
   return captureType !== 'exterior';
 }
 
-// Add the master lock to the structured object used by Gemini JSON and the shared generator.
+// Add the master lock to the shared internal scene object.
 const _buildExteriorAwareWithoutInteriorMasterLock = buildExteriorAware;
 buildExteriorAware = function () {
   const prompt = _buildExteriorAwareWithoutInteriorMasterLock();

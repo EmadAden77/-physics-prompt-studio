@@ -53,16 +53,4 @@ One camera pipeline governs face, hair, clothing, leather, glass and background.
 FINAL REJECTION GATE:
 Reject and rebuild if any of these occur: wrong time of day; visible teeth contrary to the chosen expression; waist or belt visible in an interior close selfie; large dominant steering wheel; wrong LHD seat topology; visible selfie arm; legible brand/logo; invented light; duplicated glasses; malformed hands; floating objects; inconsistent shadows or reflections.`;
   };
-  M.compileJson=function(prompt,state){
-    const audit=M.evaluate(state);
-    return {
-      task:'generate_one_photorealistic_image',
-      priority:['explicit selection','identity fidelity','capture and camera geometry','physical causality','scene context','aesthetics'],
-      selected_state:{capture:state.capture,seat:state.capture==='interior'?state.seat:null,time:state.time,place:state.place,aspect_ratio:prompt.photography.aspect_ratio},
-      reference:{role:'identity_only',instruction:prompt.reference_image},
-      subject:{age:state.age||'35',identity_lock:prompt.subject.face,expression:prompt.subject.expression,hair:prompt.subject.hair,clothing:prompt.subject.clothing,eyewear:prompt.subject.eyewear},
-      final_prompt:M.compile(prompt,state),
-      internal_audit:{active_rules:audit.active.map(r=>r.id),corrections:audit.conflicts.map(c=>({conflict:c.id,winner:c.winner,fix:c.fix})),status:audit.conflicts.length?'auto_corrected':'consistent'}
-    };
-  };
 })(window.MasterRules);

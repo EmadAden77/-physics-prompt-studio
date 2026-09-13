@@ -1,0 +1,8 @@
+{
+  "name": "physics-prompt-studio",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/compiler-smoke.mjs && node tests/static-integrity.mjs"
+  }
+}

@@ -45,10 +45,14 @@ const POSE_OPTIONS = [...POSES, ...EXTRA_POSES];
 const ANGLE_OPTIONS = [...ANGLES, ...EXTRA_ANGLES];
 const FRAMING_OPTIONS = [...FRAMINGS, ...EXTRA_FRAMINGS];
 const LIGHT_OPTIONS = [...LIGHT_SOURCES, ...EXTRA_LIGHT_SOURCES];
+const VEHICLE_SCENES = [
+  ['none', 'بدون سيارة'],
+  ['rrs-2017-white-interior', 'داخل رنج روفر سبورت 2017 بيضاء']
+];
 
 const DEFAULTS = {
   referenceRole: 'identity-only', captureType: 'front-selfie', time: 'night', location: 'commercial-street',
-  people: '1', ratio: '9:16 vertical', age: '35', pose: 'natural-standing', expression: 'neutral',
+  vehicleScene: 'none', people: '1', ratio: '9:16 vertical', age: '35', pose: 'natural-standing', expression: 'neutral',
   clothing: 'black-tee', hair: 'reference', beard: 'reference', glasses: 'reference', angle: 'eye-level',
   framing: 'chest-up', focalLength: '24', distance: '50', yaw: '0', pitch: '0', roll: '2',
   lightSource: 'street-lights', lightDirection: 'front-side natural direction',
@@ -59,7 +63,7 @@ const DEFAULTS = {
 
 const SECTION_FIELDS = {
   reference: ['idea', 'referenceRole'],
-  scene: ['captureType', 'time', 'location', 'customLocation', 'people', 'ratio'],
+  scene: ['captureType', 'time', 'location', 'customLocation', 'vehicleScene', 'people', 'ratio'],
   subject: ['age', 'pose', 'customPose', 'expression', 'hair', 'customHair', 'beard', 'customBeard', 'glasses', 'customGlasses', 'clothing', 'customClothing'],
   camera: ['angle', 'customAngle', 'framing', 'customFraming', 'focalLength', 'distance', 'yaw', 'pitch', 'roll'],
   lighting: ['lightSource', 'customLightSource', 'lightDirection', 'lightFalloff', 'exposure', 'hdr', 'whiteBalance'],
@@ -87,6 +91,18 @@ function fillSelect(id, items, defaultValue, preserveValue) {
   select.value = hasWanted ? wanted : (defaultValue || select.options[0]?.value || '');
 }
 
+function ensureVehicleControl() {
+  if ($('vehicleScene')) return;
+  const locationWrap = $('customLocationWrap');
+  if (!locationWrap) return;
+
+  const label = document.createElement('label');
+  label.className = 'field full';
+  label.innerHTML = '<span>المشهد داخل السيارة</span><select id="vehicleScene"></select><small class="hint">اختياري. عند تفعيله يضيف رنج روفر سبورت 2017 البيضاء ومقصورتها فقط، بينما يبقى المكان من اختيارك.</small>';
+  locationWrap.insertAdjacentElement('afterend', label);
+  fillSelect('vehicleScene', VEHICLE_SCENES, DEFAULTS.vehicleScene);
+}
+
 function restoreFullSearchCatalogs() {
   fillSelect('location', LOCATIONS, DEFAULTS.location, value('location'));
   fillSelect('clothing', CLOTHING_OPTIONS, DEFAULTS.clothing, value('clothing'));
@@ -106,6 +122,7 @@ function buildCatalogs() {
   fillSelect('beard', BEARDS, DEFAULTS.beard);
   fillSelect('glasses', GLASSES_OPTIONS, DEFAULTS.glasses);
   fillSelect('lightSource', LIGHT_OPTIONS, DEFAULTS.lightSource);
+  ensureVehicleControl();
 
   const preset = $('preset');
   preset.innerHTML = '<option value="">اختر Preset...</option>';
@@ -149,7 +166,7 @@ function readModules() {
 function readState() {
   return {
     idea: value('idea'), referenceAttached, referenceRole: value('referenceRole'), captureType: value('captureType'),
-    time: value('time'), location: value('location'), customLocation: value('customLocation'), people: value('people'),
+    time: value('time'), location: value('location'), customLocation: value('customLocation'), vehicleScene: value('vehicleScene'), people: value('people'),
     ratio: value('ratio'), age: value('age'), pose: value('pose'), customPose: value('customPose'),
     expression: value('expression'), clothing: value('clothing'), customClothing: value('customClothing'),
     hair: value('hair'), customHair: value('customHair'), beard: value('beard'), customBeard: value('customBeard'),

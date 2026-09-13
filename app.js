@@ -1,208 +1,94 @@
 import {
-  REFERENCE_ROLES,
-  CAPTURE_TYPES,
-  TIMES,
-  SAUDI_LOCATIONS,
-  ANGLES,
-  FRAMINGS,
-  POSES,
-  EXPRESSIONS,
-  CLOTHING,
-  LIGHT_SOURCES,
+  CATALOG,
+  DEFAULT_STATE,
+  FIELD_SPECS,
   REALISM_MODULES,
   MODULE_LEVELS
 } from './data/catalog.js';
-
-import {
-  HAIRSTYLES,
-  BEARDS,
-  GLASSES_OPTIONS,
-  EXTRA_POSES,
-  EXTRA_ANGLES,
-  EXTRA_FRAMINGS,
-  EXTRA_LIGHT_SOURCES,
-  EXTRA_LOCATIONS
-} from './data/extensions.js';
-
 import { PRESETS } from './data/presets.js';
-
-import {
-  compileDetailed,
-  compileConcise,
-  compileNegative,
-  compileJson,
-  validateState
-} from './core/compiler.js';
+import { compileDetailed, compileConcise, compileNegative, compileJson } from './core/compiler.js';
+import { validationStatus } from './core/validation.js';
 
 const $ = (id) => document.getElementById(id);
-const STORAGE_KEY = 'prompt-studio-modular-v3';
+const STORAGE_KEY = 'physics-prompt-studio-v4';
 let activeView = 'detailed';
 let referenceAttached = false;
 
-const mergeOptions = (items) => [...new Map(items.map((item) => [item[0], item])).values()];
-
-const LOCATIONS = mergeOptions([...SAUDI_LOCATIONS, ...EXTRA_LOCATIONS]);
-const CLOTHING_OPTIONS = mergeOptions([...CLOTHING, ['custom', 'مخصص', 'custom clothing']]);
-const POSE_OPTIONS = mergeOptions([...POSES, ...EXTRA_POSES]);
-const ANGLE_OPTIONS = mergeOptions([...ANGLES, ...EXTRA_ANGLES]);
-const FRAMING_OPTIONS = mergeOptions([...FRAMINGS, ...EXTRA_FRAMINGS]);
-const LIGHT_OPTIONS = mergeOptions([...LIGHT_SOURCES, ...EXTRA_LIGHT_SOURCES]);
-const VEHICLE_SCENES = [
-  ['none', 'بدون سيارة'],
-  ['rrs-2017-white-interior', 'داخل رنج روفر سبورت 2017 بيضاء']
-];
-
-const DEFAULTS = {
-  referenceRole: 'none',
-  captureType: 'front-selfie',
-  time: 'night',
-  location: 'commercial-street',
-  vehicleScene: 'none',
-  people: '1',
-  ratio: '9:16 vertical',
-  age: '35',
-  pose: 'natural-standing',
-  expression: 'neutral',
-  clothing: 'black-tee',
-  hair: 'reference',
-  beard: 'reference',
-  glasses: 'reference',
-  angle: 'eye-level',
-  framing: 'chest-up',
-  focalLength: '24',
-  distance: '50',
-  yaw: '0',
-  pitch: '0',
-  roll: '2',
-  lightSource: 'street-lights',
-  lightDirection: 'front-side natural direction',
-  lightFalloff: 'natural distance-based falloff',
-  exposure: 'natural',
-  hdr: 'low',
-  whiteBalance: 'neutral with small natural error',
-  idea: '',
-  notes: '',
-  customLocation: '',
-  customPose: '',
-  customHair: '',
-  customBeard: '',
-  customGlasses: '',
-  customClothing: '',
-  customAngle: '',
-  customFraming: '',
-  customLightSource: ''
-};
-
-const SECTION_FIELDS = {
+const SECTION_FIELDS = Object.freeze({
   reference: ['idea', 'referenceRole'],
   scene: ['captureType', 'time', 'location', 'customLocation', 'vehicleScene', 'people', 'ratio'],
   subject: ['age', 'pose', 'customPose', 'expression', 'hair', 'customHair', 'beard', 'customBeard', 'glasses', 'customGlasses', 'clothing', 'customClothing'],
-  camera: ['angle', 'customAngle', 'framing', 'customFraming', 'focalLength', 'distance', 'yaw', 'pitch', 'roll'],
+  camera: ['framing', 'focalLength', 'distance', 'yaw', 'pitch', 'roll'],
   lighting: ['lightSource', 'customLightSource', 'lightDirection', 'lightFalloff', 'exposure', 'hdr', 'whiteBalance'],
   notes: ['notes']
-};
+});
 
-const PRESET_RESET_FIELDS = [
-  'idea', 'captureType', 'time', 'location', 'customLocation', 'vehicleScene', 'people', 'ratio',
-  'pose', 'customPose', 'expression', 'clothing', 'customClothing', 'angle', 'customAngle',
-  'framing', 'customFraming', 'focalLength', 'distance', 'yaw', 'pitch', 'roll',
-  'lightSource', 'customLightSource', 'lightDirection', 'lightFalloff', 'exposure', 'hdr', 'whiteBalance'
-];
-
-const CUSTOM_VISIBILITY = {
+const CUSTOM_VISIBILITY = Object.freeze({
   location: 'customLocationWrap',
   pose: 'customPoseWrap',
   hair: 'customHairWrap',
   beard: 'customBeardWrap',
   glasses: 'customGlassesWrap',
   clothing: 'customClothingWrap',
-  angle: 'customAngleWrap',
-  framing: 'customFramingWrap',
   lightSource: 'customLightSourceWrap'
-};
+});
 
-function fillSelect(id, items, defaultValue, preserveValue) {
+function fillSelect(id, options, selectedValue) {
   const select = $(id);
-  if (!select) return;
-  const wanted = preserveValue ?? select.value ?? defaultValue;
-  select.innerHTML = '';
-  items.forEach(([optionValue, label]) => {
+  if (!select) throw new Error(`Missing select #${id}`);
+  const wanted = String(selectedValue ?? select.value ?? '');
+  select.replaceChildren(...options.map((item) => {
     const option = document.createElement('option');
-    option.value = optionValue;
-    option.textContent = label;
-    select.appendChild(option);
-  });
-  const hasWanted = [...select.options].some((option) => option.value === String(wanted));
-  select.value = hasWanted ? String(wanted) : (defaultValue || select.options[0]?.value || '');
+    option.value = item.id;
+    option.textContent = item.label;
+    return option;
+  }));
+  select.value = options.some((item) => item.id === wanted) ? wanted : String(options[0]?.id ?? '');
 }
 
-function setFieldValue(id, nextValue) {
-  const el = $(id);
-  if (!el) return false;
-  const normalized = String(nextValue ?? '');
-  if (el.tagName === 'SELECT' && ![...el.options].some((option) => option.value === normalized)) return false;
-  el.value = normalized;
-  return true;
-}
-
-function restoreFullSearchCatalogs() {
-  fillSelect('location', LOCATIONS, DEFAULTS.location, value('location'));
-  fillSelect('clothing', CLOTHING_OPTIONS, DEFAULTS.clothing, value('clothing'));
+function applyNumericSpecs() {
+  for (const [id, spec] of Object.entries(FIELD_SPECS)) {
+    const input = $(id);
+    if (!input) throw new Error(`Missing numeric input #${id}`);
+    input.min = String(spec.min);
+    input.max = String(spec.max);
+    input.step = String(spec.step);
+    input.dataset.unit = spec.unit;
+  }
 }
 
 function buildCatalogs() {
-  fillSelect('referenceRole', REFERENCE_ROLES, DEFAULTS.referenceRole);
-  fillSelect('captureType', CAPTURE_TYPES, DEFAULTS.captureType);
-  fillSelect('time', TIMES, DEFAULTS.time);
-  fillSelect('location', LOCATIONS, DEFAULTS.location);
-  fillSelect('vehicleScene', VEHICLE_SCENES, DEFAULTS.vehicleScene);
-  fillSelect('angle', ANGLE_OPTIONS, DEFAULTS.angle);
-  fillSelect('framing', FRAMING_OPTIONS, DEFAULTS.framing);
-  fillSelect('pose', POSE_OPTIONS, DEFAULTS.pose);
-  fillSelect('expression', EXPRESSIONS, DEFAULTS.expression);
-  fillSelect('clothing', CLOTHING_OPTIONS, DEFAULTS.clothing);
-  fillSelect('hair', HAIRSTYLES, DEFAULTS.hair);
-  fillSelect('beard', BEARDS, DEFAULTS.beard);
-  fillSelect('glasses', GLASSES_OPTIONS, DEFAULTS.glasses);
-  fillSelect('lightSource', LIGHT_OPTIONS, DEFAULTS.lightSource);
+  for (const [field, options] of Object.entries(CATALOG)) {
+    fillSelect(field, options, DEFAULT_STATE[field]);
+  }
 
   const preset = $('preset');
-  preset.innerHTML = '<option value="">اختر Preset...</option>';
-  PRESETS.forEach(({ id, label }) => {
-    const option = document.createElement('option');
-    option.value = id;
-    option.textContent = label;
-    preset.appendChild(option);
-  });
+  preset.replaceChildren(new Option('اختر Preset...', ''), ...PRESETS.map((item) => new Option(item.label, item.id)));
 
   const moduleGrid = $('realismModules');
-  moduleGrid.innerHTML = '';
-  REALISM_MODULES.forEach(([key, label]) => {
+  moduleGrid.replaceChildren(...REALISM_MODULES.map((module) => {
     const card = document.createElement('label');
     card.className = 'module-card';
     const title = document.createElement('span');
-    title.textContent = label;
+    title.textContent = module.label;
     const select = document.createElement('select');
-    select.id = `module_${key}`;
-    MODULE_LEVELS.forEach(([moduleValue, text]) => {
-      const option = document.createElement('option');
-      option.value = moduleValue;
-      option.textContent = text;
-      select.appendChild(option);
-    });
-    select.value = 'auto';
+    select.id = `module_${module.id}`;
+    for (const level of MODULE_LEVELS) select.appendChild(new Option(level.label, level.id));
+    select.value = DEFAULT_STATE.modules[module.id];
     card.append(title, select);
-    moduleGrid.appendChild(card);
-  });
+    return card;
+  }));
+
+  applyNumericSpecs();
 }
 
 function value(id) {
-  const el = $(id);
-  return el ? String(el.value ?? '').trim() : '';
+  const element = $(id);
+  return element ? String(element.value ?? '').trim() : '';
 }
 
 function readModules() {
-  return Object.fromEntries(REALISM_MODULES.map(([key]) => [key, value(`module_${key}`) || 'off']));
+  return Object.fromEntries(REALISM_MODULES.map(({ id }) => [id, value(`module_${id}`)]));
 }
 
 function readState() {
@@ -229,10 +115,7 @@ function readState() {
     customBeard: value('customBeard'),
     glasses: value('glasses'),
     customGlasses: value('customGlasses'),
-    angle: value('angle'),
-    customAngle: value('customAngle'),
     framing: value('framing'),
-    customFraming: value('customFraming'),
     focalLength: value('focalLength'),
     distance: value('distance'),
     yaw: value('yaw'),
@@ -250,6 +133,23 @@ function readState() {
   };
 }
 
+function setFieldValue(id, nextValue) {
+  const element = $(id);
+  if (!element) return false;
+  const normalized = String(nextValue ?? '');
+  if (element.tagName === 'SELECT' && ![...element.options].some((option) => option.value === normalized)) return false;
+  element.value = normalized;
+  return true;
+}
+
+function applyStateToForm(state) {
+  for (const [key, nextValue] of Object.entries(state)) {
+    if (key === 'modules' || key === 'referenceAttached') continue;
+    setFieldValue(key, nextValue);
+  }
+  for (const module of REALISM_MODULES) setFieldValue(`module_${module.id}`, state.modules?.[module.id] ?? DEFAULT_STATE.modules[module.id]);
+}
+
 function compileForView(state) {
   if (activeView === 'concise') return compileConcise(state);
   if (activeView === 'json') return compileJson(state);
@@ -257,43 +157,47 @@ function compileForView(state) {
   return compileDetailed(state);
 }
 
-function renderWarnings(state) {
-  const warnings = validateState(state);
+function updateCustomVisibility() {
+  for (const [selectId, wrapId] of Object.entries(CUSTOM_VISIBILITY)) {
+    const wrap = $(wrapId);
+    if (wrap) wrap.hidden = value(selectId) !== 'custom';
+  }
+}
+
+function renderIssues(status) {
   const box = $('warnings');
   const checklist = $('checklist');
-  $('warningCount').textContent = String(warnings.length);
+  $('warningCount').textContent = String(status.issues.length);
 
-  if (!warnings.length) {
+  if (!status.issues.length) {
     box.classList.remove('visible');
-    box.innerHTML = '';
-    checklist.innerHTML = '<li class="ok">لا يوجد تعارض واضح في الاختيارات الحالية.</li><li class="ok">الموقع سعودي عام بدون معلم معروف.</li><li class="ok">الإضاءة الفيزيائية منفصلة عن المعالجة.</li>';
+    box.replaceChildren();
+    checklist.innerHTML = '<li class="ok">الحالة متسقة مع النموذج الفيزيائي الحالي.</li><li class="ok">الهندسة الرقمية هي المصدر الوحيد لزاوية الكاميرا.</li><li class="ok">الموقع سعودي عام بلا اسم مدينة أو معلم محدد.</li>';
     return;
   }
 
   box.classList.add('visible');
-  box.innerHTML = `<strong>تنبيهات قبل النسخ:</strong><ul>${warnings.map((warning) => `<li>${warning}</li>`).join('')}</ul>`;
-  checklist.innerHTML = warnings.map((warning) => `<li class="warn">${warning}</li>`).join('');
-}
-
-function updateCustomVisibility() {
-  Object.entries(CUSTOM_VISIBILITY).forEach(([selectId, wrapId]) => {
-    const wrap = $(wrapId);
-    if (wrap) wrap.hidden = value(selectId) !== 'custom';
-  });
+  const blockingText = status.blocked ? '<strong>الإخراج متوقف حتى معالجة التعارضات المانعة.</strong>' : '<strong>تنبيهات الحالة الحالية:</strong>';
+  box.innerHTML = `${blockingText}<ul>${status.issues.map((item) => `<li><b>${item.severity.toUpperCase()}</b> · ${item.message}</li>`).join('')}</ul>`;
+  checklist.innerHTML = status.issues.map((item) => `<li class="${item.severity === 'warning' ? 'warn' : 'error'}">${item.message}</li>`).join('');
 }
 
 function render() {
   updateCustomVisibility();
   const state = readState();
+  const status = validationStatus(state);
   $('output').textContent = compileForView(state);
-  renderWarnings(state);
+  renderIssues(status);
+
+  const badge = $('liveState');
+  badge.textContent = status.blocked ? 'BLOCKED' : status.strict ? 'STRICT' : 'VALID';
+  badge.classList.toggle('blocked', status.blocked);
+  badge.classList.toggle('strict', !status.blocked && status.strict);
 }
 
 function setActiveView(view) {
   activeView = view;
-  document.querySelectorAll('[data-view]').forEach((button) => {
-    button.classList.toggle('active', button.dataset.view === view);
-  });
+  document.querySelectorAll('[data-view]').forEach((button) => button.classList.toggle('active', button.dataset.view === view));
   render();
 }
 
@@ -301,58 +205,46 @@ async function copyOutput() {
   const text = $('output').textContent || '';
   if (!text) return;
   const button = $('copy');
-  const old = button.textContent;
+  const original = button.textContent;
   try {
     await navigator.clipboard.writeText(text);
     button.textContent = 'تم النسخ';
   } catch {
     button.textContent = 'انسخ يدويًا';
   }
-  setTimeout(() => { button.textContent = old; }, 1000);
+  window.setTimeout(() => { button.textContent = original; }, 900);
 }
 
 function saveLocalState() {
-  const values = {};
-  document.querySelectorAll('#promptForm input:not([type="file"]):not([type="search"]), #promptForm select, #promptForm textarea').forEach((el) => {
-    if (el.id) values[el.id] = el.value;
-  });
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(values)); } catch {}
+  const state = readState();
+  const serializable = { ...state, referenceAttached: false };
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(serializable)); } catch {}
 }
 
 function restoreLocalState() {
-  let saved;
-  try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch { saved = null; }
-  if (!saved || typeof saved !== 'object') return;
-  Object.entries(saved).forEach(([id, savedValue]) => setFieldValue(id, savedValue));
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch {}
+  if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return;
+  applyStateToForm({ ...DEFAULT_STATE, ...saved, modules: { ...DEFAULT_STATE.modules, ...(saved.modules || {}) } });
 }
 
-function resetFields(ids) {
-  ids.forEach((id) => setFieldValue(id, DEFAULTS[id] ?? ''));
+function clearReferenceFile() {
+  $('referenceImage').value = '';
+  referenceAttached = false;
+  $('uploadZone').classList.remove('has-file');
+  $('fileStatus').textContent = 'تبقى الصورة على جهازك؛ التطبيق يسجل فقط ما إذا كان المرجع مرفقًا ودوره.';
 }
 
 function resetSection(section) {
-  if (section === 'scene') {
-    $('locationSearch').value = '';
-    fillSelect('location', LOCATIONS, DEFAULTS.location, DEFAULTS.location);
-  }
-  if (section === 'subject') {
-    $('clothingSearch').value = '';
-    fillSelect('clothing', CLOTHING_OPTIONS, DEFAULTS.clothing, DEFAULTS.clothing);
-  }
-
   if (section === 'realism') {
-    REALISM_MODULES.forEach(([key]) => setFieldValue(`module_${key}`, 'auto'));
+    for (const module of REALISM_MODULES) setFieldValue(`module_${module.id}`, DEFAULT_STATE.modules[module.id]);
   } else {
-    resetFields(SECTION_FIELDS[section] || []);
+    for (const id of SECTION_FIELDS[section] || []) setFieldValue(id, DEFAULT_STATE[id]);
   }
-
-  if (section === 'reference') {
-    $('referenceImage').value = '';
-    referenceAttached = false;
-    $('uploadZone').classList.remove('has-file');
-    $('fileStatus').textContent = 'تبقى الصورة على جهازك؛ التطبيق يستخدم فقط اختيارك لدورها في البرومبت.';
-  }
-
+  if (section === 'scene') $('locationSearch').value = '';
+  if (section === 'subject') $('clothingSearch').value = '';
+  if (section === 'reference') clearReferenceFile();
+  restoreFilteredCatalogs();
   saveLocalState();
   render();
 }
@@ -360,42 +252,45 @@ function resetSection(section) {
 function resetAll() {
   $('locationSearch').value = '';
   $('clothingSearch').value = '';
-  fillSelect('location', LOCATIONS, DEFAULTS.location, DEFAULTS.location);
-  fillSelect('clothing', CLOTHING_OPTIONS, DEFAULTS.clothing, DEFAULTS.clothing);
-  Object.keys(DEFAULTS).forEach((id) => setFieldValue(id, DEFAULTS[id]));
-  REALISM_MODULES.forEach(([key]) => setFieldValue(`module_${key}`, 'auto'));
-  $('referenceImage').value = '';
-  referenceAttached = false;
-  $('uploadZone').classList.remove('has-file');
-  $('fileStatus').textContent = 'تبقى الصورة على جهازك؛ التطبيق يستخدم فقط اختيارك لدورها في البرومبت.';
+  restoreFilteredCatalogs();
+  applyStateToForm(DEFAULT_STATE);
+  clearReferenceFile();
   try { localStorage.removeItem(STORAGE_KEY); } catch {}
   render();
 }
 
-function filterCatalog(selectId, items, query, defaultValue) {
-  const select = $(selectId);
-  const current = select.value;
-  const q = query.trim().toLowerCase();
-  let filtered = !q ? items : items.filter((item) => item.join(' ').toLowerCase().includes(q));
-  const currentItem = items.find(([key]) => key === current);
-  if (currentItem && !filtered.some(([key]) => key === current)) filtered = [currentItem, ...filtered];
-  fillSelect(selectId, filtered, defaultValue, current);
+function filterOptions(selectId, query) {
+  const options = CATALOG[selectId];
+  const current = value(selectId);
+  const normalizedQuery = query.trim().toLowerCase();
+  const filtered = normalizedQuery
+    ? options.filter((item) => `${item.id} ${item.label} ${item.prompt || ''}`.toLowerCase().includes(normalizedQuery))
+    : options;
+  const currentOption = options.find((item) => item.id === current);
+  const withCurrent = currentOption && !filtered.some((item) => item.id === current) ? [currentOption, ...filtered] : filtered;
+  fillSelect(selectId, withCurrent, current);
   render();
+}
+
+function restoreFilteredCatalogs() {
+  fillSelect('location', CATALOG.location, value('location') || DEFAULT_STATE.location);
+  fillSelect('clothing', CATALOG.clothing, value('clothing') || DEFAULT_STATE.clothing);
 }
 
 function applyPreset() {
   const preset = PRESETS.find((item) => item.id === value('preset'));
   if (!preset) return;
-
+  const currentReferenceRole = value('referenceRole');
   $('locationSearch').value = '';
   $('clothingSearch').value = '';
-  restoreFullSearchCatalogs();
-  resetFields(PRESET_RESET_FIELDS);
-
-  Object.entries(preset.values).forEach(([id, presetValue]) => {
-    if (!setFieldValue(id, presetValue)) console.warn(`Preset ${preset.id}: unsupported value for ${id}`);
-  });
-
+  restoreFilteredCatalogs();
+  const next = {
+    ...DEFAULT_STATE,
+    ...preset.values,
+    referenceRole: currentReferenceRole,
+    modules: { ...DEFAULT_STATE.modules }
+  };
+  applyStateToForm(next);
   saveLocalState();
   render();
 }
@@ -410,19 +305,17 @@ function bindEvents() {
     const file = event.target.files?.[0];
     referenceAttached = Boolean(file);
     $('uploadZone').classList.toggle('has-file', referenceAttached);
-    $('fileStatus').textContent = file
-      ? `تم اختيار: ${file.name}. حدّد دور الصورة المرجعية لاستخدامها في البرومبت.`
-      : 'تبقى الصورة على جهازك؛ التطبيق يستخدم فقط اختيارك لدورها في البرومبت.';
+    $('fileStatus').textContent = file ? `تم اختيار: ${file.name}.` : 'تبقى الصورة على جهازك؛ التطبيق يسجل فقط ما إذا كان المرجع مرفقًا ودوره.';
     render();
   });
 
-  $('locationSearch').addEventListener('input', (event) => filterCatalog('location', LOCATIONS, event.target.value, DEFAULTS.location));
-  $('clothingSearch').addEventListener('input', (event) => filterCatalog('clothing', CLOTHING_OPTIONS, event.target.value, DEFAULTS.clothing));
+  $('locationSearch').addEventListener('input', (event) => filterOptions('location', event.target.value));
+  $('clothingSearch').addEventListener('input', (event) => filterOptions('clothing', event.target.value));
   $('applyPreset').addEventListener('click', applyPreset);
   $('resetAll').addEventListener('click', resetAll);
+  $('copy').addEventListener('click', copyOutput);
   document.querySelectorAll('[data-reset]').forEach((button) => button.addEventListener('click', () => resetSection(button.dataset.reset)));
   document.querySelectorAll('[data-view]').forEach((button) => button.addEventListener('click', () => setActiveView(button.dataset.view)));
-  $('copy').addEventListener('click', copyOutput);
 }
 
 buildCatalogs();

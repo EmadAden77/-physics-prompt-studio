@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --check app.js && node --check core/compiler.js && node tests/compiler-smoke.mjs && node tests/static-integrity.mjs"
+    "check": "node --check app.js && node --check data/catalog.js && node --check data/presets.js && node --check core/state.js && node --check core/geometry.js && node --check core/validation.js && node --check core/compiler.js",
+    "test": "npm run check && node --test tests/*.test.mjs && node tests/static-integrity.mjs"
   }
 }

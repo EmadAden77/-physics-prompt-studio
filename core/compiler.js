@@ -1,403 +1,199 @@
-import { SAUDI_LOCATIONS, CLOTHING } from '../data/catalog.js';
 import {
-  HAIRSTYLES,
-  BEARDS,
-  GLASSES_OPTIONS,
-  EXTRA_POSES,
-  EXTRA_ANGLES,
-  EXTRA_FRAMINGS,
-  EXTRA_LIGHT_SOURCES,
-  EXTRA_LOCATIONS
-} from '../data/extensions.js';
+  ASPECT_RATIOS,
+  FRAMINGS,
+  REALISM_MODULES,
+  VEHICLE_SCENES
+} from '../data/catalog.js';
+import { fieldCoverageCm } from './geometry.js';
+import { normalizeState, optionById } from './state.js';
+import { validationStatus } from './validation.js';
 
-const map3 = (items) => new Map(items.map(([key, , english]) => [key, english]));
-const locationMap = map3([...SAUDI_LOCATIONS, ...EXTRA_LOCATIONS]);
-const clothingMap = map3(CLOTHING);
-const hairMap = map3(HAIRSTYLES);
-const beardMap = map3(BEARDS);
-const glassesMap = map3(GLASSES_OPTIONS);
-const extraPoseMap = map3(EXTRA_POSES);
-const extraAngleMap = map3(EXTRA_ANGLES);
-const extraFramingMap = map3(EXTRA_FRAMINGS);
-const extraLightMap = map3(EXTRA_LIGHT_SOURCES);
+const ratioMap = new Map(ASPECT_RATIOS.map((item) => [item.id, item]));
+const framingMap = new Map(FRAMINGS.map((item) => [item.id, item]));
+const vehicleMap = new Map(VEHICLE_SCENES.map((item) => [item.id, item]));
 
-const captureMap = {
-  'front-selfie': 'subject-held smartphone front-camera selfie',
-  'rear-camera': 'smartphone rear-camera photograph',
-  'third-person': 'third-person photograph taken by another person',
-  'mirror-selfie': 'mirror selfie',
-  candid: 'candid spontaneous photograph',
-  cctv: 'fixed CCTV-style surveillance-camera frame'
-};
-
-const timeMap = {
-  morning: 'morning',
-  noon: 'noon',
-  afternoon: 'afternoon',
-  sunset: 'sunset',
-  evening: 'evening',
-  night: 'night'
-};
-
-const angleMap = new Map([
-  ['eye-level', 'natural eye-level angle'],
-  ['slightly-high', 'slightly above eye level'],
-  ['slightly-low', 'slightly below eye level'],
-  ['three-quarter-left', 'left three-quarter angle'],
-  ['three-quarter-right', 'right three-quarter angle'],
-  ['off-center', 'natural off-center handheld angle'],
-  ['low-diagonal', 'slightly low diagonal angle'],
-  ['high-diagonal', 'slightly high diagonal angle'],
-  ...extraAngleMap
-]);
-
-const framingMap = new Map([
-  ['close-head-shoulders', 'close head-and-shoulders framing'],
-  ['chest-up', 'chest-up framing'],
-  ['half-body', 'half-body framing'],
-  ['three-quarter-body', 'three-quarter-body framing'],
-  ['full-body', 'full-body framing'],
-  ...extraFramingMap
-]);
-
-const poseMap = new Map([
-  ['natural-standing', 'standing naturally'],
-  ['natural-seated', 'seated naturally'],
-  ['walking', 'walking naturally'],
-  ['casual-lean', 'casually leaning'],
-  ['waiting', 'standing as if casually waiting'],
-  ['hands-relaxed', 'relaxed body language with natural hand placement'],
-  ...extraPoseMap
-]);
-
-const expressionMap = {
-  neutral: 'neutral calm expression',
-  'small-smile': 'very small closed-mouth smile',
-  focused: 'natural focused expression',
-  thoughtful: 'quiet thoughtful expression',
-  tired: 'mild natural tiredness'
-};
-
-const lightMap = new Map([
-  ['daylight', 'natural daylight'],
-  ['open-shade', 'open shade'],
-  ['window-light', 'window light'],
-  ['street-lights', 'ordinary street lighting'],
-  ['parking-lights', 'ordinary parking-area lighting'],
-  ['indoor-practical', 'indoor practical lighting'],
-  ['storefront-mixed', 'mixed storefront and ambient practical lighting'],
-  ['phone-screen', 'phone-screen light'],
-  ['front-flash', 'smartphone front flash'],
-  ['custom', 'custom physical light source'],
-  ...extraLightMap
-]);
-
-const realismText = {
-  anatomy: {
-    auto: 'Keep human anatomy believable and naturally proportioned.',
-    strict: 'Strictly enforce correct human anatomy, joint orientation, limb proportions, facial structure, and natural asymmetry.'
-  },
-  contact: {
-    auto: 'Keep weight, support, and contact with surfaces physically plausible.',
-    strict: 'Strictly enforce contact physics: body weight, compression, support, gravity, and object-surface contact must agree.'
-  },
-  skin: {
-    auto: 'Use believable skin, hair, and beard texture without plastic smoothing.',
-    strict: 'Strictly preserve skin micro-texture, pores, fine hair, beard density variation, and natural non-uniformity without beauty-filter smoothing.'
-  },
-  materials: {
-    auto: 'Render materials with plausible texture and light response.',
-    strict: 'Strictly enforce material physics: fabric, leather, glass, metal, wood, paint, and skin must respond differently to light and contact.'
-  },
-  reflections: {
-    auto: 'Keep reflections and highlights consistent with viewing geometry.',
-    strict: 'Strictly enforce reflection geometry, highlight direction, occlusion, and surface roughness.'
-  },
-  atmosphere: {
-    auto: 'Keep background depth and atmospheric separation believable.',
-    strict: 'Strictly enforce atmospheric depth, distance contrast, haze, and scale cues without artificial blur.'
-  },
-  motion: {
-    auto: 'Keep motion and shutter behavior internally consistent.',
-    strict: 'Strictly enforce motion/shutter consistency: moving subjects, camera shake, and static objects must show compatible blur behavior.'
-  },
-  imperfections: {
-    auto: 'Allow restrained real-camera imperfections.',
-    strict: 'Strictly preserve controlled camera imperfections such as slight edge softness, mild sensor noise, small white-balance error, and realistic dynamic-range limits.'
-  },
-  environment: {
-    auto: 'Keep people and objects naturally integrated with the environment.',
-    strict: 'Strictly enforce environmental interaction: wind, gravity, dust, fabric movement, shadows, footprints, contact, and local activity must have plausible causes.'
-  }
-};
-
-const INDOOR_LOCATION_KEYS = new Set([
-  'modern-majlis',
-  'living-room',
-  'bedroom',
-  'office-interior',
-  'restaurant-interior',
-  'cafe-interior',
-  'small-office-lobby',
-  'building-corridor',
-  'home-entry-hall'
-]);
-
-const NAMED_CITY_PATTERN = /(الرياض|جدة|مكة|مكّة|المدينة|الدمام|الخبر|الطائف|أبها|ينبع|riyadh|jeddah|makkah|mecca|madinah|medina|dammam|khobar|taif|abha|yanbu)/i;
-
-const customOrMap = (key, customValue, map, fallback = '') => {
-  if (key === 'custom') return customValue?.trim() || fallback;
-  return map.get(key) || key || fallback;
-};
-
-const toFiniteNumber = (value) => {
-  if (value === '' || value === null || value === undefined) return null;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-};
+function customPrompt(state, field, customField) {
+  if (state[field] === 'custom') return state[customField];
+  return optionById(field, state[field])?.prompt || '';
+}
 
 function referenceInstruction(state) {
   if (!state.referenceAttached || state.referenceRole === 'none') return '';
   if (state.referenceRole === 'identity-only') {
-    return 'REFERENCE: use the attached image only as the identity source for the referenced person. Preserve facial identity and apparent age, but do not copy its clothing, pose, background, camera angle, or lighting.';
+    return 'Use the attached image only as the identity source. Preserve facial identity and apparent age; do not copy clothing, pose, background, camera geometry, or lighting from the reference.';
   }
   if (state.referenceRole === 'identity-appearance') {
-    return 'REFERENCE: use the attached image for identity and visible appearance cues. Explicit current clothing, hair, beard, glasses, pose, and expression selections override conflicting reference details. Do not automatically copy the reference background, camera angle, or lighting.';
+    return 'Use the attached image for identity and visible appearance. Explicit structured selections for clothing, hair, facial hair, glasses, pose, expression, camera geometry, location, and lighting override the reference.';
   }
-  return 'REFERENCE: use the attached image as a broad visual reference. Explicit current scene and appearance selections take priority whenever they differ from the reference.';
+  return 'Use the attached image as a broad visual reference, but every explicit structured selection below is authoritative when a conflict exists.';
 }
 
-function locationBase(state) {
-  return customOrMap(state.location, state.customLocation, locationMap, 'a generic location in Saudi Arabia');
+function locationPrompt(state) {
+  const base = customPrompt(state, 'location', 'customLocation');
+  return `${base}. Keep the place generic and non-iconic: no named city, recognizable landmark, famous building, named venue, city-defining skyline, or tourist icon.`;
 }
 
-function locationInstruction(state) {
-  return `${locationBase(state)}. Keep the place ordinary and non-iconic: no recognizable landmark, famous building, named venue, city-defining skyline, or tourist icon.`;
-}
-
-function vehicleInstruction(state) {
-  if (state.vehicleScene !== 'rrs-2017-white-interior') return null;
+function subjectPrompt(state) {
   return {
-    model: '2017 Range Rover Sport L494',
-    exterior: 'white',
-    line: `A white 2017 Range Rover Sport is parked and stationary at ${locationBase(state)}.`,
-    cabin: 'Visible cabin details should match a 2017 Range Rover Sport L494: Ivory leather seats, dark wood trim, panoramic roof, black-and-Ivory steering wheel.',
-    constraints: 'Keep the vehicle interior realistic and period-appropriate. Do not redesign the cabin as a newer model. No newer Range Rover interior.'
+    pose: customPrompt(state, 'pose', 'customPose'),
+    expression: optionById('expression', state.expression)?.prompt || '',
+    hair: customPrompt(state, 'hair', 'customHair'),
+    beard: customPrompt(state, 'beard', 'customBeard'),
+    glasses: customPrompt(state, 'glasses', 'customGlasses'),
+    clothing: customPrompt(state, 'clothing', 'customClothing')
   };
 }
 
-function cameraInstruction(state) {
-  const angle = customOrMap(state.angle, state.customAngle, angleMap, 'natural camera angle');
-  const framing = customOrMap(state.framing, state.customFraming, framingMap, 'natural framing');
-  const focal = state.focalLength ? `${state.focalLength}mm equivalent focal length` : 'natural smartphone focal length';
-  const distance = state.distance ? `camera distance about ${state.distance} cm` : 'natural camera distance';
-  const rotations = [
-    state.yaw !== '' ? `yaw ${state.yaw}°` : '',
-    state.pitch !== '' ? `pitch ${state.pitch}°` : '',
-    state.roll !== '' ? `roll ${state.roll}°` : ''
-  ].filter(Boolean);
-
-  return [
-    captureMap[state.captureType] || state.captureType || 'photograph',
-    angle,
-    framing,
-    focal,
-    distance,
-    ...rotations
-  ].filter(Boolean).join('; ');
-}
-
-function lightingInstruction(state) {
-  const source = customOrMap(state.lightSource, state.customLightSource, lightMap, 'scene-appropriate physical lighting');
+function lightingPrompt(state) {
   return {
-    physical: [source, `direction: ${state.lightDirection || 'natural direction'}`, `reach/falloff: ${state.lightFalloff || 'natural distance-based falloff'}`].join('; '),
-    processing: [`exposure: ${state.exposure || 'natural'}`, `HDR/computational processing: ${state.hdr || 'low'}`, `white balance: ${state.whiteBalance || 'neutral'}`].join('; ')
+    source: customPrompt(state, 'lightSource', 'customLightSource'),
+    direction: optionById('lightDirection', state.lightDirection)?.prompt || '',
+    falloff: optionById('lightFalloff', state.lightFalloff)?.prompt || '',
+    exposure: optionById('exposure', state.exposure)?.prompt || '',
+    hdr: optionById('hdr', state.hdr)?.prompt || '',
+    whiteBalance: optionById('whiteBalance', state.whiteBalance)?.prompt || ''
   };
 }
 
-function appearance(state) {
+function vehiclePrompt(state) {
+  if (state.vehicleScene === 'none') return null;
+  const vehicle = vehicleMap.get(state.vehicleScene);
+  if (!vehicle) return null;
   return {
-    pose: customOrMap(state.pose, state.customPose, poseMap, 'natural pose'),
-    hair: customOrMap(state.hair, state.customHair, hairMap, 'natural hair'),
-    beard: customOrMap(state.beard, state.customBeard, beardMap, 'natural facial hair'),
-    glasses: customOrMap(state.glasses, state.customGlasses, glassesMap, 'no glasses'),
-    clothing: customOrMap(state.clothing, state.customClothing, clothingMap, 'scene-appropriate clothing')
+    line: `A ${vehicle.exterior} ${vehicle.model} is parked and stationary at ${customPrompt(state, 'location', 'customLocation')}.`,
+    cabin: `Visible cabin details: ${vehicle.cabin}.`,
+    constraints: 'Keep the cabin period-correct for the 2017 L494 generation. Do not substitute a newer Range Rover dashboard or interior.'
   };
+}
+
+function resolvedScene(state) {
+  if (state.idea) return state.idea;
+  if (state.vehicleScene !== 'none') return `The primary subject is seated naturally inside the selected stationary vehicle at the selected generic Saudi location.`;
+  return `A photorealistic scene with ${state.people} subject${state.people === '1' ? '' : 's'} consistent with the structured selections below.`;
 }
 
 function realismInstructions(state) {
-  return Object.entries(state.modules || {})
-    .filter(([, level]) => level && level !== 'off')
-    .map(([name, level]) => realismText[name]?.[level])
-    .filter(Boolean);
+  const instructions = [];
+  for (const module of REALISM_MODULES) {
+    const level = state.modules[module.id];
+    if (level === 'auto') instructions.push(module.auto);
+    if (level === 'strict') instructions.push(module.strict);
+  }
+  return instructions;
 }
 
-function resolvedScene(state, vehicle) {
-  if (state.idea?.trim()) return state.idea.trim();
-  if (vehicle) return `A ${state.age || 35}-year-old man is seated inside a white 2017 Range Rover Sport at the selected Saudi location.`;
-  return 'Create the selected scene.';
+function cameraPrompt(state) {
+  const capture = optionById('captureType', state.captureType)?.prompt || '';
+  const framing = framingMap.get(state.framing)?.prompt || '';
+  return `${capture}; ${framing}; ${state.focalLength}mm equivalent focal length; optical camera-to-primary-subject distance ${state.distance}cm; yaw ${state.yaw}°; pitch ${state.pitch}°; roll ${state.roll}°. Numeric geometry is authoritative.`;
 }
 
-export function validateState(state) {
-  const warnings = [];
-  const age = toFiniteNumber(state.age);
-  const distance = toFiniteNumber(state.distance);
-  const focal = toFiniteNumber(state.focalLength);
-
-  if (!state.idea?.trim()) warnings.push('الفكرة الأساسية فارغة.');
-  if (state.referenceRole !== 'none' && !state.referenceAttached) warnings.push('تم اختيار دور للصورة المرجعية لكن لم تُرفق صورة.');
-  if (state.referenceAttached && state.referenceRole === 'none') warnings.push('أرفقت صورة مرجعية لكن دورها مضبوط على "بدون استخدام".');
-
-  if (state.time === 'night' && ['daylight', 'open-shade', 'soft-cloudy-daylight'].includes(state.lightSource)) {
-    warnings.push('الوقت ليل لكن مصدر الضوء نهاري.');
-  }
-  if (state.time === 'noon' && ['street-lights', 'parking-lights', 'parking-pole-led'].includes(state.lightSource)) {
-    warnings.push('الوقت ظهر بينما مصدر الضوء المختار إنارة ليلية؛ راجع الاختيار إن لم يكن مقصودًا.');
-  }
-
-  if (age !== null && (age < 1 || age > 100)) warnings.push('العمر الظاهر خارج النطاق المعتاد.');
-  if (distance !== null && (distance < 10 || distance > 500)) warnings.push('مسافة الكاميرا خارج النطاق المدعوم في الواجهة.');
-  if (focal !== null && (focal < 12 || focal > 150)) warnings.push('البعد البؤري خارج النطاق المدعوم في الواجهة.');
-
-  if (distance !== null && distance < 20 && ['half-body', 'three-quarter-body', 'full-body', 'waist-up', 'environmental-portrait'].includes(state.framing)) {
-    warnings.push('المسافة قصيرة جدًا مقارنة بالكادر المختار.');
-  }
-
-  if (state.captureType === 'front-selfie') {
-    if (distance !== null && (distance < 25 || distance > 90)) warnings.push('مسافة الكاميرا غير معتادة لسيلفي أمامي محمول باليد؛ راجع المسافة إذا لم تكن مقصودة.');
-    if (focal !== null && (focal < 18 || focal > 35)) warnings.push('البعد البؤري غير معتاد لسيلفي هاتف أمامي؛ راجع العدسة إذا لم يكن ذلك مقصودًا.');
-    if (['three-quarter-body', 'full-body'].includes(state.framing)) warnings.push('الكادر المختار واسع جدًا لسيلفي أمامي بطول ذراع عادي.');
-    if (state.framing === 'half-body' && distance !== null && distance < 40) warnings.push('نصف الجسم مع هذه المسافة القصيرة غير مريح هندسيًا لسيلفي أمامي.');
-  }
-
-  if (state.captureType === 'cctv' && ['close-head-shoulders', 'face-dominant'].includes(state.framing)) {
-    warnings.push('الكادر القريب جدًا غير معتاد لكاميرا مراقبة ثابتة.');
-  }
-
-  if (state.vehicleScene === 'rrs-2017-white-interior') {
-    if (INDOOR_LOCATION_KEYS.has(state.location)) warnings.push('تم اختيار مشهد داخل السيارة مع موقع داخلي لا يمكن أن تكون السيارة متوقفة داخله؛ اختر موقفًا أو شارعًا أو مدخلًا خارجيًا.');
-    if (state.pose !== 'natural-seated' && state.pose !== 'custom') warnings.push('مشهد داخل السيارة يتطلب عادة وضعية جلوس؛ راجع الوضعية إذا لم يكن الاستثناء مقصودًا.');
-    if (state.captureType === 'front-selfie' && ['three-quarter-body', 'full-body'].includes(state.framing)) warnings.push('الكادر الواسع جدًا غير واقعي غالبًا لسيلفي أمامي من داخل المقصورة.');
-  }
-
-  const customFields = [
-    ['location', 'customLocation', 'الموقع'],
-    ['pose', 'customPose', 'الوضعية'],
-    ['hair', 'customHair', 'الشعر'],
-    ['beard', 'customBeard', 'اللحية'],
-    ['glasses', 'customGlasses', 'النظارة'],
-    ['clothing', 'customClothing', 'الملابس'],
-    ['angle', 'customAngle', 'الزاوية'],
-    ['framing', 'customFraming', 'الكادر'],
-    ['lightSource', 'customLightSource', 'مصدر الضوء']
-  ];
-
-  customFields.forEach(([key, customKey, label]) => {
-    if (state[key] === 'custom' && !state[customKey]?.trim()) warnings.push(`اخترت ${label} مخصصًا لكن الوصف فارغ.`);
-  });
-
-  if (state.location === 'custom' && state.customLocation?.trim() && NAMED_CITY_PATTERN.test(state.customLocation)) {
-    warnings.push('الموقع المخصص يحتوي اسم مدينة؛ سياسة التطبيق تفضّل مواقع سعودية عامة بدون أسماء مدن أو معالم محددة.');
-  }
-
-  return warnings;
+function blockedText(status) {
+  const title = status.strict ? 'OUTPUT BLOCKED BY STRICT REALISM' : 'OUTPUT BLOCKED BY INVALID INPUT';
+  return [title, ...status.blocking.map((item) => `- [${item.code}] ${item.message}`)].join('\n');
 }
 
-export function compileDetailed(state) {
-  const light = lightingInstruction(state);
-  const realism = realismInstructions(state);
-  const subject = appearance(state);
-  const vehicle = vehicleInstruction(state);
+function prepare(input) {
+  const status = validationStatus(input);
+  return { ...status, state: normalizeState(input) };
+}
+
+export function compileDetailed(input) {
+  const prepared = prepare(input);
+  if (prepared.blocked) return blockedText(prepared);
+
+  const { state } = prepared;
+  const subject = subjectPrompt(state);
+  const light = lightingPrompt(state);
+  const vehicle = vehiclePrompt(state);
   const reference = referenceInstruction(state);
+  const realism = realismInstructions(state);
+  const ratio = ratioMap.get(state.ratio)?.prompt || state.ratio;
+  const time = optionById('time', state.time)?.prompt || state.time;
 
   const lines = [
     'GENERATE ONE PHOTOREALISTIC IMAGE',
     '',
-    `CORE SCENE: ${resolvedScene(state, vehicle)}`,
-    `LOCATION: ${locationInstruction(state)}`,
-    `TIME: ${timeMap[state.time] || state.time || 'unspecified'}.`,
-    `CAPTURE: ${cameraInstruction(state)}.`,
-    `SUBJECTS: ${state.people || '1'} person${String(state.people || '1') === '1' ? '' : 's'}; apparent age ${state.age || 'unspecified'}.`,
+    'CONSTRAINT PRIORITY: structured fields below are authoritative. If free-text scene wording conflicts with them, follow the structured fields.',
+    prepared.strict ? 'STRICT GATE: physical conflicts have already been rejected; do not relax or reinterpret the structured constraints.' : '',
+    '',
+    `CORE SCENE: ${resolvedScene(state)}`,
+    `LOCATION: ${locationPrompt(state)}`,
+    `TIME: ${time}.`,
+    `CAPTURE GEOMETRY: ${cameraPrompt(state)}`,
+    `SUBJECTS: ${state.people}; primary apparent age ${state.age} years.`,
     `POSE: ${subject.pose}.`,
-    `EXPRESSION: ${expressionMap[state.expression] || state.expression || 'natural expression'}.`,
+    `EXPRESSION: ${subject.expression}.`,
     `HAIR: ${subject.hair}.`,
     `FACIAL HAIR: ${subject.beard}.`,
     `CLOTHING: ${subject.clothing}.`,
     `GLASSES: ${subject.glasses}.`,
-    `ASPECT RATIO: ${state.ratio || 'unspecified'}.`
-  ];
+    `ASPECT RATIO: ${ratio}.`
+  ].filter(Boolean);
 
-  if (vehicle) {
-    lines.push(
-      `VEHICLE: ${vehicle.line}`,
-      `VISIBLE CABIN DETAILS: ${vehicle.cabin}`,
-      `VEHICLE CONSTRAINTS: ${vehicle.constraints}`
-    );
-  }
-
-  if (reference) lines.push(`REFERENCE: ${reference.replace(/^REFERENCE:\s*/i, '')}`);
+  if (vehicle) lines.push(`VEHICLE: ${vehicle.line}`, `VISIBLE CABIN DETAILS: ${vehicle.cabin}`, `VEHICLE CONSTRAINTS: ${vehicle.constraints}`);
+  if (reference) lines.push(`REFERENCE: ${reference}`);
 
   lines.push(
     '',
-    `PHYSICAL LIGHTING: ${light.physical}. Physical illumination alone determines which surfaces receive light, shadow direction, highlights, and local brightness.`,
-    `CAMERA PROCESSING: ${light.processing}. Exposure, ISO-like gain, HDR, and computational processing may reveal captured signal but must not invent physical illumination that never reached the subject.`
+    `PHYSICAL LIGHTING: ${light.source}; ${light.direction}; ${light.falloff}. Physical illumination alone determines received light, shadows, highlights, reflections, and local brightness.`,
+    `CAMERA PROCESSING: ${light.exposure}; ${light.hdr}; ${light.whiteBalance}. Processing may reveal captured signal but must not invent illumination that never reached the scene.`
   );
 
   if (realism.length) {
     lines.push('', 'REALISM MODULES:');
-    realism.forEach((item) => lines.push(`- ${item}`));
+    realism.forEach((text) => lines.push(`- ${text}`));
   }
 
-  if (state.notes?.trim()) lines.push('', `ADDITIONAL USER DETAILS: ${state.notes.trim()}`);
-
+  if (state.notes) lines.push('', `ADDITIONAL USER DETAILS: ${state.notes}`, 'Additional details are subordinate to the structured physical constraints above.');
   return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
-export function compileConcise(state) {
+export function compileConcise(input) {
+  const prepared = prepare(input);
+  if (prepared.blocked) return blockedText(prepared);
+
+  const { state } = prepared;
+  const subject = subjectPrompt(state);
+  const light = lightingPrompt(state);
+  const vehicle = vehiclePrompt(state);
   const reference = referenceInstruction(state);
-  const light = lightingInstruction(state);
   const realism = realismInstructions(state).join(' ');
-  const subject = appearance(state);
-  const vehicle = vehicleInstruction(state);
+  const ratio = ratioMap.get(state.ratio)?.prompt || state.ratio;
+  const time = optionById('time', state.time)?.prompt || state.time;
 
   return [
     'Create one photorealistic image.',
-    `Scene: ${resolvedScene(state, vehicle)}`,
-    `Location: ${locationInstruction(state)}`,
-    `Time: ${timeMap[state.time] || state.time || 'unspecified'}. Capture: ${cameraInstruction(state)}.`,
-    `Subject: ${state.people || '1'} person${String(state.people || '1') === '1' ? '' : 's'}, apparent age ${state.age || 'unspecified'}, ${subject.pose}, ${expressionMap[state.expression] || state.expression || 'natural expression'}, hair: ${subject.hair}, facial hair: ${subject.beard}, clothing: ${subject.clothing}, glasses: ${subject.glasses}.`,
+    `Scene: ${resolvedScene(state)}`,
+    `Location: ${locationPrompt(state)}`,
+    `Time: ${time}.`,
+    `Capture: ${cameraPrompt(state)}`,
+    `Subject: ${state.people} subject${state.people === '1' ? '' : 's'}; primary apparent age ${state.age} years; ${subject.pose}; ${subject.expression}; hair: ${subject.hair}; facial hair: ${subject.beard}; clothing: ${subject.clothing}; glasses: ${subject.glasses}.`,
     vehicle ? `Vehicle: ${vehicle.line} ${vehicle.cabin} ${vehicle.constraints}` : '',
-    reference,
-    `Physical lighting: ${light.physical}. Camera processing: ${light.processing}. Do not use processing to invent light that did not physically reach the scene.`,
+    reference ? `Reference: ${reference}` : '',
+    `Physical lighting: ${light.source}; ${light.direction}; ${light.falloff}. Processing: ${light.exposure}; ${light.hdr}; ${light.whiteBalance}.`,
     realism,
-    state.notes?.trim() ? `Additional details: ${state.notes.trim()}` : '',
-    `Aspect ratio: ${state.ratio || 'unspecified'}.`
+    state.notes ? `Additional details: ${state.notes}. Structured physical constraints remain authoritative.` : '',
+    `Aspect ratio: ${ratio}.`
   ].filter(Boolean).join('\n');
 }
 
-export function compileNegative(state) {
+export function compileNegative(input) {
+  const prepared = prepare(input);
+  if (prepared.blocked) return blockedText(prepared);
+
+  const { state } = prepared;
   const negatives = [
-    'recognizable landmark',
-    'famous building',
-    'named tourist attraction',
-    'city-defining skyline',
-    'impossible anatomy',
-    'extra fingers or limbs',
-    'floating objects',
-    'impossible contact',
-    'inconsistent reflections',
-    'light without a physical source',
-    'plastic skin',
-    'over-smoothed skin',
-    'excessive HDR',
-    'artificial sharpening'
+    'named city', 'recognizable landmark', 'famous building', 'named tourist attraction', 'city-defining skyline',
+    'impossible anatomy', 'extra fingers', 'extra limbs', 'floating objects', 'impossible contact',
+    'inconsistent reflections', 'light without a physical source', 'lighting inconsistent with time or place',
+    'plastic skin', 'over-smoothed skin', 'excessive HDR', 'artificial sharpening', 'camera geometry inconsistent with framing'
   ];
 
   if (state.referenceAttached && state.referenceRole === 'identity-only') {
-    negatives.push('copying reference clothing', 'copying reference background', 'copying reference pose');
+    negatives.push('copying reference clothing', 'copying reference background', 'copying reference pose', 'copying reference lighting');
   }
-
-  if (state.vehicleScene === 'rrs-2017-white-interior') {
+  if (state.vehicleScene !== 'none') {
     negatives.push('newer Range Rover interior', 'incorrect SUV cabin', 'redesigned dashboard', 'vehicle in motion');
     if (state.captureType === 'front-selfie') negatives.push('third-person camera');
   }
@@ -405,64 +201,58 @@ export function compileNegative(state) {
   return negatives.join(', ');
 }
 
-export function compileJson(state) {
-  const subject = appearance(state);
-  const vehicle = vehicleInstruction(state);
+export function compileJson(input) {
+  const prepared = prepare(input);
+  const { state } = prepared;
+  const ratio = ratioMap.get(state.ratio);
+  let coverage = null;
+  if (ratio && Number.isFinite(state.focalLength) && state.focalLength > 0 && Number.isFinite(state.distance) && state.distance > 0) {
+    coverage = fieldCoverageCm({ ratioId: state.ratio, focalLengthEqMm: state.focalLength, distanceCm: state.distance });
+  }
 
   const payload = {
+    status: {
+      strict: prepared.strict,
+      blocked: prepared.blocked,
+      issues: prepared.issues
+    },
     scene: {
-      idea: state.idea || '',
-      resolved_scene: resolvedScene(state, vehicle),
-      location: locationInstruction(state),
-      time: state.time || null,
-      aspect_ratio: state.ratio || null
+      idea: state.idea,
+      resolved: resolvedScene(state),
+      location_id: state.location,
+      location: locationPrompt(state),
+      time: state.time,
+      aspect_ratio: ratio ? { id: ratio.id, width: ratio.width, height: ratio.height, prompt: ratio.prompt } : null
     },
-    reference: {
-      attached: Boolean(state.referenceAttached),
-      role: state.referenceRole || 'none'
-    },
+    reference: { attached: state.referenceAttached, role: state.referenceRole },
     capture: {
-      type: state.captureType || null,
-      angle: customOrMap(state.angle, state.customAngle, angleMap, null),
-      framing: customOrMap(state.framing, state.customFraming, framingMap, null),
-      focal_length_equivalent_mm: toFiniteNumber(state.focalLength),
-      distance_cm: toFiniteNumber(state.distance),
-      yaw_deg: toFiniteNumber(state.yaw),
-      pitch_deg: toFiniteNumber(state.pitch),
-      roll_deg: toFiniteNumber(state.roll)
+      type: state.captureType,
+      framing: state.framing,
+      focal_length: { value: state.focalLength, unit: 'mm equivalent' },
+      optical_distance: { value: state.distance, unit: 'cm' },
+      yaw: { value: state.yaw, unit: 'deg' },
+      pitch: { value: state.pitch, unit: 'deg' },
+      roll: { value: state.roll, unit: 'deg' },
+      approximate_field_coverage: coverage ? { width: { value: Number(coverage.widthCm.toFixed(2)), unit: 'cm' }, height: { value: Number(coverage.heightCm.toFixed(2)), unit: 'cm' } } : null
     },
     subject: {
-      people: toFiniteNumber(state.people),
-      apparent_age: toFiniteNumber(state.age),
-      pose: subject.pose,
-      expression: expressionMap[state.expression] || state.expression || null,
-      hair: subject.hair,
-      facial_hair: subject.beard,
-      clothing: subject.clothing,
-      glasses: subject.glasses
+      count: Number(state.people),
+      primary_apparent_age: { value: state.age, unit: 'years' },
+      ...subjectPrompt(state)
     },
-    vehicle: vehicle
-      ? {
-          enabled: true,
-          scene: state.vehicleScene,
-          model: vehicle.model,
-          exterior_color: vehicle.exterior,
-          cabin: vehicle.cabin,
-          constraints: vehicle.constraints
-        }
-      : { enabled: false, scene: 'none' },
+    vehicle: state.vehicleScene === 'none' ? { enabled: false } : { enabled: true, id: state.vehicleScene, ...vehiclePrompt(state) },
     lighting: {
-      physical_source: customOrMap(state.lightSource, state.customLightSource, lightMap, null),
-      direction: state.lightDirection || null,
-      falloff: state.lightFalloff || null
+      source: lightingPrompt(state).source,
+      direction: lightingPrompt(state).direction,
+      falloff: lightingPrompt(state).falloff
     },
     processing: {
-      exposure: state.exposure || null,
-      hdr: state.hdr || null,
-      white_balance: state.whiteBalance || null
+      exposure: lightingPrompt(state).exposure,
+      hdr: lightingPrompt(state).hdr,
+      white_balance: lightingPrompt(state).whiteBalance
     },
-    realism_modules: state.modules || {},
-    notes: state.notes || ''
+    realism_modules: Object.fromEntries(REALISM_MODULES.map(({ id }) => [id, state.modules[id]])),
+    notes: state.notes
   };
 
   return JSON.stringify(payload, null, 2);

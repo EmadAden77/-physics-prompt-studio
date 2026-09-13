@@ -3,85 +3,62 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Prompt Studio عام لبناء برومبتات صور واقعية بمشاهد سعودية عامة بلا معالم مشهورة" />
+  <meta name="description" content="منشئ حتمي لبرومبتات صور واقعية بمشاهد سعودية عامة وقيود فيزيائية قابلة للفحص" />
   <meta name="theme-color" content="#0d100d" />
-  <title>Prompt Studio</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <title>Physics Prompt Studio</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <main class="shell">
     <header class="masthead">
       <div>
-        <p class="eyebrow">PROMPT STUDIO / MODULAR BUILD</p>
-        <h1>ابنِ المشهد، ثم خلّ البرومبت يتبعك</h1>
-        <p class="intro">منشئ عام لصور واقعية. لا سيارة مفروضة، ولا معالم سياحية، ولا قواعد مخفية. كل ما يدخل البرومبت ظاهر أمامك وقابل للتحكم.</p>
+        <p class="eyebrow">PHYSICS PROMPT STUDIO / DETERMINISTIC</p>
+        <h1>برومبتات واقعية من قيود واضحة، لا من التخمين</h1>
+        <p class="intro">الهندسة الرقمية هي المرجع، والـConflict Checker لا يعدّل اختياراتك. إذا فُعّل أي موديول على “صارم”، تمنع التعارضات الفيزيائية الإخراج بدل تمريرها.</p>
       </div>
-      <div class="status-badge"><strong>SAUDI GENERIC</strong><span>أماكن سعودية عامة</span><small>بدون معالم أو مواقع مشهورة</small></div>
+      <div class="status-badge"><strong>DETERMINISTIC</strong><span>نفس الحالة = نفس الناتج</span><small>بدون أسماء مدن أو معالم محددة</small></div>
     </header>
 
     <section class="preset-bar">
-      <div>
-        <strong>Presets اختيارية</strong>
-        <small>تطبّق إعدادات مشهد متماسكة، ويمكنك تعديل أي شيء بعدها.</small>
-      </div>
+      <div><strong>Presets ثابتة</strong><small>كل Preset يحمّل حالة مشهد محددة ويمكن تعديلها بعد ذلك.</small></div>
       <select id="preset" aria-label="Preset"></select>
       <button id="applyPreset" type="button">تطبيق</button>
       <button id="resetAll" class="ghost" type="button">إعادة الكل</button>
     </section>
 
     <section class="workspace">
-      <form id="promptForm" class="controls">
+      <form id="promptForm" class="controls" novalidate>
         <section class="form-section" data-section="reference">
-          <div class="section-title"><span>01</span><div><h2>الفكرة والمرجع</h2><p>ابدأ بالمشهد نفسه، ثم حدّد كيف تستخدم الصورة المرجعية إن وجدت.</p></div><button class="section-reset" data-reset="reference" type="button">إعادة القسم</button></div>
-          <label class="field full">الفكرة الأساسية
-            <textarea id="idea" placeholder="مثال: رجل يقف بشكل عفوي ليلًا أمام محلات في شارع تجاري سعودي عادي..."></textarea>
-          </label>
+          <div class="section-title"><span>01</span><div><h2>الفكرة والمرجع</h2><p>النص الحر يحدد الفكرة فقط؛ القيود المنظمة أدناه تتغلب على أي تعارض داخله.</p></div><button class="section-reset" data-reset="reference" type="button">إعادة القسم</button></div>
+          <label class="field full">الفكرة الأساسية<textarea id="idea" placeholder="مثال: رجل يجلس بهدوء داخل السيارة ليلًا..."></textarea></label>
           <div class="grid two">
             <label class="upload-zone" for="referenceImage" id="uploadZone">
               <input id="referenceImage" type="file" accept="image/*" hidden />
-              <span class="upload-icon">↑</span>
-              <strong>صورة مرجعية اختيارية</strong>
-              <small id="fileStatus">تبقى الصورة على جهازك؛ التطبيق يستخدم فقط اختيارك لدورها في البرومبت.</small>
+              <span class="upload-icon">↑</span><strong>صورة مرجعية اختيارية</strong>
+              <small id="fileStatus">تبقى الصورة على جهازك؛ التطبيق يسجل فقط ما إذا كان المرجع مرفقًا ودوره.</small>
             </label>
             <label class="field">دور الصورة المرجعية<select id="referenceRole"></select></label>
           </div>
         </section>
 
         <section class="form-section" data-section="scene">
-          <div class="section-title"><span>02</span><div><h2>المشهد</h2><p>كل المواقع داخل السعودية، عامة وغير مرتبطة بمعلم أو مكان مشهور.</p></div><button class="section-reset" data-reset="scene" type="button">إعادة القسم</button></div>
+          <div class="section-title"><span>02</span><div><h2>المشهد</h2><p>المواقع سعودية عامة، وكل موقع يحمل تصنيفًا فيزيائيًا يُستخدم في الفحص.</p></div><button class="section-reset" data-reset="scene" type="button">إعادة القسم</button></div>
           <div class="grid two">
             <label class="field">نوع الالتقاط<select id="captureType"></select></label>
             <label class="field">الوقت<select id="time"></select></label>
-            <label class="field full">ابحث في الأماكن
-              <input id="locationSearch" type="search" placeholder="مثال: فيلا، مطعم، شارع، موقف..." autocomplete="off" />
-            </label>
-            <label class="field full">المكان في السعودية
-              <select id="location"></select>
-              <small class="hint">أماكن عامة فقط، بدون أسماء مدن أو معالم أو منشآت محددة.</small>
-            </label>
-            <label class="field full custom-field" id="customLocationWrap" hidden>الموقع المخصص
-              <input id="customLocation" placeholder="اكتب مكانًا سعوديًا عامًا بدون اسم مدينة أو معلم أو منشأة محددة" />
-            </label>
-            <label class="field full">المشهد داخل السيارة
-              <select id="vehicleScene"></select>
-              <small class="hint">اختياري. رنج روفر سبورت 2017 البيضاء تستخدم نفس المكان السعودي الذي تختاره أعلاه.</small>
-            </label>
-            <label class="field">عدد الأشخاص
-              <select id="people"><option value="1">شخص واحد</option><option value="2">شخصان</option><option value="3">3 أشخاص</option><option value="4">4 أشخاص</option><option value="5">5 أشخاص</option></select>
-            </label>
-            <label class="field">نسبة الصورة
-              <select id="ratio"><option value="9:16 vertical">9:16 عمودي</option><option value="4:5 vertical">4:5 عمودي</option><option value="1:1 square">1:1 مربع</option><option value="16:9 horizontal">16:9 أفقي</option><option value="3:2 horizontal">3:2 أفقي</option></select>
-            </label>
+            <label class="field full">ابحث في الأماكن<input id="locationSearch" type="search" placeholder="فيلا، موقف، مطعم، شارع..." autocomplete="off" /></label>
+            <label class="field full">المكان في السعودية<select id="location"></select><small class="hint">عام وغير مميز. أسماء المدن والمعالم المحددة ممنوعة.</small></label>
+            <label class="field full custom-field" id="customLocationWrap" hidden>الموقع المخصص<input id="customLocation" placeholder="وصف سعودي عام بدون اسم مدينة أو معلم" /></label>
+            <label class="field full">المشهد داخل السيارة<select id="vehicleScene"></select></label>
+            <label class="field">عدد الأشخاص<select id="people"></select></label>
+            <label class="field">نسبة الصورة<select id="ratio"></select></label>
           </div>
         </section>
 
         <section class="form-section" data-section="subject">
-          <div class="section-title"><span>03</span><div><h2>الشخص والمظهر</h2><p>المظهر منفصل عن المرجع؛ ما تختاره هنا هو الذي يدخل الناتج.</p></div><button class="section-reset" data-reset="subject" type="button">إعادة القسم</button></div>
+          <div class="section-title"><span>03</span><div><h2>الشخص والمظهر</h2><p>اختيارات صريحة بدل الاعتماد على تفاصيل ضمنية.</p></div><button class="section-reset" data-reset="subject" type="button">إعادة القسم</button></div>
           <div class="grid two">
-            <label class="field">العمر الظاهر<input id="age" type="number" min="1" max="100" value="35" /></label>
+            <label class="field">العمر الظاهر <span class="unit">(years)</span><input id="age" type="number" /></label>
             <label class="field">الوضعية<select id="pose"></select></label>
             <label class="field full custom-field" id="customPoseWrap" hidden>الوضعية المخصصة<input id="customPose" placeholder="صف الوضعية" /></label>
             <label class="field">التعبير<select id="expression"></select></label>
@@ -91,69 +68,56 @@
             <label class="field full custom-field" id="customBeardWrap" hidden>اللحية المخصصة<input id="customBeard" placeholder="صف اللحية أو الشارب" /></label>
             <label class="field">النظارة<select id="glasses"></select></label>
             <label class="field full custom-field" id="customGlassesWrap" hidden>النظارة المخصصة<input id="customGlasses" placeholder="صف النظارة" /></label>
-            <label class="field full">ابحث في الملابس
-              <input id="clothingSearch" type="search" placeholder="مثال: كتان، بولو، ثوب، جاكيت، بدلة..." autocomplete="off" />
-            </label>
+            <label class="field full">ابحث في الملابس<input id="clothingSearch" type="search" placeholder="كتان، بولو، ثوب، جاكيت، بدلة..." autocomplete="off" /></label>
             <label class="field full">الملابس<select id="clothing"></select></label>
-            <label class="field full custom-field" id="customClothingWrap" hidden>الملابس المخصصة<input id="customClothing" placeholder="اكتب وصف الملابس التي تريدها" /></label>
+            <label class="field full custom-field" id="customClothingWrap" hidden>الملابس المخصصة<input id="customClothing" placeholder="صف الملابس" /></label>
           </div>
         </section>
 
         <section class="form-section" data-section="camera">
-          <div class="section-title"><span>04</span><div><h2>هندسة الكاميرا</h2><p>اسم الكاميرا وحده لا يكفي؛ هنا تحدد الهندسة التي تصنع المنظور فعلًا.</p></div><button class="section-reset" data-reset="camera" type="button">إعادة القسم</button></div>
+          <div class="section-title"><span>04</span><div><h2>هندسة الكاميرا</h2><p>تم حذف “زاوية نصية” موازية للأرقام. Yaw / Pitch / Roll هي المصدر الوحيد للحقيقة.</p></div><button class="section-reset" data-reset="camera" type="button">إعادة القسم</button></div>
           <div class="grid two">
-            <label class="field">زاوية التصوير<select id="angle"></select></label>
-            <label class="field full custom-field" id="customAngleWrap" hidden>زاوية مخصصة<input id="customAngle" placeholder="صف الزاوية" /></label>
             <label class="field">الكادر<select id="framing"></select></label>
-            <label class="field full custom-field" id="customFramingWrap" hidden>كادر مخصص<input id="customFraming" placeholder="صف حدود الكادر" /></label>
-            <label class="field">البعد البؤري المكافئ (mm)<input id="focalLength" type="number" min="12" max="150" value="24" /></label>
-            <label class="field">المسافة عن الكاميرا (cm)<input id="distance" type="number" min="10" max="500" value="50" /></label>
-            <label class="field">Yaw (°)<input id="yaw" type="number" min="-90" max="90" value="0" /></label>
-            <label class="field">Pitch (°)<input id="pitch" type="number" min="-45" max="45" value="0" /></label>
-            <label class="field">Roll (°)<input id="roll" type="number" min="-20" max="20" value="2" /></label>
+            <label class="field">البعد البؤري المكافئ <span class="unit">(mm equivalent)</span><input id="focalLength" type="number" /></label>
+            <label class="field">المسافة البصرية للهدف الأساسي <span class="unit">(cm)</span><input id="distance" type="number" /></label>
+            <label class="field">Yaw <span class="unit">(deg)</span><input id="yaw" type="number" /></label>
+            <label class="field">Pitch <span class="unit">(deg)</span><input id="pitch" type="number" /></label>
+            <label class="field">Roll <span class="unit">(deg)</span><input id="roll" type="number" /></label>
           </div>
+          <p class="model-note">النموذج البصري يستخدم 35mm-equivalent مع نسبة الصورة لحساب مجال رؤية تقريبي ومقارنته بالكادر المختار.</p>
         </section>
 
         <section class="form-section" data-section="lighting">
-          <div class="section-title"><span>05</span><div><h2>الإضاءة والمعالجة</h2><p>الإضاءة الفيزيائية في جهة، والتعريض/HDR في جهة ثانية.</p></div><button class="section-reset" data-reset="lighting" type="button">إعادة القسم</button></div>
+          <div class="section-title"><span>05</span><div><h2>الإضاءة والمعالجة</h2><p>مصدر الضوء يحمل قيود الوقت والبيئة والاتجاه والـfalloff؛ المعالجة لا تخلق ضوءًا غير موجود.</p></div><button class="section-reset" data-reset="lighting" type="button">إعادة القسم</button></div>
           <div class="subhead">الإضاءة الفيزيائية</div>
           <div class="grid two">
             <label class="field">مصدر الضوء<select id="lightSource"></select></label>
-            <label class="field full custom-field" id="customLightSourceWrap" hidden>مصدر ضوء مخصص<input id="customLightSource" placeholder="صف مصدر الضوء الفيزيائي" /></label>
-            <label class="field">اتجاه الضوء
-              <select id="lightDirection"><option value="front-side natural direction">أمامي جانبي</option><option value="side direction">جانبي</option><option value="overhead direction">علوي</option><option value="back-side direction">خلفي جانبي</option><option value="mixed practical directions">مصادر عملية مختلطة</option></select>
-            </label>
-            <label class="field">الانتشار / Light Falloff
-              <select id="lightFalloff"><option value="natural distance-based falloff">طبيعي حسب المسافة</option><option value="strong near-source falloff">هبوط قوي لمصدر قريب</option><option value="broad soft falloff">انتشار واسع وناعم</option><option value="localized practical-light falloff">محلي حول مصادر الإضاءة العملية</option></select>
-            </label>
+            <label class="field full custom-field" id="customLightSourceWrap" hidden>مصدر ضوء مخصص<input id="customLightSource" placeholder="صف المصدر الفيزيائي" /></label>
+            <label class="field">الاتجاه المسيطر<select id="lightDirection"></select></label>
+            <label class="field">نموذج Light Falloff<select id="lightFalloff"></select></label>
           </div>
           <div class="subhead">المعالجة داخل الكاميرا</div>
           <div class="grid three">
-            <label class="field">Exposure<select id="exposure"><option value="natural">طبيعي</option><option value="slightly dark">أغمق قليلًا</option><option value="slightly bright">أفتح قليلًا</option></select></label>
-            <label class="field">HDR<select id="hdr"><option value="low">منخفض</option><option value="off">مغلق</option><option value="moderate">متوسط</option></select></label>
-            <label class="field">White Balance<select id="whiteBalance"><option value="neutral with small natural error">محايد مع خطأ طبيعي بسيط</option><option value="slightly warm">دافئ قليلًا</option><option value="slightly cool">بارد قليلًا</option></select></label>
+            <label class="field">Exposure<select id="exposure"></select></label>
+            <label class="field">HDR<select id="hdr"></select></label>
+            <label class="field">White Balance<select id="whiteBalance"></select></label>
           </div>
         </section>
 
         <section class="form-section" data-section="realism">
-          <div class="section-title"><span>06</span><div><h2>موديولات الواقعية</h2><p>كل وحدة مستقلة: إيقاف، تلقائي، أو صارم.</p></div><button class="section-reset" data-reset="realism" type="button">إعادة القسم</button></div>
+          <div class="section-title"><span>06</span><div><h2>موديولات الواقعية</h2><p>إيقاف / تلقائي / صارم. وجود أي موديول صارم يفعّل بوابة المنع للتعارضات الفيزيائية.</p></div><button class="section-reset" data-reset="realism" type="button">إعادة القسم</button></div>
           <div id="realismModules" class="module-grid"></div>
         </section>
 
         <section class="form-section compact-section" data-section="notes">
-          <div class="section-title"><span>07</span><div><h2>تفاصيلك أنت</h2><p>هذه أعلى معلومة يكتبها المستخدم يدويًا داخل هذا الإصدار.</p></div><button class="section-reset" data-reset="notes" type="button">إعادة القسم</button></div>
-          <label class="field full">تفاصيل إضافية
-            <textarea id="notes" placeholder="مثال: بدون ابتسامة، الخلفية فيها حركة خفيفة، القميص بدون شعارات..."></textarea>
-          </label>
+          <div class="section-title"><span>07</span><div><h2>تفاصيل إضافية</h2><p>تظل خاضعة للقيود المنظمة ولا تستطيع تجاوزها.</p></div><button class="section-reset" data-reset="notes" type="button">إعادة القسم</button></div>
+          <label class="field full">ملاحظات<textarea id="notes" placeholder="مثال: بدون ابتسامة، بدون شعارات..."></textarea></label>
           <div id="warnings" class="warnings" aria-live="polite"></div>
         </section>
       </form>
 
       <aside class="result-panel">
-        <div class="result-head">
-          <div><p class="eyebrow">LIVE OUTPUT</p><h2>الـ Prompt الناتج</h2></div>
-          <span id="liveState" class="live-state">LIVE</span>
-        </div>
+        <div class="result-head"><div><p class="eyebrow">LIVE OUTPUT</p><h2>الـPrompt الناتج</h2></div><span id="liveState" class="live-state">VALID</span></div>
         <div class="output-tabs" role="tablist">
           <button class="tab active" data-view="detailed" type="button">مفصل</button>
           <button class="tab" data-view="concise" type="button">مختصر</button>
@@ -166,7 +130,7 @@
           <div class="checks-title"><strong>Conflict Checker</strong><span id="warningCount">0</span></div>
           <ul id="checklist"></ul>
         </div>
-        <p class="tip">Conflict Checker ينبه فقط ولا يغيّر اختياراتك. إعداداتك تُحفظ محليًا في هذا المتصفح.</p>
+        <p class="tip">Fatal يمنع دائمًا. Error يمنع عند Strict فقط. Warning للتنبيه. لا يتم تعديل اختيارك تلقائيًا.</p>
       </aside>
     </section>
   </main>

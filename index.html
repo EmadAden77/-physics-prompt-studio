@@ -25,9 +25,9 @@
     <section class="preset-bar">
       <div>
         <strong>Presets اختيارية</strong>
-        <small>تملأ إعدادات واضحة فقط، ويمكنك تعديل أي شيء بعدها.</small>
+        <small>تطبّق إعدادات مشهد متماسكة، ويمكنك تعديل أي شيء بعدها.</small>
       </div>
-      <select id="preset"></select>
+      <select id="preset" aria-label="Preset"></select>
       <button id="applyPreset" type="button">تطبيق</button>
       <button id="resetAll" class="ghost" type="button">إعادة الكل</button>
     </section>
@@ -60,10 +60,14 @@
             </label>
             <label class="field full">المكان في السعودية
               <select id="location"></select>
-              <small class="hint">لا توجد مدن أو معالم أو فنادق أو مولات محددة بالاسم.</small>
+              <small class="hint">أماكن عامة فقط، بدون أسماء مدن أو معالم أو منشآت محددة.</small>
             </label>
             <label class="field full custom-field" id="customLocationWrap" hidden>الموقع المخصص
-              <input id="customLocation" placeholder="اكتب مكانًا سعوديًا عامًا بدون اسم معلم أو منشأة محددة" />
+              <input id="customLocation" placeholder="اكتب مكانًا سعوديًا عامًا بدون اسم مدينة أو معلم أو منشأة محددة" />
+            </label>
+            <label class="field full">المشهد داخل السيارة
+              <select id="vehicleScene"></select>
+              <small class="hint">اختياري. رنج روفر سبورت 2017 البيضاء تستخدم نفس المكان السعودي الذي تختاره أعلاه.</small>
             </label>
             <label class="field">عدد الأشخاص
               <select id="people"><option value="1">شخص واحد</option><option value="2">شخصان</option><option value="3">3 أشخاص</option><option value="4">4 أشخاص</option><option value="5">5 أشخاص</option></select>
@@ -96,7 +100,7 @@
         </section>
 
         <section class="form-section" data-section="camera">
-          <div class="section-title"><span>04</span><div><h2>هندسة الكاميرا</h2><p>اسم الكاميرا وحده ما يكفي؛ هنا تحدد الهندسة التي تصنع المنظور فعلًا.</p></div><button class="section-reset" data-reset="camera" type="button">إعادة القسم</button></div>
+          <div class="section-title"><span>04</span><div><h2>هندسة الكاميرا</h2><p>اسم الكاميرا وحده لا يكفي؛ هنا تحدد الهندسة التي تصنع المنظور فعلًا.</p></div><button class="section-reset" data-reset="camera" type="button">إعادة القسم</button></div>
           <div class="grid two">
             <label class="field">زاوية التصوير<select id="angle"></select></label>
             <label class="field full custom-field" id="customAngleWrap" hidden>زاوية مخصصة<input id="customAngle" placeholder="صف الزاوية" /></label>
@@ -162,7 +166,7 @@
           <div class="checks-title"><strong>Conflict Checker</strong><span id="warningCount">0</span></div>
           <ul id="checklist"></ul>
         </div>
-        <p class="tip">الموقع دائمًا سعودي عام وغير مميز بمعلم معروف. إعداداتك تُحفظ محليًا في هذا المتصفح، ويمكنك إعادة أي قسم لوحده.</p>
+        <p class="tip">Conflict Checker ينبه فقط ولا يغيّر اختياراتك. إعداداتك تُحفظ محليًا في هذا المتصفح.</p>
       </aside>
     </section>
   </main>

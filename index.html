@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Prompt Studio بدون قواعد أو قيود تلقائية" />
+  <meta name="description" content="Prompt Studio عام لبناء برومبتات صور واقعية بمشاهد سعودية عامة بلا معالم مشهورة" />
+  <meta name="theme-color" content="#0d100d" />
   <title>Prompt Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -14,144 +15,130 @@
   <main class="shell">
     <header class="masthead">
       <div>
-        <p class="eyebrow">PROMPT STUDIO</p>
-        <h1>منشئ Prompt بسيط</h1>
-        <p class="intro">لا توجد قواعد تلقائية أو تعليمات سيارة أو Locks. الناتج مبني فقط على اختياراتك وما تكتبه.</p>
+        <p class="eyebrow">PROMPT STUDIO / MODULAR BUILD</p>
+        <h1>ابنِ المشهد، ثم خلّ البرومبت يتبعك</h1>
+        <p class="intro">منشئ عام لصور واقعية. لا سيارة مفروضة، ولا معالم سياحية، ولا قواعد مخفية. كل ما يدخل البرومبت ظاهر أمامك وقابل للتحكم.</p>
       </div>
+      <div class="status-badge"><strong>SAUDI GENERIC</strong><span>أماكن سعودية عامة</span><small>بدون معالم أو مواقع مشهورة</small></div>
     </header>
 
     <section class="workspace">
       <form id="promptForm" class="controls">
-        <div class="section-title"><span>01</span><h2>الصورة المرجعية</h2></div>
-        <label class="upload-zone" for="referenceImage" id="uploadZone">
-          <input id="referenceImage" type="file" accept="image/*" hidden />
-          <span class="upload-icon">↑</span>
-          <strong>أرفق صورة مرجعية اختياريًا</strong>
-          <small id="fileStatus">الصورة تبقى على جهازك ولا تفرض أي قواعد على الـPrompt.</small>
-        </label>
+        <section class="form-section">
+          <div class="section-title"><span>01</span><div><h2>الفكرة والمرجع</h2><p>ابدأ بالمشهد نفسه، ثم حدّد كيف تستخدم الصورة المرجعية إن وجدت.</p></div></div>
+          <label class="field full">الفكرة الأساسية
+            <textarea id="idea" placeholder="مثال: رجل يقف بشكل عفوي ليلًا أمام محلات في شارع تجاري سعودي عادي..."></textarea>
+          </label>
+          <div class="grid two">
+            <label class="upload-zone" for="referenceImage" id="uploadZone">
+              <input id="referenceImage" type="file" accept="image/*" hidden />
+              <span class="upload-icon">↑</span>
+              <strong>صورة مرجعية اختيارية</strong>
+              <small id="fileStatus">تبقى الصورة على جهازك؛ التطبيق يستخدم فقط اختيارك لدورها في البرومبت.</small>
+            </label>
+            <label class="field">دور الصورة المرجعية
+              <select id="referenceRole"></select>
+            </label>
+          </div>
+        </section>
 
-        <div class="section-title"><span>02</span><h2>المشهد</h2></div>
-        <div class="grid two">
-          <label>نوع التصوير
-            <select id="captureType">
-              <option value="selfie">سيلفي</option>
-              <option value="third-person photo">تصوير شخص ثالث</option>
-              <option value="mirror selfie">سيلفي مرآة</option>
-              <option value="portrait photo">صورة بورتريه</option>
-              <option value="candid photo">صورة عفوية</option>
-            </select>
-          </label>
+        <section class="form-section">
+          <div class="section-title"><span>02</span><div><h2>المشهد</h2><p>كل المواقع داخل السعودية، عامة وغير مرتبطة بمعلم أو مكان مشهور.</p></div></div>
+          <div class="grid two">
+            <label class="field">نوع الالتقاط<select id="captureType"></select></label>
+            <label class="field">الوقت<select id="time"></select></label>
+            <label class="field full">المكان في السعودية<select id="location"></select><small class="hint">لا توجد مدن أو معالم أو فنادق أو مولات محددة بالاسم.</small></label>
+            <label class="field">عدد الأشخاص
+              <select id="people"><option value="1">شخص واحد</option><option value="2">شخصان</option><option value="3">3 أشخاص</option><option value="4">4 أشخاص</option><option value="5">5 أشخاص</option></select>
+            </label>
+            <label class="field">نسبة الصورة
+              <select id="ratio"><option value="9:16 vertical">9:16 عمودي</option><option value="4:5 vertical">4:5 عمودي</option><option value="1:1 square">1:1 مربع</option><option value="16:9 horizontal">16:9 أفقي</option><option value="3:2 horizontal">3:2 أفقي</option></select>
+            </label>
+          </div>
+        </section>
 
-          <label>وقت المشهد
-            <select id="time">
-              <option value="morning">الصباح</option>
-              <option value="noon">الظهر</option>
-              <option value="afternoon">العصر</option>
-              <option value="daytime">النهار</option>
-              <option value="night">الليل</option>
-            </select>
-          </label>
+        <section class="form-section">
+          <div class="section-title"><span>03</span><div><h2>الشخص والمظهر</h2><p>المظهر منفصل عن المرجع؛ ما تختاره هنا هو الذي يدخل الناتج.</p></div></div>
+          <div class="grid two">
+            <label class="field">العمر الظاهر<input id="age" type="number" min="1" max="100" value="35" /></label>
+            <label class="field">الوضعية<select id="pose"></select></label>
+            <label class="field">التعبير<select id="expression"></select></label>
+            <label class="field">الملابس<select id="clothing"></select></label>
+            <label class="field">الشعر<input id="hair" value="same as reference if a reference is attached" placeholder="مثال: short natural hair" /></label>
+            <label class="field">النظارة
+              <select id="glasses"><option value="same as reference if present">كما في المرجع إن وجد</option><option value="no glasses">بدون نظارة</option><option value="black rectangular glasses">إطار أسود مستطيل</option><option value="thin metal glasses">إطار معدني نحيف</option></select>
+            </label>
+          </div>
+        </section>
 
-          <label>زاوية التصوير
-            <select id="angle">
-              <option value="natural eye-level angle">طبيعية بمستوى العين</option>
-              <option value="slightly low angle">منخفضة قليلًا</option>
-              <option value="slightly high angle">مرتفعة قليلًا</option>
-              <option value="three-quarter angle">ثلاثة أرباع</option>
-              <option value="off-center handheld angle">عفوية خارج المنتصف</option>
-            </select>
-          </label>
+        <section class="form-section">
+          <div class="section-title"><span>04</span><div><h2>هندسة الكاميرا</h2><p>اسم الكاميرا وحده ما يكفي؛ هنا تحدد الهندسة التي تصنع المنظور فعلًا.</p></div></div>
+          <div class="grid two">
+            <label class="field">زاوية التصوير<select id="angle"></select></label>
+            <label class="field">الكادر<select id="framing"></select></label>
+            <label class="field">البعد البؤري المكافئ (mm)<input id="focalLength" type="number" min="12" max="150" value="24" /></label>
+            <label class="field">المسافة عن الكاميرا (cm)<input id="distance" type="number" min="10" max="500" value="50" /></label>
+            <label class="field">Yaw (°)<input id="yaw" type="number" min="-90" max="90" value="0" /></label>
+            <label class="field">Pitch (°)<input id="pitch" type="number" min="-45" max="45" value="0" /></label>
+            <label class="field">Roll (°)<input id="roll" type="number" min="-20" max="20" value="2" /></label>
+          </div>
+        </section>
 
-          <label>الوضعية
-            <select id="pose">
-              <option value="natural relaxed pose">طبيعية ومرتاحة</option>
-              <option value="standing">واقف</option>
-              <option value="seated">جالس</option>
-              <option value="walking">يمشي</option>
-              <option value="leaning casually">متكئ</option>
-            </select>
-          </label>
+        <section class="form-section">
+          <div class="section-title"><span>05</span><div><h2>الإضاءة والمعالجة</h2><p>الإضاءة الفيزيائية في جهة، والتعريض/HDR في جهة ثانية. أخيرًا فصلنا الاثنين مثل ناس عاقلة.</p></div></div>
+          <div class="subhead">الإضاءة الفيزيائية</div>
+          <div class="grid two">
+            <label class="field">مصدر الضوء<select id="lightSource"></select></label>
+            <label class="field">اتجاه الضوء
+              <select id="lightDirection"><option value="front-side natural direction">أمامي جانبي</option><option value="side direction">جانبي</option><option value="overhead direction">علوي</option><option value="back-side direction">خلفي جانبي</option><option value="mixed practical directions">مصادر عملية مختلطة</option></select>
+            </label>
+            <label class="field full">الانتشار / Light Falloff
+              <select id="lightFalloff"><option value="natural distance-based falloff">طبيعي حسب المسافة</option><option value="strong near-source falloff">هبوط قوي لمصدر قريب</option><option value="broad soft falloff">انتشار واسع وناعم</option><option value="localized practical-light falloff">محلي حول مصادر الإضاءة العملية</option></select>
+            </label>
+          </div>
+          <div class="subhead">المعالجة داخل الكاميرا</div>
+          <div class="grid three">
+            <label class="field">Exposure<select id="exposure"><option value="natural">طبيعي</option><option value="slightly dark">أغمق قليلًا</option><option value="slightly bright">أفتح قليلًا</option></select></label>
+            <label class="field">HDR<select id="hdr"><option value="low">منخفض</option><option value="off">مغلق</option><option value="moderate">متوسط</option></select></label>
+            <label class="field">White Balance<select id="whiteBalance"><option value="neutral with small natural error">محايد مع خطأ طبيعي بسيط</option><option value="slightly warm">دافئ قليلًا</option><option value="slightly cool">بارد قليلًا</option></select></label>
+          </div>
+        </section>
 
-          <label>التعبير
-            <select id="expression">
-              <option value="neutral calm expression">محايد وهادئ</option>
-              <option value="small closed-mouth smile">ابتسامة خفيفة مغلقة</option>
-              <option value="focused expression">تركيز طبيعي</option>
-              <option value="thoughtful expression">شرود هادئ</option>
-            </select>
-          </label>
+        <section class="form-section">
+          <div class="section-title"><span>06</span><div><h2>موديولات الواقعية</h2><p>كل وحدة مستقلة: إيقاف، تلقائي، أو صارم. ما عاد كل شيء مفروض على كل مشهد.</p></div></div>
+          <div id="realismModules" class="module-grid"></div>
+        </section>
 
-          <label>نسبة الصورة
-            <select id="ratio">
-              <option value="9:16 vertical">9:16 عمودي</option>
-              <option value="4:5 vertical">4:5 عمودي</option>
-              <option value="1:1 square">1:1 مربع</option>
-              <option value="16:9 horizontal">16:9 أفقي</option>
-            </select>
+        <section class="form-section compact-section">
+          <div class="section-title"><span>07</span><div><h2>تفاصيلك أنت</h2><p>هذه أعلى معلومة يكتبها المستخدم يدويًا داخل هذا الإصدار.</p></div></div>
+          <label class="field full">تفاصيل إضافية
+            <textarea id="notes" placeholder="مثال: بدون ابتسامة، الخلفية فيها حركة خفيفة، القميص بدون شعارات..."></textarea>
           </label>
-
-          <label>الموقع
-            <select id="place">
-              <option value="commercial street">شارع تجاري</option>
-              <option value="shopping mall">مول</option>
-              <option value="residential villa entrance">مدخل فيلا</option>
-              <option value="private home interior">داخل منزل</option>
-              <option value="quiet residential neighborhood">حي سكني هادئ</option>
-              <option value="gas station">محطة وقود</option>
-              <option value="roadside cafeteria">كافتيريا</option>
-              <option value="restaurant">مطعم</option>
-              <option value="supermarket">سوبرماركت</option>
-              <option value="seafront or corniche">كورنيش</option>
-              <option value="custom location in notes">موقع مخصص في الملاحظات</option>
-            </select>
-          </label>
-        </div>
-
-        <div class="section-title"><span>03</span><h2>الشخص والمظهر</h2></div>
-        <div class="grid two">
-          <label>العمر الظاهر<input id="age" value="35" inputmode="numeric" maxlength="3" /></label>
-          <label>الشعر
-            <select id="hair">
-              <option value="same as reference">كما في المرجع</option>
-              <option value="natural side sweep">تمشيط جانبي</option>
-              <option value="short textured hair">قصير بملمس طبيعي</option>
-              <option value="French crop">French crop</option>
-              <option value="short wavy hair">متموج قصير</option>
-            </select>
-          </label>
-          <label>الملابس
-            <select id="clothing">
-              <option value="plain navy shirt and black trousers">قميص كحلي وبنطال أسود</option>
-              <option value="plain white T-shirt">تيشيرت أبيض</option>
-              <option value="plain black T-shirt">تيشيرت أسود</option>
-              <option value="light blue shirt">قميص أزرق فاتح</option>
-              <option value="white Saudi thobe">ثوب سعودي أبيض</option>
-              <option value="navy Saudi thobe">ثوب سعودي كحلي</option>
-              <option value="custom clothing in notes">ملابس مخصصة في الملاحظات</option>
-            </select>
-          </label>
-          <label>النظارة
-            <select id="glasses">
-              <option value="same as reference">كما في المرجع</option>
-              <option value="no glasses">بدون نظارة</option>
-              <option value="black rectangular glasses">إطار أسود مستطيل</option>
-            </select>
-          </label>
-        </div>
-
-        <label class="notes">تفاصيل إضافية<textarea id="notes" placeholder="اكتب أي تفاصيل تريدها. لن يضيف التطبيق قواعد من عنده."></textarea></label>
-        <div id="warnings" class="warnings" aria-live="polite"></div>
-        <button type="submit" class="generate">توليد الـ Prompt <span>↗</span></button>
+          <div id="warnings" class="warnings" aria-live="polite"></div>
+        </section>
       </form>
 
       <aside class="result-panel">
-        <div class="result-head"><div><p class="eyebrow">OUTPUT</p><h2>الـ Prompt الناتج</h2></div></div>
-        <div class="output-tabs"><button id="copy" type="button">نسخ</button></div>
-        <pre id="output" aria-live="polite">اختر الإعدادات ثم اضغط توليد الـ Prompt.</pre>
-        <div class="checks"><strong>الحالة</strong><ul id="checklist"><li>لا توجد قواعد تلقائية مفعلة.</li></ul></div>
+        <div class="result-head">
+          <div><p class="eyebrow">LIVE OUTPUT</p><h2>الـ Prompt الناتج</h2></div>
+          <span id="liveState" class="live-state">LIVE</span>
+        </div>
+        <div class="output-tabs" role="tablist">
+          <button class="tab active" data-view="detailed" type="button">مفصل</button>
+          <button class="tab" data-view="concise" type="button">مختصر</button>
+          <button class="tab" data-view="json" type="button">JSON</button>
+          <button class="tab" data-view="negative" type="button">Negative</button>
+          <button id="copy" type="button">نسخ</button>
+        </div>
+        <pre id="output" aria-live="polite"></pre>
+        <div class="checks">
+          <div class="checks-title"><strong>Conflict Checker</strong><span id="warningCount">0</span></div>
+          <ul id="checklist"></ul>
+        </div>
+        <p class="tip">الموقع دائمًا سعودي عام وغير مميز بمعلم معروف. أي تفاصيل أكثر دقة تكتبها أنت في خانة التفاصيل الإضافية.</p>
       </aside>
     </section>
   </main>
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>

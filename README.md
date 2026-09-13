@@ -1,5 +1,7 @@
 # Physics Prompt Studio
 
+> Architecture baseline: deterministic physics validation / V4.
+
 تطبيق ويب ثابت لبناء برومبتات صور واقعية بطريقة حتمية وموديولية، مع فصل واضح بين البيانات، الحالة، الهندسة، التحقق، والتجميع.
 
 ## المبادئ

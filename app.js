@@ -55,7 +55,7 @@ function resolveAutomaticScene(){
   }else if(pose==='door'||time==='morning'||time==='afternoon'){
     angle='driver-side';angleLabel='ثلاثة أرباع جانبية حسب اتجاه الضوء';
   }else if(time==='night'){
-    angle='driver-low';angleLabel='منخفضة قليلًا لتناسب المشهد الليلي';
+    angle='driver-close';angleLabel='قريبة بمستوى العين؛ الليل لا يغيّر هندسة الكاميرا';
   }
   let lightingProfile='window',lightingLabel='ضوء طبيعي يدخل من الزجاج مع سقوط واقعي';
   if(time==='night'){

@@ -22,10 +22,20 @@
       <div class="status-badge"><strong>SAUDI GENERIC</strong><span>أماكن سعودية عامة</span><small>بدون معالم أو مواقع مشهورة</small></div>
     </header>
 
+    <section class="preset-bar">
+      <div>
+        <strong>Presets اختيارية</strong>
+        <small>تملأ إعدادات واضحة فقط، ويمكنك تعديل أي شيء بعدها.</small>
+      </div>
+      <select id="preset"></select>
+      <button id="applyPreset" type="button">تطبيق</button>
+      <button id="resetAll" class="ghost" type="button">إعادة الكل</button>
+    </section>
+
     <section class="workspace">
       <form id="promptForm" class="controls">
-        <section class="form-section">
-          <div class="section-title"><span>01</span><div><h2>الفكرة والمرجع</h2><p>ابدأ بالمشهد نفسه، ثم حدّد كيف تستخدم الصورة المرجعية إن وجدت.</p></div></div>
+        <section class="form-section" data-section="reference">
+          <div class="section-title"><span>01</span><div><h2>الفكرة والمرجع</h2><p>ابدأ بالمشهد نفسه، ثم حدّد كيف تستخدم الصورة المرجعية إن وجدت.</p></div><button class="section-reset" data-reset="reference" type="button">إعادة القسم</button></div>
           <label class="field full">الفكرة الأساسية
             <textarea id="idea" placeholder="مثال: رجل يقف بشكل عفوي ليلًا أمام محلات في شارع تجاري سعودي عادي..."></textarea>
           </label>
@@ -36,18 +46,25 @@
               <strong>صورة مرجعية اختيارية</strong>
               <small id="fileStatus">تبقى الصورة على جهازك؛ التطبيق يستخدم فقط اختيارك لدورها في البرومبت.</small>
             </label>
-            <label class="field">دور الصورة المرجعية
-              <select id="referenceRole"></select>
-            </label>
+            <label class="field">دور الصورة المرجعية<select id="referenceRole"></select></label>
           </div>
         </section>
 
-        <section class="form-section">
-          <div class="section-title"><span>02</span><div><h2>المشهد</h2><p>كل المواقع داخل السعودية، عامة وغير مرتبطة بمعلم أو مكان مشهور.</p></div></div>
+        <section class="form-section" data-section="scene">
+          <div class="section-title"><span>02</span><div><h2>المشهد</h2><p>كل المواقع داخل السعودية، عامة وغير مرتبطة بمعلم أو مكان مشهور.</p></div><button class="section-reset" data-reset="scene" type="button">إعادة القسم</button></div>
           <div class="grid two">
             <label class="field">نوع الالتقاط<select id="captureType"></select></label>
             <label class="field">الوقت<select id="time"></select></label>
-            <label class="field full">المكان في السعودية<select id="location"></select><small class="hint">لا توجد مدن أو معالم أو فنادق أو مولات محددة بالاسم.</small></label>
+            <label class="field full">ابحث في الأماكن
+              <input id="locationSearch" type="search" placeholder="مثال: فيلا، مطعم، شارع، موقف..." autocomplete="off" />
+            </label>
+            <label class="field full">المكان في السعودية
+              <select id="location"></select>
+              <small class="hint">لا توجد مدن أو معالم أو فنادق أو مولات محددة بالاسم.</small>
+            </label>
+            <label class="field full custom-field" id="customLocationWrap" hidden>الموقع المخصص
+              <input id="customLocation" placeholder="اكتب مكانًا سعوديًا عامًا بدون اسم معلم أو منشأة محددة" />
+            </label>
             <label class="field">عدد الأشخاص
               <select id="people"><option value="1">شخص واحد</option><option value="2">شخصان</option><option value="3">3 أشخاص</option><option value="4">4 أشخاص</option><option value="5">5 أشخاص</option></select>
             </label>
@@ -57,25 +74,34 @@
           </div>
         </section>
 
-        <section class="form-section">
-          <div class="section-title"><span>03</span><div><h2>الشخص والمظهر</h2><p>المظهر منفصل عن المرجع؛ ما تختاره هنا هو الذي يدخل الناتج.</p></div></div>
+        <section class="form-section" data-section="subject">
+          <div class="section-title"><span>03</span><div><h2>الشخص والمظهر</h2><p>المظهر منفصل عن المرجع؛ ما تختاره هنا هو الذي يدخل الناتج.</p></div><button class="section-reset" data-reset="subject" type="button">إعادة القسم</button></div>
           <div class="grid two">
             <label class="field">العمر الظاهر<input id="age" type="number" min="1" max="100" value="35" /></label>
             <label class="field">الوضعية<select id="pose"></select></label>
+            <label class="field full custom-field" id="customPoseWrap" hidden>الوضعية المخصصة<input id="customPose" placeholder="صف الوضعية" /></label>
             <label class="field">التعبير<select id="expression"></select></label>
-            <label class="field">الملابس<select id="clothing"></select></label>
-            <label class="field">الشعر<input id="hair" value="same as reference if a reference is attached" placeholder="مثال: short natural hair" /></label>
-            <label class="field">النظارة
-              <select id="glasses"><option value="same as reference if present">كما في المرجع إن وجد</option><option value="no glasses">بدون نظارة</option><option value="black rectangular glasses">إطار أسود مستطيل</option><option value="thin metal glasses">إطار معدني نحيف</option></select>
+            <label class="field">الشعر<select id="hair"></select></label>
+            <label class="field full custom-field" id="customHairWrap" hidden>الشعر المخصص<input id="customHair" placeholder="صف تسريحة الشعر" /></label>
+            <label class="field">اللحية / الشارب<select id="beard"></select></label>
+            <label class="field full custom-field" id="customBeardWrap" hidden>اللحية المخصصة<input id="customBeard" placeholder="صف اللحية أو الشارب" /></label>
+            <label class="field">النظارة<select id="glasses"></select></label>
+            <label class="field full custom-field" id="customGlassesWrap" hidden>النظارة المخصصة<input id="customGlasses" placeholder="صف النظارة" /></label>
+            <label class="field full">ابحث في الملابس
+              <input id="clothingSearch" type="search" placeholder="مثال: كتان، بولو، ثوب، جاكيت، بدلة..." autocomplete="off" />
             </label>
+            <label class="field full">الملابس<select id="clothing"></select></label>
+            <label class="field full custom-field" id="customClothingWrap" hidden>الملابس المخصصة<input id="customClothing" placeholder="اكتب وصف الملابس التي تريدها" /></label>
           </div>
         </section>
 
-        <section class="form-section">
-          <div class="section-title"><span>04</span><div><h2>هندسة الكاميرا</h2><p>اسم الكاميرا وحده ما يكفي؛ هنا تحدد الهندسة التي تصنع المنظور فعلًا.</p></div></div>
+        <section class="form-section" data-section="camera">
+          <div class="section-title"><span>04</span><div><h2>هندسة الكاميرا</h2><p>اسم الكاميرا وحده ما يكفي؛ هنا تحدد الهندسة التي تصنع المنظور فعلًا.</p></div><button class="section-reset" data-reset="camera" type="button">إعادة القسم</button></div>
           <div class="grid two">
             <label class="field">زاوية التصوير<select id="angle"></select></label>
+            <label class="field full custom-field" id="customAngleWrap" hidden>زاوية مخصصة<input id="customAngle" placeholder="صف الزاوية" /></label>
             <label class="field">الكادر<select id="framing"></select></label>
+            <label class="field full custom-field" id="customFramingWrap" hidden>كادر مخصص<input id="customFraming" placeholder="صف حدود الكادر" /></label>
             <label class="field">البعد البؤري المكافئ (mm)<input id="focalLength" type="number" min="12" max="150" value="24" /></label>
             <label class="field">المسافة عن الكاميرا (cm)<input id="distance" type="number" min="10" max="500" value="50" /></label>
             <label class="field">Yaw (°)<input id="yaw" type="number" min="-90" max="90" value="0" /></label>
@@ -84,15 +110,16 @@
           </div>
         </section>
 
-        <section class="form-section">
-          <div class="section-title"><span>05</span><div><h2>الإضاءة والمعالجة</h2><p>الإضاءة الفيزيائية في جهة، والتعريض/HDR في جهة ثانية. أخيرًا فصلنا الاثنين مثل ناس عاقلة.</p></div></div>
+        <section class="form-section" data-section="lighting">
+          <div class="section-title"><span>05</span><div><h2>الإضاءة والمعالجة</h2><p>الإضاءة الفيزيائية في جهة، والتعريض/HDR في جهة ثانية.</p></div><button class="section-reset" data-reset="lighting" type="button">إعادة القسم</button></div>
           <div class="subhead">الإضاءة الفيزيائية</div>
           <div class="grid two">
             <label class="field">مصدر الضوء<select id="lightSource"></select></label>
+            <label class="field full custom-field" id="customLightSourceWrap" hidden>مصدر ضوء مخصص<input id="customLightSource" placeholder="صف مصدر الضوء الفيزيائي" /></label>
             <label class="field">اتجاه الضوء
               <select id="lightDirection"><option value="front-side natural direction">أمامي جانبي</option><option value="side direction">جانبي</option><option value="overhead direction">علوي</option><option value="back-side direction">خلفي جانبي</option><option value="mixed practical directions">مصادر عملية مختلطة</option></select>
             </label>
-            <label class="field full">الانتشار / Light Falloff
+            <label class="field">الانتشار / Light Falloff
               <select id="lightFalloff"><option value="natural distance-based falloff">طبيعي حسب المسافة</option><option value="strong near-source falloff">هبوط قوي لمصدر قريب</option><option value="broad soft falloff">انتشار واسع وناعم</option><option value="localized practical-light falloff">محلي حول مصادر الإضاءة العملية</option></select>
             </label>
           </div>
@@ -104,13 +131,13 @@
           </div>
         </section>
 
-        <section class="form-section">
-          <div class="section-title"><span>06</span><div><h2>موديولات الواقعية</h2><p>كل وحدة مستقلة: إيقاف، تلقائي، أو صارم. ما عاد كل شيء مفروض على كل مشهد.</p></div></div>
+        <section class="form-section" data-section="realism">
+          <div class="section-title"><span>06</span><div><h2>موديولات الواقعية</h2><p>كل وحدة مستقلة: إيقاف، تلقائي، أو صارم.</p></div><button class="section-reset" data-reset="realism" type="button">إعادة القسم</button></div>
           <div id="realismModules" class="module-grid"></div>
         </section>
 
-        <section class="form-section compact-section">
-          <div class="section-title"><span>07</span><div><h2>تفاصيلك أنت</h2><p>هذه أعلى معلومة يكتبها المستخدم يدويًا داخل هذا الإصدار.</p></div></div>
+        <section class="form-section compact-section" data-section="notes">
+          <div class="section-title"><span>07</span><div><h2>تفاصيلك أنت</h2><p>هذه أعلى معلومة يكتبها المستخدم يدويًا داخل هذا الإصدار.</p></div><button class="section-reset" data-reset="notes" type="button">إعادة القسم</button></div>
           <label class="field full">تفاصيل إضافية
             <textarea id="notes" placeholder="مثال: بدون ابتسامة، الخلفية فيها حركة خفيفة، القميص بدون شعارات..."></textarea>
           </label>
@@ -135,7 +162,7 @@
           <div class="checks-title"><strong>Conflict Checker</strong><span id="warningCount">0</span></div>
           <ul id="checklist"></ul>
         </div>
-        <p class="tip">الموقع دائمًا سعودي عام وغير مميز بمعلم معروف. أي تفاصيل أكثر دقة تكتبها أنت في خانة التفاصيل الإضافية.</p>
+        <p class="tip">الموقع دائمًا سعودي عام وغير مميز بمعلم معروف. إعداداتك تُحفظ محليًا في هذا المتصفح، ويمكنك إعادة أي قسم لوحده.</p>
       </aside>
     </section>
   </main>

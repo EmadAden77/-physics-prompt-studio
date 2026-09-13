@@ -15,6 +15,7 @@ function hardOutputGuard(prompt,ctx={}){
 9. VISIBLE SCENE EVIDENCE: ${visibleElements||'only contextually necessary objects'}. Keep background secondary and depth-appropriate.
 10. MATERIAL: honor the selected garment fabric. Cotton poplin must look tightly woven, smooth-matte and lightly creased, never loose slubby linen.
 11. OCCUPANCY QA: before finalizing, trace one physical chain: subject pelvis → driver-seat cushion → steering column ahead → pedals below; subject LEFT shoulder → driver door; subject RIGHT thigh → center console → empty passenger seat. If this chain fails, reject and rebuild the cabin.
+12. SAUDI PLACE QA: reject sterile showroom streets and generic Gulf scenery. Asphalt, curbs, pavement, access, drainage, dust, repairs, parking, traffic and people must match the selected Saudi place and time. Use restrained disorder with a physical or social cause; never add random trash, exaggerated decay or decorative chaos.
 
 If any later instruction competes with this lock, this lock wins.`;
 }

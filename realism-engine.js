@@ -30,6 +30,7 @@ const REALISM_MODULES = {
   practicalLight:{label:'Practical Light',when:c=>['practical','parking','quiet'].includes(c.lightingProfile),prompt:'PRACTICAL-LIGHT MODULE: every bright region, cast shadow and reflection must trace to a believable source with correct direction, occlusion, color and distance falloff.'},
   windowLight:{label:'Window Light',when:c=>c.lightingProfile==='window',prompt:'WINDOW-LIGHT MODULE: illumination follows window geometry, glass transmission, occlusion and gradual cross-cabin falloff; exposure may reveal signal but may not invent fill.'},
   environmentLife:{label:'Contextual Life',when:()=>true,prompt:'ENVIRONMENT LIFE MODULE: derive people, vehicles, pedestrian behavior, business activity and ambient movement from the selected Saudi place and time. Use independent identities, purposeful actions, natural spacing, correct occlusion and depth hierarchy. Avoid decorative crowds, artificial emptiness, cloned people and repeated vehicles.'},
+  saudiReality:{label:'Saudi Physical Reality',when:()=>true,prompt:'SAUDI PHYSICAL REALITY MODULE: derive asphalt, pavement, curbs, access geometry, drainage, maintenance, dust, repairs, traffic and people from the selected Saudi place and time. Preserve restrained cause-based real-world disorder; reject sterile showroom streets, generic Gulf scenery, decorative trash and exaggerated decay.'},
   multiPerson:{label:'Multi-person',when:c=>/people|persons|group|أشخاص|شخصين|مجموعة/i.test(c.notes||''),prompt:'MULTI-PERSON MODULE: give every person a distinct identity, anatomy, pose and clothing response; preserve correct occlusion and prohibit cloned faces or fused bodies.'}
 };
 
@@ -54,7 +55,7 @@ ${modules.map(m=>m.prompt).join('\n')}
 
 CONFLICT RESOLUTION: preserve the highest-priority constraint and adjust only the lower-priority result. Between explicit conflicts, prefer the more specific and physically defining instruction while preserving scene intent.
 
-FINAL FORENSIC QA: verify capture type, camera reach and perspective, identity, light ownership and falloff, exposure, anatomy, contact, forces, materials, reflections, vehicle structure, background continuity and AI artifacts. Correct the cause before finalization.`
+FINAL FORENSIC QA: verify capture type, camera reach and perspective, identity, light ownership and falloff, exposure, anatomy, contact, forces, materials, reflections, vehicle structure, Saudi road/curb/sidewalk/asphalt logic, contextual life, restrained causal disorder, background continuity and AI artifacts. Correct the cause before finalization.`
 }
 
 function renderRealismEngineUI(){const c=currentRealismContext(),modules=activeRealismModules(c),conflicts=realismConflictAudit(c),workflow=document.getElementById('workflowStrip'),chips=document.getElementById('activeModules'),tiers=document.getElementById('priorityTiers'),status=document.getElementById('engineStatus');if(!workflow||!chips||!tiers||!status)return;workflow.innerHTML=REALISM_WORKFLOW.map((s,i)=>`<li><span>${i+1}</span>${s}</li>`).join('');chips.innerHTML=modules.map(m=>`<span>${m.label}</span>`).join('');tiers.innerHTML=REALISM_PRIORITY_TIERS.map(t=>`<li><strong>${t.name}</strong><small>${t.text}</small></li>`).join('');status.textContent=conflicts.length?`${conflicts.length} تعارض`:'متسق';status.classList.toggle('has-conflict',Boolean(conflicts.length))}

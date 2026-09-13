@@ -6,6 +6,16 @@ let audit=MasterRules.evaluate(base);
 assert(audit.active.some(r=>r.id==='driver-seat-lhd'));
 assert(!audit.active.some(r=>r.id==='exterior-visible-only'));
 assert.equal(audit.conflicts.length,0);
+const lhdRule=audit.active.find(r=>r.id==='driver-seat-lhd');
+assert(lhdRule.enforce.some(x=>x.includes('LOWER-LEFT')));
+assert(lhdRule.enforce.some(x=>x.includes('LEFT hand')));
+assert(lhdRule.enforce.some(x=>x.includes('passenger seat remains on final-image RIGHT')));
+assert(lhdRule.avoid.some(x=>x.includes('NO horizontal mirroring')));
+assert(MasterRules.LHDSpatialAnchorSystem);
+assert(MasterRules.LHDSpatialAnchorSystem.driverSelfie('short').includes('LOWER-LEFT'));
+assert(MasterRules.LHDSpatialAnchorSystem.driverSelfie('medium').includes('Reject any image'));
+assert(MasterRules.LHDSpatialAnchorSystem.driverSelfie('detailed').includes('FINAL FRAME QA'));
+
 audit=MasterRules.evaluate({...base,directSun:true,exteriorControlsActive:true});
 assert(audit.conflicts.some(c=>c.id==='night-sun-conflict'));
 assert(audit.conflicts.some(c=>c.id==='interior-exterior-controls'));
@@ -13,6 +23,7 @@ const exterior=MasterRules.evaluate({...base,capture:'exterior',scene:'outside-c
 assert(exterior.active.some(r=>r.id==='exterior-visible-only'));
 assert(!exterior.active.some(r=>r.id==='driver-seat-lhd'));
 assert(MasterRules.output(base).includes('MUST:'));
+
 const sample={reference_image:'Attach face.jpg as the only identity reference.',subject:{expression:'a closed-mouth smile; no teeth.',hair:'reference hair.',clothing:'a sage shirt with beige chinos and a brown leather belt; cotton texture.',eyewear:'black rectangular glasses.'},photography:{aspect_ratio:'9:16 vertical',angle:'eye-level selfie angle.'},additional_instruction:'None.'};
 const compiled=MasterRules.compile(sample,{...base,age:'35',angle:'driver-close'});
 assert(compiled.includes('NIGHT ONLY'));
@@ -22,7 +33,17 @@ assert(!compiled.includes('afternoon/day/night'));
 assert(!compiled.includes('beige chinos'));
 assert(!compiled.includes('leather belt'));
 assert(compiled.includes('48–55 cm'));
+assert(compiled.includes('LHD SPATIAL ANCHOR SYSTEM — HIGHEST PRIORITY'));
+assert(compiled.includes('selfie camera is held by the driver in his LEFT hand'));
+assert(compiled.includes('LOWER-LEFT'));
+assert(compiled.includes('empty front passenger seat on image RIGHT'));
+assert(compiled.includes('NO steering wheel on the right'));
+assert(compiled.includes('NO horizontal mirroring'));
+assert(compiled.includes('steering wheel absent from a driver selfie'));
+assert(!compiled.includes('Do not force the steering wheel into frame'));
+assert(!compiled.includes('mirrored-looking preview is acceptable'));
+
 const villaNight=MasterRules.compile(sample,{...base,age:'35',angle:'driver-close',place:'villa'});
 assert(villaNight.includes('villa and gate fixtures'));
 assert(!villaNight.includes('fuel-station canopy fixtures'));
-console.log('Master Rules V5 tests passed');
+console.log('Master Rules V5 + canonical LHD spatial anchor tests passed');

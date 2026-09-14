@@ -13,6 +13,16 @@ import { compileOutsideNegative, compileOutsideSections } from './carSelfieOutsi
 
 const prompt = (field, id) => commonOption(field, id)?.prompt || '';
 
+const HARD_ACCEPTANCE = `HARD ACCEPTANCE CRITERIA (image FAILS if any is violated):
+1. Skin must show visible pores, fine vellus hair, and subtle tonal variation. If skin appears perfectly smooth, airbrushed, or waxy, the image FAILS.
+2. Hair must show visible individual strand separation and 2-4 physically plausible stray hairs. If hair appears uniformly glossy or helmet-like, the image FAILS.
+3. Facial symmetry must be naturally imperfect. If the face is perfectly mirrored, the image FAILS.
+4. Denim and other fabrics must show: seam bunching at shoulder/elbow, gravity-driven wrinkles, matte fiber response, and slight indigo/value variation. If fabric appears as a smooth painted surface, the image FAILS.
+5. Camera tilt must be 1-3 degrees off-perfect-level. If composition is perfectly level and centered, the image FAILS.
+6. Corneal reflections must show source-consistent catchlights. If eyes are glassy or have symmetrical artificial catchlights, the image FAILS.
+7. No brand text, logo, or readable signage may appear in the frame unless explicitly requested. If visible brand text appears, the image FAILS.
+8. Composition must be slightly off-center (subject not dead-center). If perfectly centered, the image FAILS.`;
+
 export function analyzeCarSelfieIntent(request = '', mode = 'inside', baseState = {}) {
   return mode === 'outside' ? analyzeOutsideIntent(request, baseState) : analyzeInsideIntent(request, baseState);
 }
@@ -54,14 +64,15 @@ export function compileCarSelfieDetailed(input = {}) {
   }
   const modeSections = state.mode === 'outside' ? compileOutsideSections(state) : compileInsideSections(state);
   return [
-    'CAR SELFIE PHYSICS STUDIO V7 — PHOTOREALISTIC PROMPT SPECIFICATION',
+    'CAR SELFIE PHYSICS STUDIO V7.1 — PHOTOREALISTIC PROMPT SPECIFICATION',
     '',
     `ACTIVE MODE: ${state.mode === 'outside' ? 'OUTSIDE BESIDE CAR' : 'INSIDE CAR'}. The inactive mode is forbidden and contributes zero fields or instructions.`,
     ...commonSections(state),
     ...modeSections,
     state.notes.trim() ? `USER NOTES: ${state.notes.trim()}` : '',
     '',
-    'FORENSIC QA BEFORE FINALIZING: verify active-mode isolation, Xiaomi optic authority, camera support, arm reach or remote support, light-source causality, shadow directions, glass/paint reflections, fabric folds, fixed hair density, facial muscle coupling, privacy of strangers, vehicle contact/grounding and absence of impossible anatomy or floating objects.'
+    'FORENSIC QA BEFORE FINALIZING: verify active-mode isolation, Xiaomi optic authority, camera support, arm reach or remote support, light-source causality, shadow directions, glass/paint reflections, fabric folds, fixed hair density, facial muscle coupling, privacy of strangers, vehicle contact/grounding and absence of impossible anatomy or floating objects.',
+    HARD_ACCEPTANCE
   ].filter(Boolean).join('\n');
 }
 
@@ -85,7 +96,7 @@ export function compileCarSelfieJson(input = {}) {
   const validation = carValidationStatus(state);
   const intent = analyzeCarSelfieIntent(state.initialRequest, state.mode, state);
   return JSON.stringify({
-    version: 'car-selfie-v7',
+    version: 'car-selfie-v7.1',
     domain: 'isolated-car-selfie-dual-mode',
     deterministic: true,
     activeMode: state.mode,

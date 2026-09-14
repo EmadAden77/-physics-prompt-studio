@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="مختبر فيزياء سيلفي السيارة بوضعين مستقلين: داخل السيارة وخارجها بجانب السيارة">
+  <meta name="description" content="مختبر تصوير السيارة بثلاث طبقات: برومبت مضغوط، مواصفات هندسية، وقائمة قبول بعد التوليد">
   <meta name="theme-color" content="#0b0d11">
   <title>Car Selfie Physics Studio</title>
   <link rel="stylesheet" href="car-selfie.css">
@@ -12,17 +12,23 @@
 <main class="shell">
   <header class="hero">
     <div>
-      <p class="eyebrow">CAR SELFIE PHYSICS STUDIO / V7</p>
+      <p class="eyebrow">CAR SELFIE PHYSICS STUDIO / V8</p>
       <h1>مختبر تصوير السيارة</h1>
-      <p>وضعان منفصلان بالكامل: سيلفي داخل المقصورة، أو تصوير ذاتي بالخارج بجانب السيارة. لا تختلط الحقول أو التعليمات بينهما.</p>
+      <p>ثلاث طبقات منفصلة: مواصفات هندسية داخلية، برومبت قصير يُرسل للنموذج، وقائمة تحقق بصرية بعد التوليد. لا نطلب من مولّد الصور أن يحفظ كتاب فيزياء كاملًا ثم نتفاجأ عندما يتجاهله.</p>
       <a href="index.html" class="back">← الرجوع للمشاهد العامة</a>
     </div>
     <div class="badge">
-      <strong>DETERMINISTIC PHYSICS</strong>
-      <span>Xiaomi 15 Ultra + Mode Isolation</span>
-      <small>نفس المدخلات = نفس النتيجة</small>
+      <strong>3-LAYER ARCHITECTURE</strong>
+      <span>Engineering → Prompt → Acceptance</span>
+      <small>المواصفات الهندسية لا تُرسل للنموذج</small>
     </div>
   </header>
+
+  <section class="layer-strip" aria-label="طبقات النظام">
+    <div><strong>1 · ENGINEERING</strong><span>إحداثيات وقواعد تحقق داخلية</span></div>
+    <div><strong>2 · PROMPT</strong><span>150–250 كلمة كحد أقصى</span></div>
+    <div><strong>3 · ACCEPTANCE</strong><span>✓ / ✗ بعد مشاهدة الصورة</span></div>
+  </section>
 
   <section class="mode-switch" aria-label="اختيار وضع السيارة">
     <button type="button" class="mode-button active" data-mode-select="inside" aria-pressed="true">
@@ -52,7 +58,7 @@
         <div class="card intro-card">
           <p class="eyebrow">STEP 01 / MODE</p>
           <h2>اختر منطق المشهد أولًا</h2>
-          <p>الاختيار في الأعلى هو قفل معماري، وليس مجرد شكل. وضع الداخل لا يحمل أي حقل وقوف خارجي، ووضع الخارج لا يحمل أي مقعد أو فوضى مقصورة.</p>
+          <p>الاختيار في الأعلى هو قفل معماري. وضع الداخل والخارج يظلان منفصلين، لكن كلاهما يستخدم نفس الطبقات الثلاث الجديدة.</p>
           <div class="mode-summary" id="modeSummary"></div>
         </div>
       </section>
@@ -61,7 +67,7 @@
         <div class="card">
           <p class="eyebrow">STEP 02 / REAL-TIME INTENT</p>
           <h2>الطلب الأولي والفلترة الذكية</h2>
-          <p class="muted">التحليل يعمل فور الكتابة. إذا ذكرت صراحةً «بجانب السيارة» أو «داخل السيارة» يستطيع النظام تبديل الوضع حتميًا. الخيارات غير المتناسقة لا تُعرض أصلًا.</p>
+          <p class="muted">التحليل حتمي ويعمل فور الكتابة. الخيارات غير المتناسقة لا تُعرض أصلًا.</p>
           <textarea id="initialRequest" placeholder="مثال داخل: سيلفي ليلي داخل رنج روفر 2017 متوقفة، ثوب أبيض، فوضى خفيفة&#10;مثال خارج: واقف بجانب باب السائق ليلًا أمام مقهى محلي، تيشيرت كحلي"></textarea>
           <div class="intent-bar"><button type="button" id="analyzeIntent">إعادة التحليل الآن</button><span id="intentSummary">اكتب طلبك وسيبدأ التحليل.</span></div>
         </div>
@@ -84,16 +90,16 @@
               <label>لوحة العدادات<select id="clusterType"></select></label>
               <label>السقف<select id="roofType"></select></label>
             </div>
-            <div class="lock-note">LHD ثابت: السائق يسار، المقود والعدادات يسار، والكونسول يمين السائق.</div>
+            <div class="lock-note">LHD ثابت. تفاصيل الإحداثيات لا تُحشى داخل البرومبت المضغوط؛ تُعرض في «مواصفات هندسية» وتُراجع بعد التوليد.</div>
           </div>
 
           <div class="mode-block" data-mode-only="outside" hidden>
-            <div class="subhead"><strong>الخارج بجانب السيارة فقط</strong><span>لا توجد مقاعد أو عدادات أو مقصورة في هذا الوضع.</span></div>
+            <div class="subhead"><strong>الخارج بجانب السيارة فقط</strong><span>لا توجد مقاعد أو عدادات أو فوضى مقصورة في هذا الوضع.</span></div>
             <div class="grid two">
               <label>وضعية الوقوف<select id="standingPose"></select></label>
               <label>حالة طلاء السيارة<select id="paintCondition"></select></label>
             </div>
-            <div class="physics-note">الهيكل والزجاج والإطارات تخضع لانعكاس البيئة، Fresnel، انحناء الألواح، تماس الإطارات بالأرض وظلال التلامس.</div>
+            <div class="physics-note">الهيكل والزجاج والإطارات تبقى ضمن المواصفات الهندسية وقائمة التحقق بدل تضخيم البرومبت المرسل للنموذج.</div>
           </div>
         </div>
       </section>
@@ -133,7 +139,7 @@
               <label>ملف الشعر<select id="hairProfile"></select></label>
               <label>حركة الشعر<select id="hairMotion"></select></label>
               <label>انعكاس الشعر<select id="hairSpecular"></select></label>
-              <small>الكثافة وخط الشعر مقفولان ولا يتغيران مع الضوء أو الزاوية.</small>
+              <small>الكثافة وخط الشعر مقفولان هندسيًا ويُراجعان في طبقة القبول.</small>
             </fieldset>
           </div>
 
@@ -161,6 +167,12 @@
             <label>HDR<select id="hdr"></select></label>
             <label>White Balance<select id="whiteBalance"></select></label>
             <label>وضع Conflict Checker<select id="physicsMode"></select></label>
+            <label>الوضع الافتراضي للمخرجات
+              <select id="promptMode">
+                <option value="compact">الوضع المضغوط · افتراضي</option>
+                <option value="detailed">الوضع التفصيلي · للتجربة</option>
+              </select>
+            </label>
           </div>
 
           <div class="mode-block" data-mode-only="inside">
@@ -170,11 +182,11 @@
               <label>الفوضى داخل السيارة<select id="clutterLevel"></select></label>
               <label>المصدر الداخلي<select id="cabinEmitter"></select></label>
             </div>
-            <div class="physics-note">الأكواب والزجاجات والأوراق والشواحن والنظارات والمناديل والأغراض الشخصية لها دعم وتلامس وظلال تماس وجاذبية واستجابة للحركة.</div>
+            <div class="physics-note">هذه التفاصيل تُستخدم في التحقق والهندسة. البرومبت المضغوط يحتفظ فقط بالوصف الذي يحتاجه النموذج فعلًا.</div>
           </div>
 
           <div class="mode-block" data-mode-only="outside" hidden>
-            <div class="physics-note">الخارج: الشمس/أعمدة الإنارة/اللافتات هي المصادر المسموحة. الطلاء والزجاج يعكسان البيئة فقط وفق اتجاه السطح ومصدر الضوء. لا توجد إضاءة داشبورد أو فوضى مقصورة في هذا الوضع.</div>
+            <div class="physics-note">انعكاسات الطلاء والزجاج ووضعية الوقوف تُحفظ في طبقة Engineering/Acceptance ولا تتحول إلى صفحات من التعليمات داخل البرومبت المضغوط.</div>
           </div>
           <label class="notes">ملاحظات إضافية<textarea id="notes"></textarea></label>
         </div>
@@ -182,10 +194,28 @@
 
       <section class="wizard-step" data-step="6">
         <div class="card output-card">
-          <div class="result-head"><div><p class="eyebrow">STEP 06 / OUTPUT</p><h2>المخرجات</h2></div><span id="liveState">VALID</span></div>
-          <div class="tabs"><button class="active" data-view="detailed" type="button">مفصل</button><button data-view="concise" type="button">مختصر</button><button data-view="json" type="button">JSON</button><button data-view="negative" type="button">Negative</button><button id="copy" type="button">نسخ</button></div>
+          <div class="result-head"><div><p class="eyebrow">STEP 06 / THREE-LAYER OUTPUT</p><h2>المخرجات</h2></div><span id="liveState">VALID</span></div>
+          <div class="tabs">
+            <button class="active" data-view="compact" type="button">برومبت مضغوط</button>
+            <button data-view="detailed" type="button">برومبت تفصيلي</button>
+            <button data-view="engineering" type="button">مواصفات هندسية</button>
+            <button data-view="acceptance" type="button">قائمة تحقق</button>
+            <button id="copy" type="button">نسخ</button>
+          </div>
+          <div class="output-meta" id="outputMeta" data-kind="model">يُرسل للنموذج</div>
           <pre id="output"></pre>
           <div class="checks"><div><strong>Car Physics Checker</strong><span id="issueCount">0</span></div><ul id="issues"></ul></div>
+        </div>
+
+        <div class="card acceptance-card">
+          <div class="acceptance-head">
+            <div><p class="eyebrow">POST-GENERATION ACCEPTANCE</p><h2>قائمة التحقق البصري</h2></div>
+            <span id="acceptanceProgress">0/0 ناجح</span>
+          </div>
+          <p class="muted">بعد توليد الصورة، راجعها بعينك واضغط ✓ أو ✗. هذه النقاط لا تُرسل للنموذج.</p>
+          <div id="acceptanceChecklist" class="acceptance-list"></div>
+          <button type="button" id="acceptanceReportButton">تقرير قبول الصورة</button>
+          <pre id="acceptanceReport" class="acceptance-report">لم تُراجع الصورة بعد.</pre>
         </div>
       </section>
 
@@ -193,7 +223,7 @@
     </div>
 
     <aside class="preview-card">
-      <div class="preview-head"><div><p class="eyebrow">LIVE GEOMETRY</p><h2>معاينة التكوين</h2></div><span id="previewMode">INSIDE</span></div>
+      <div class="preview-head"><div><p class="eyebrow">ENGINEERING PREVIEW</p><h2>معاينة التكوين</h2></div><span id="previewMode">INSIDE</span></div>
       <svg id="geometryPreview" viewBox="0 0 320 220" role="img" aria-label="رسم توضيحي لموقع الكاميرا وزوايا التصوير">
         <rect x="62" y="80" width="196" height="78" rx="20" class="car-body"/>
         <path d="M98 80 L126 45 H215 L240 80" class="car-roof"/>
@@ -208,7 +238,7 @@
         <text id="previewLabel" x="160" y="202" text-anchor="middle">داخل السيارة</text>
       </svg>
       <div class="angle-readout"><span>Yaw <strong id="yawReadout">0°</strong></span><span>Pitch <strong id="pitchReadout">0°</strong></span><span>Roll <strong id="rollReadout">2°</strong></span></div>
-      <div class="preview-note" id="previewNote">الكاميرا داخل المقصورة. النقطة والخط يوضحان موقعها واتجاهها التقريبي.</div>
+      <div class="preview-note" id="previewNote">معاينة هندسية داخلية، منفصلة عن البرومبت المرسل للنموذج.</div>
       <div class="mini-status"><strong id="miniStatus">VALID</strong><span id="miniIssues">0 تعارضات</span></div>
     </aside>
   </section>

@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check app.js && node --check car-selfie.js",
+    "check": "node --check app.js && node --check car-selfie.js && node --check core/prompt-optimizer.js",
     "test": "npm run check && node --test tests/*.test.mjs"
   }
 }

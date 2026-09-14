@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="مختبر تصوير السيارة بثلاث طبقات: برومبت مضغوط، مواصفات هندسية، وقائمة قبول بعد التوليد">
+  <meta name="description" content="مختبر تصوير السيارة بنهج سردي قصير مع مواصفات هندسية وقائمة قبول منفصلتين">
   <meta name="theme-color" content="#0b0d11">
   <title>Car Selfie Physics Studio</title>
   <link rel="stylesheet" href="car-selfie.css">
@@ -12,21 +12,21 @@
 <main class="shell">
   <header class="hero">
     <div>
-      <p class="eyebrow">CAR SELFIE PHYSICS STUDIO / V8</p>
+      <p class="eyebrow">CAR SELFIE PHYSICS STUDIO / V9</p>
       <h1>مختبر تصوير السيارة</h1>
-      <p>ثلاث طبقات منفصلة: مواصفات هندسية داخلية، برومبت قصير يُرسل للنموذج، وقائمة تحقق بصرية بعد التوليد. لا نطلب من مولّد الصور أن يحفظ كتاب فيزياء كاملًا ثم نتفاجأ عندما يتجاهله.</p>
+      <p>المخرج الافتراضي الآن برومبت سردي قصير يصف صورة حقيقية موجودة. المواصفات الهندسية وقائمة القبول تبقيان منفصلتين، والنسخة التقنية الطويلة موجودة فقط للمقارنة.</p>
       <a href="index.html" class="back">← الرجوع للمشاهد العامة</a>
     </div>
     <div class="badge">
-      <strong>3-LAYER ARCHITECTURE</strong>
-      <span>Engineering → Prompt → Acceptance</span>
-      <small>المواصفات الهندسية لا تُرسل للنموذج</small>
+      <strong>NARRATIVE-FIRST</strong>
+      <span>Engineering → Narrative → Acceptance</span>
+      <small>الوصف السردي هو المخرج الافتراضي</small>
     </div>
   </header>
 
   <section class="layer-strip" aria-label="طبقات النظام">
     <div><strong>1 · ENGINEERING</strong><span>إحداثيات وقواعد تحقق داخلية</span></div>
-    <div><strong>2 · PROMPT</strong><span>150–250 كلمة كحد أقصى</span></div>
+    <div><strong>2 · NARRATIVE</strong><span>وصف صورة حقيقية في 200–280 كلمة تقريبًا</span></div>
     <div><strong>3 · ACCEPTANCE</strong><span>✓ / ✗ بعد مشاهدة الصورة</span></div>
   </section>
 
@@ -58,7 +58,7 @@
         <div class="card intro-card">
           <p class="eyebrow">STEP 01 / MODE</p>
           <h2>اختر منطق المشهد أولًا</h2>
-          <p>الاختيار في الأعلى هو قفل معماري. وضع الداخل والخارج يظلان منفصلين، لكن كلاهما يستخدم نفس الطبقات الثلاث الجديدة.</p>
+          <p>وضع الداخل والخارج يظلان منفصلين. المحرك يحوّل الحالة إلى وصف سردي واحد بدل قائمة مواصفات موجهة للنموذج.</p>
           <div class="mode-summary" id="modeSummary"></div>
         </div>
       </section>
@@ -90,7 +90,7 @@
               <label>لوحة العدادات<select id="clusterType"></select></label>
               <label>السقف<select id="roofType"></select></label>
             </div>
-            <div class="lock-note">LHD ثابت. تفاصيل الإحداثيات لا تُحشى داخل البرومبت المضغوط؛ تُعرض في «مواصفات هندسية» وتُراجع بعد التوليد.</div>
+            <div class="lock-note">LHD ثابت، ويظهر في البرومبت كسطر Visual Anchor واحد واضح بدل عشرات التعليمات المتكررة.</div>
           </div>
 
           <div class="mode-block" data-mode-only="outside" hidden>
@@ -99,7 +99,7 @@
               <label>وضعية الوقوف<select id="standingPose"></select></label>
               <label>حالة طلاء السيارة<select id="paintCondition"></select></label>
             </div>
-            <div class="physics-note">الهيكل والزجاج والإطارات تبقى ضمن المواصفات الهندسية وقائمة التحقق بدل تضخيم البرومبت المرسل للنموذج.</div>
+            <div class="physics-note">الوصف السردي يذكر الوقوف، الانعكاسات، تماس الإطارات والأرض بصورة طبيعية بدل لغة المواصفات.</div>
           </div>
         </div>
       </section>
@@ -139,7 +139,7 @@
               <label>ملف الشعر<select id="hairProfile"></select></label>
               <label>حركة الشعر<select id="hairMotion"></select></label>
               <label>انعكاس الشعر<select id="hairSpecular"></select></label>
-              <small>الكثافة وخط الشعر مقفولان هندسيًا ويُراجعان في طبقة القبول.</small>
+              <small>الكثافة وخط الشعر ثابتان، لكن النص النهائي يصف النتيجة الطبيعية بدل صياغة أمرية.</small>
             </fieldset>
           </div>
 
@@ -169,8 +169,9 @@
             <label>وضع Conflict Checker<select id="physicsMode"></select></label>
             <label>الوضع الافتراضي للمخرجات
               <select id="promptMode">
-                <option value="compact">الوضع المضغوط · افتراضي</option>
-                <option value="detailed">الوضع التفصيلي · للتجربة</option>
+                <option value="narrative">سردي · افتراضي</option>
+                <option value="compact">مضغوط جدًا</option>
+                <option value="legacy">Technical Spec (legacy)</option>
               </select>
             </label>
           </div>
@@ -182,11 +183,11 @@
               <label>الفوضى داخل السيارة<select id="clutterLevel"></select></label>
               <label>المصدر الداخلي<select id="cabinEmitter"></select></label>
             </div>
-            <div class="physics-note">هذه التفاصيل تُستخدم في التحقق والهندسة. البرومبت المضغوط يحتفظ فقط بالوصف الذي يحتاجه النموذج فعلًا.</div>
+            <div class="physics-note">الفوضى تتحول إلى جملة ميزانية ظهور بسيطة: من مقصورة نظيفة إلى ثلاثة عناصر ظاهرة كحد أقصى في المستوى الشديد.</div>
           </div>
 
           <div class="mode-block" data-mode-only="outside" hidden>
-            <div class="physics-note">انعكاسات الطلاء والزجاج ووضعية الوقوف تُحفظ في طبقة Engineering/Acceptance ولا تتحول إلى صفحات من التعليمات داخل البرومبت المضغوط.</div>
+            <div class="physics-note">الخارج يُوصف كصورة حقيقية: وقفة، ضوء، انعكاس طلاء وزجاج، تماس إطارات وأرض، بدون قائمة أوامر تقنية.</div>
           </div>
           <label class="notes">ملاحظات إضافية<textarea id="notes"></textarea></label>
         </div>
@@ -194,15 +195,16 @@
 
       <section class="wizard-step" data-step="6">
         <div class="card output-card">
-          <div class="result-head"><div><p class="eyebrow">STEP 06 / THREE-LAYER OUTPUT</p><h2>المخرجات</h2></div><span id="liveState">VALID</span></div>
+          <div class="result-head"><div><p class="eyebrow">STEP 06 / NARRATIVE OUTPUT</p><h2>المخرجات</h2></div><span id="liveState">VALID</span></div>
           <div class="tabs">
-            <button class="active" data-view="compact" type="button">برومبت مضغوط</button>
-            <button data-view="detailed" type="button">برومبت تفصيلي</button>
+            <button class="active" data-view="narrative" type="button">سردي</button>
+            <button data-view="compact" type="button">مضغوط</button>
+            <button data-view="legacy" type="button">Technical Spec (legacy)</button>
             <button data-view="engineering" type="button">مواصفات هندسية</button>
             <button data-view="acceptance" type="button">قائمة تحقق</button>
             <button id="copy" type="button">نسخ</button>
           </div>
-          <div class="output-meta" id="outputMeta" data-kind="model">يُرسل للنموذج</div>
+          <div class="output-meta" id="outputMeta" data-kind="model">الوصف السردي · يُرسل للنموذج</div>
           <pre id="output"></pre>
           <div class="checks"><div><strong>Car Physics Checker</strong><span id="issueCount">0</span></div><ul id="issues"></ul></div>
         </div>
@@ -238,7 +240,7 @@
         <text id="previewLabel" x="160" y="202" text-anchor="middle">داخل السيارة</text>
       </svg>
       <div class="angle-readout"><span>Yaw <strong id="yawReadout">0°</strong></span><span>Pitch <strong id="pitchReadout">0°</strong></span><span>Roll <strong id="rollReadout">2°</strong></span></div>
-      <div class="preview-note" id="previewNote">معاينة هندسية داخلية، منفصلة عن البرومبت المرسل للنموذج.</div>
+      <div class="preview-note" id="previewNote">معاينة هندسية داخلية منفصلة عن الوصف السردي.</div>
       <div class="mini-status"><strong id="miniStatus">VALID</strong><span id="miniIssues">0 تعارضات</span></div>
     </aside>
   </section>

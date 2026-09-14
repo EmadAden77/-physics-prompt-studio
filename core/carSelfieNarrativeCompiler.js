@@ -88,7 +88,9 @@ function narrativeParts(state, mode, compression = 0) {
   const gaze = GAZE_TEXT[state.gazeTarget] || commonPhrase('gazeTarget', state.gazeTarget, 6);
 
   const cameraProcessing = compression >= 1
-    ? 'The phone keeps natural contrast, restrained HDR and believable noise.'
+    ? masterDriver
+      ? 'Processing keeps pores, shadow noise and captured light without synthetic fill.'
+      : 'The phone keeps natural contrast, restrained HDR and believable noise.'
     : masterDriver
       ? 'Night processing keeps natural contrast, retained pores and shadow noise; exposure and HDR reveal captured light without inventing illumination.'
       : 'The phone keeps natural smartphone contrast, restrained HDR, believable low-light noise and mixed-light white balance without synthetic relighting.';
@@ -102,18 +104,24 @@ function narrativeParts(state, mode, compression = 0) {
     : `${compactPhrase(clothing?.prompt || 'simple everyday clothing', 7)}, ${compactPhrase(fabric?.prompt || state.fabricType, 6)}, natural wrinkles and restrained sheen`;
 
   const identitySentence = masterDriver && state.referenceAttached
-    ? 'The attached reference defines identity only: facial structure, asymmetry, skin tone, hairline, hair density and facial-hair pattern stay faithful, while pose, clothing, background and lighting come from this scene.'
+    ? compression >= 1
+      ? 'The reference fixes identity only, including facial structure, asymmetry, hairline and facial-hair pattern.'
+      : 'The attached reference defines identity only: facial structure, asymmetry, skin tone, hairline, hair density and facial-hair pattern stay faithful, while pose, clothing, background and lighting come from this scene.'
     : '';
 
   const subject = `A candid photorealistic smartphone photo shows one person around ${state.apparentAge}, with ${expression}, ${gaze}. Skin has visible pores, fine texture and natural asymmetry. Hair keeps its real density and hairline, with separated strands and a few ordinary flyaways. The person wears ${clothingDescription}. ${identitySentence}`;
 
   const captureSentence = masterDriver
-    ? 'It is a genuine self-held front-camera selfie; the phone stays outside the frame and the wide perspective remains physically consistent.'
+    ? compression >= 1
+      ? 'This is a self-held front-camera selfie; the phone stays outside the frame.'
+      : 'It is a genuine self-held front-camera selfie; the phone stays outside the frame and the wide perspective remains physically consistent.'
     : '';
   const camera = `Shot on a Xiaomi 15 Ultra with the ${lens?.focalLengthEqMm || state.focalLength}mm-equivalent lens at f/${lens?.aperture || state.aperture}, about ${state.distance}cm away, yaw ${state.yaw}°, pitch ${state.pitch}° and a natural ${state.roll}° roll. ${captureSentence} ${cameraProcessing}`;
 
   const lightSentence = masterDriver
-    ? 'Roadside light reaches only surfaces physically exposed to it, with visible falloff across the face, torso and deeper cabin.'
+    ? compression >= 1
+      ? 'Roadside light falls off naturally across the face, torso and cabin.'
+      : 'Roadside light reaches only surfaces physically exposed to it, with visible falloff across the face, torso and deeper cabin.'
     : 'Falloff, reflections and shadow direction feel physically coherent.';
   const environment = `Around the subject is ${placeDetails}. It is ${commonPhrase('time', state.time, 4)} with ${commonPhrase('weather', state.weather, 6)}, lit by ${commonPhrase('externalLight', state.externalLight, 8)}. ${lightSentence}`;
 
@@ -122,7 +130,9 @@ function narrativeParts(state, mode, compression = 0) {
     const seat = option(INSIDE_CATALOG, 'seat', state.seat);
     const clutter = CLUTTER_BUDGET[state.clutterLevel] || CLUTTER_BUDGET.light;
     const periodCue = masterDriver && state.vehicleProfile === master.vehicleLock.vehicleProfile
-      ? 'The Ebony/Ivory cabin is period-correct for 2017, with Ivory perforated leather, dark polished wood, realistic seat compression and no newer-generation dashboard or steering design.'
+      ? compression >= 1
+        ? 'Its Ebony/Ivory cabin is period-correct for 2017, with no newer-generation interior.'
+        : 'The Ebony/Ivory cabin is period-correct for 2017, with Ivory perforated leather, dark polished wood, realistic seat compression and no newer-generation dashboard or steering design.'
       : '';
     modeStory = `The subject is ${compactPhrase(seat?.prompt || 'seated naturally in the front cabin', 9)} inside ${compactPhrase(vehicle?.insidePrompt || 'the parked vehicle', 10)}, ${compactPhrase(vehicleState?.prompt || 'fully stationary', 5)}. ${periodCue} The cabin looks ordinary and controlled: ${clutter}. Every visible loose item rests naturally on a real surface under gravity.`;
   } else {
@@ -131,7 +141,9 @@ function narrativeParts(state, mode, compression = 0) {
   }
 
   const finish = masterDriver
-    ? `The result feels like an ordinary unedited Xiaomi front-camera night photo, with subtle shadow noise, mild edge softness, natural skin and material texture, slightly off-center handheld framing and no commercial polish.${notes ? ` A small requested detail remains natural: ${notes}.` : ''}`
+    ? compression >= 1
+      ? `It looks like an ordinary unedited Xiaomi night selfie, slightly imperfect and off-center.${notes ? ` Detail: ${notes}.` : ''}`
+      : `The result feels like an ordinary unedited Xiaomi front-camera night photo, with subtle shadow noise, mild edge softness, natural skin and material texture, slightly off-center handheld framing and no commercial polish.${notes ? ` A small requested detail remains natural: ${notes}.` : ''}`
     : `The frame is slightly off-center and naturally imperfect, with fabric fibers, corneal catchlights, believable hands and no advertising polish.${notes ? ` A small requested detail remains natural: ${notes}.` : ''}`;
 
   return [subject, camera, environment, modeStory, anchorFor(state, mode), finish];

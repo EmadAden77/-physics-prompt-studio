@@ -11,6 +11,7 @@ import {
   FRAMING_OPTIONS
 } from './core/prompt-generator.js';
 import { compatibilitySnapshot, recommendedDefaults } from './core/scene-compatibility.js';
+import { enforceSaudiNoLandmarks, mergeSaudiNoLandmarksConstraint } from './core/saudi-location-lock.js';
 
 const $ = (id) => document.getElementById(id);
 const controls = {
@@ -107,7 +108,7 @@ function applySceneCompatibility() {
   const compatible = compatibilitySnapshot(sceneType, CATALOGS);
   const defaults = recommendedDefaults(sceneType);
 
-  rebuildOptionalSelect(controls.location, compatible.location, 'تلقائي — مكان متناسق مع نوع المشهد', true);
+  rebuildOptionalSelect(controls.location, compatible.location, 'تلقائي — مكان سعودي عادي بدون معالم', true);
   rebuildOptionalSelect(controls.pose, compatible.pose, 'تلقائي — وضعية متناسقة مع نوع المشهد');
   rebuildOptionalSelect(controls.angle, compatible.angle, 'تلقائي — زاوية متناسقة مع نوع المشهد');
   rebuildOptionalSelect(controls.lighting, compatible.lighting, 'تلقائي — إضاءة متناسقة مع نوع المشهد', true);
@@ -142,7 +143,7 @@ function autoInput() {
     backgroundActivity: controls.backgroundActivity.value,
     realismLevel: controls.realismLevel.value,
     framing: controls.framing.value,
-    location: selectedPrompt(controls.location),
+    location: enforceSaudiNoLandmarks(selectedPrompt(controls.location)),
     clothing: selectedPrompt(controls.clothing),
     pose: selectedPrompt(controls.pose),
     angle: selectedPrompt(controls.angle),
@@ -150,14 +151,14 @@ function autoInput() {
     lightingNotes: controls.lightingNotes.value,
     cameraDistance: controls.cameraDistance.value,
     description: controls.description.value,
-    customConstraints: controls.customConstraints.value,
+    customConstraints: mergeSaudiNoLandmarksConstraint(controls.customConstraints.value),
     identityReference: controls.identityReference.checked
   };
 }
 
 function sceneForOptimizer() {
   return {
-    location: selectedPrompt(controls.location),
+    location: enforceSaudiNoLandmarks(selectedPrompt(controls.location)),
     clothing: selectedPrompt(controls.clothing),
     pose: selectedPrompt(controls.pose),
     angle: selectedPrompt(controls.angle),

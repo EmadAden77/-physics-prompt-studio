@@ -1,3 +1,5 @@
+import { buildRealismPacket, renderRealismGuidance } from './realistic-image-generator.js';
+
 export const SCENE_TYPES = [
   { value: 'front_selfie', label: 'سيلفي عادي', capture: 'subject-held front-camera smartphone selfie', prompt: 'a casual subject-held front-camera smartphone selfie with physically feasible arm-reach geometry', framing: 'chest-up to mid-torso framing' },
   { value: 'standing_selfie', label: 'سيلفي واقف', capture: 'subject-held front-camera smartphone selfie', prompt: 'the subject standing naturally while taking the selfie himself', framing: 'upper-body to waist-up framing' },
@@ -15,10 +17,10 @@ export const SCENE_TYPES = [
 ];
 
 export const CAMERA_PROFILES = [
-  { value: 'xiaomi15_front', label: 'Xiaomi 15 Ultra — Front', prompt: 'Xiaomi 15 Ultra front camera behavior, approximately 21mm-equivalent wide selfie perspective, realistic arm-length distortion, broad smartphone depth of field, modest HDR, restrained sharpening, and natural mobile noise reduction' },
-  { value: 'iphone15pm_front', label: 'iPhone 15 Pro Max — Front', prompt: 'iPhone 15 Pro Max front-camera behavior with a natural wide selfie perspective, realistic computational exposure, broad smartphone depth of field, restrained sharpening and plausible low-light texture' },
-  { value: 'generic_front', label: 'هاتف أمامي عام', prompt: 'modern smartphone front-camera behavior with realistic wide-angle perspective, arm-length geometry, broad depth of field and restrained computational processing' },
-  { value: 'smartphone_rear', label: 'هاتف — كاميرا خلفية', prompt: 'modern smartphone rear-camera behavior with realistic 24mm-equivalent perspective, broad environmental detail, restrained computational sharpening and no artificial DSLR look' }
+  { value: 'xiaomi15_front', label: 'Xiaomi 15 Ultra — Front', prompt: 'Xiaomi 15 Ultra front camera with a natural wide selfie look, realistic arm-length perspective, broad smartphone focus, modest HDR, restrained sharpening, and natural low-light texture' },
+  { value: 'iphone15pm_front', label: 'iPhone 15 Pro Max — Front', prompt: 'iPhone 15 Pro Max front camera with a natural wide selfie look, realistic computational exposure, broad smartphone focus, restrained sharpening and plausible low-light texture' },
+  { value: 'generic_front', label: 'هاتف أمامي عام', prompt: 'modern smartphone front camera with realistic wide selfie perspective, arm-length geometry, broad focus and restrained computational processing' },
+  { value: 'smartphone_rear', label: 'هاتف — كاميرا خلفية', prompt: 'modern smartphone rear camera with a natural wide perspective, broad environmental detail, restrained computational sharpening and no artificial DSLR look' }
 ];
 
 export const ASPECT_RATIOS = [
@@ -65,28 +67,15 @@ const DEFAULTS = {
   framing: FRAMING_OPTIONS[1]
 };
 
-function clean(value) {
-  return typeof value === 'string' ? value.trim() : '';
-}
-
-function getOption(options, value, fallback) {
-  return options.find((item) => item.value === value) || fallback;
-}
-
-function section(title, body) {
-  const text = clean(body);
-  return text ? `[${title}]\n${text}` : '';
-}
+function clean(value) { return typeof value === 'string' ? value.trim() : ''; }
+function getOption(options, value, fallback) { return options.find((item) => item.value === value) || fallback; }
+function section(title, body) { const text = clean(body); return text ? `[${title}]\n${text}` : ''; }
 
 function captureRules(sceneType) {
   const selfie = /selfie/i.test(sceneType.capture);
   const mirror = /mirror selfie/i.test(sceneType.capture);
-  if (mirror) {
-    return 'Capture type is locked to a true mirror selfie. The phone must exist inside the mirror reflection, reflection geometry must be consistent, and the image must not silently become a direct front-camera selfie or a third-person photograph.';
-  }
-  if (selfie) {
-    return 'Capture type is locked to a subject-held smartphone selfie. Camera position must remain reachable by the subject at ordinary arm length; shoulder, elbow, wrist, torso rotation and perspective must agree with the phone position. Never silently convert the shot into a third-person camera, floating camera, mirror shot or telephoto portrait.';
-  }
+  if (mirror) return 'Capture type is locked to a true mirror selfie. The phone must exist inside the mirror reflection, reflection geometry must be consistent, and the image must not silently become a direct front-camera selfie or a third-person photograph.';
+  if (selfie) return 'Capture type is locked to a subject-held smartphone selfie. Camera position must remain reachable by the subject at ordinary arm length; shoulder, elbow, wrist, torso rotation and perspective must agree with the phone position. Never silently convert the shot into a third-person camera, floating camera, mirror shot or telephoto portrait.';
   return 'Capture type is locked to a third-person smartphone photograph. The subject is not holding the camera. Preserve a physically plausible photographer viewpoint, distance and perspective; do not introduce a selfie arm or mirror logic.';
 }
 
@@ -103,7 +92,7 @@ function geometryRules(sceneType, camera, framing, angle, distance) {
 function lightingRules(lighting, notes) {
   const selected = clean(lighting) || 'Use lighting appropriate to the chosen time and location, produced only by physically plausible visible or inferable sources.';
   const extra = clean(notes);
-  return `${selected}${extra ? ` Additional lighting direction: ${extra}.` : ''} Physical illumination alone determines which surfaces receive light, shadow direction and softness, highlights, reflections, material brightness and local contrast. Exposure, ISO, HDR, tone mapping and noise reduction may only reveal or process captured signal; they must never create illumination that no physical source provides. Respect inverse-distance falloff for nearby weak lights, occlusion, bounce light, practical fixture direction and realistic background falloff.`;
+  return `${selected}${extra ? ` Additional lighting direction: ${extra}.` : ''} Physical illumination alone determines which surfaces receive light, shadow direction and softness, highlights, reflections, material brightness and local contrast. Exposure, ISO, HDR, tone mapping and noise reduction may only reveal or process captured signal; they must never create illumination that no physical source provides. Respect realistic falloff for nearby weak lights, occlusion, bounce light, practical fixture direction and realistic background falloff.`;
 }
 
 function physicalRealism(realism) {
@@ -111,24 +100,20 @@ function physicalRealism(realism) {
 }
 
 function smartphoneBehavior() {
-  return 'The result must read as an ordinary real smartphone photograph, not a studio portrait, CGI render or cinematic frame. Use broad smartphone depth of field, restrained computational sharpening, realistic local contrast, modest dynamic range, plausible white balance, subtle edge softness, mild sensor/noise-reduction texture in darker areas, and natural clipping of strong practical lights when appropriate.';
+  return 'The result must read as an ordinary real smartphone photograph, not a studio portrait, CGI render or cinematic frame. Use broad smartphone focus, restrained computational sharpening, realistic local contrast, modest dynamic range, plausible white balance, subtle edge softness, mild sensor/noise-reduction texture in darker areas, and natural clipping of strong practical lights when appropriate.';
 }
 
 function imperfections() {
-  return 'Allow controlled imperfections: tiny handheld roll, slight off-center framing, small asymmetries in clothing and posture, minor exposure variation, realistic fabric creasing, non-uniform background spacing, subtle low-light softness or shadow noise, and ordinary environmental wear. Imperfections must support realism, not look intentionally distressed.';
+  return 'Allow controlled physical imperfections: tiny handheld roll, slight off-center framing, small asymmetries in clothing and posture, minor exposure variation, realistic fabric creasing, non-uniform background spacing, subtle low-light softness or shadow noise, and ordinary environmental wear. Imperfections must support realism, not look intentionally distressed.';
 }
 
 function negatives(sceneType) {
-  const captureNegative = sceneType.capture.includes('third-person')
-    ? 'no selfie arm, no implied subject-held camera'
-    : sceneType.capture.includes('mirror')
-      ? 'no direct front-camera viewpoint outside the mirror, no duplicate phone or hands'
-      : 'no third-person viewpoint, no floating external camera, no mirror unless explicitly selected';
-  return `Avoid: beauty filters, waxy or porcelain skin, face reconstruction, artificial symmetry, malformed hands, extra fingers, duplicated limbs, floating objects, impossible body support, incorrect contact shadows, melted textiles, repeated background people, cloned props, impossible reflections, invisible studio key lights, fake rim lights, excessive HDR, aggressive orange-teal grading, fake DSLR bokeh, over-sharpening, oversaturated skin, sterile showroom staging, and ${captureNegative}.`;
+  const captureNegative = sceneType.capture.includes('third-person') ? 'no selfie arm, no implied subject-held camera' : sceneType.capture.includes('mirror') ? 'no direct front-camera viewpoint outside the mirror, no duplicate phone or hands' : 'no third-person viewpoint, no floating external camera, no mirror unless explicitly selected';
+  return `Avoid: beauty filters, waxy or porcelain skin, face reconstruction, artificial symmetry, malformed hands, extra fingers, duplicated limbs, floating objects, impossible body support, incorrect contact shadows, melted textiles, repeated background people, cloned props, impossible reflections, invisible studio key lights, fake rim lights, excessive HDR, aggressive orange-teal grading, fake DSLR bokeh, over-sharpening, oversaturated skin, sterile showroom staging, generic static posing, advertisement-style product placement, and ${captureNegative}.`;
 }
 
-function verification(sceneType, aspectRatio) {
-  return `Before finalizing, verify: capture type unmistakably matches “${sceneType.capture}”; the camera position is physically possible; anatomy and contacts are coherent; selected location, clothing, pose, angle and lighting are visible and mutually compatible; lighting can be traced to plausible physical sources; materials respond differently according to their properties; background scale and activity make sense; and composition is ${aspectRatio.prompt}. If a secondary aesthetic choice conflicts with physical causality or capture geometry, preserve physical plausibility.`;
+function verification(sceneType, aspectRatio, realismGuidance) {
+  return `Before finalizing, verify: capture type unmistakably matches “${sceneType.capture}”; the camera position is physically possible; anatomy and contacts are coherent; selected location, clothing, pose, angle and lighting are visible and mutually compatible; lighting can be traced to plausible physical sources; materials respond differently according to their properties; background scale and activity make sense; composition is ${aspectRatio.prompt}; and the realism checklist is satisfied: ${realismGuidance.consistency.replace(/^Before finalizing, verify:\s*/i, '')} If a secondary aesthetic choice conflicts with physical causality or capture geometry, preserve physical plausibility.`;
 }
 
 export function generateImagePrompt(input = {}) {
@@ -149,29 +134,50 @@ export function generateImagePrompt(input = {}) {
   const customConstraints = clean(input.customConstraints);
   const identityEnabled = input.identityReference !== false;
 
+  const realismPacket = buildRealismPacket({
+    sceneType: sceneType.value,
+    captureType: sceneType.capture,
+    location,
+    clothing,
+    expression: expression.prompt,
+    angle,
+    lighting,
+    description,
+    aspectRatio: aspectRatio.prompt,
+    pose
+  });
+  const realismGuidance = renderRealismGuidance(realismPacket);
+
   const sections = [
     section('GOAL', `Generate ONE highly photorealistic ${aspectRatio.prompt} image. Capture type: ${sceneType.capture}. ${description ? `User scene intent: ${description}.` : 'Keep the moment natural, personal and unstaged.'} The result must look like a genuine smartphone photograph rather than advertising, studio photography, CGI or AI-stylized imagery.`),
+    section('ACTION-DRIVEN AUTHENTICITY', realismGuidance.action),
     section('CAPTURE TYPE LOCK — CRITICAL', captureRules(sceneType)),
-    section('IDENTITY / SUBJECT', `${identityRules(identityEnabled)} Expression: ${expression.prompt}.`),
+    section('IDENTITY / SUBJECT', `${identityRules(identityEnabled)} Expression: ${expression.prompt}. ${realismPacket.subject.face}`),
     section('SCENE', `Location: ${location}. Background behavior: ${background.prompt}. Maintain believable architecture, furniture, roads, vehicles, landscape, circulation space, object scale and environmental depth appropriate to the selected location.`),
+    section('OBSERVABLE BACKGROUND ELEMENTS', realismGuidance.background),
     section('CLOTHING', `${clothing}. Preserve gravity-driven drape, realistic material thickness, seam tension, compression at body/contact points, and non-mirrored natural asymmetry.`),
+    section('CONTEXTUAL ACCESSORIES', realismGuidance.accessories),
     section('POSE & BODY MECHANICS', `${pose}. Body mechanics must respect balance, support, joint limits, body weight, seat or ground contact, and natural asymmetric posture.`),
     section('CAMERA GEOMETRY', geometryRules(sceneType, camera, framing, angle, input.cameraDistance)),
     section('PHYSICAL LIGHTING', lightingRules(lighting, input.lightingNotes)),
+    section('MIRROR RULES', realismGuidance.mirror),
+    section('PRODUCT INTEGRATION', realismGuidance.product),
     section('PHYSICAL / MATERIAL REALISM', physicalRealism(realism)),
     section('SMARTPHONE IMAGE BEHAVIOR', smartphoneBehavior()),
-    section('CONTROLLED IMPERFECTIONS', imperfections()),
+    section('AUTHENTIC IMPERFECTIONS', realismGuidance.imperfections),
+    section('CONTROLLED PHYSICAL IMPERFECTIONS', imperfections()),
     customConstraints ? section('USER CONSTRAINTS', customConstraints) : '',
     section('NEGATIVE CONSTRAINTS', negatives(sceneType)),
-    section('FINAL VERIFICATION', verification(sceneType, aspectRatio))
+    section('FINAL VERIFICATION', verification(sceneType, aspectRatio, realismGuidance))
   ].filter(Boolean);
 
   const prompt = sections.join('\n\n');
   return {
-    schema_version: '2.0.0',
+    schema_version: '2.1.0',
     mode: 'auto_generate',
     prompt,
     sections,
+    realism_packet: realismPacket,
     config: {
       scene_type: sceneType.value,
       capture_type: sceneType.capture,
@@ -191,17 +197,18 @@ export function generateImagePrompt(input = {}) {
       description,
       custom_constraints: customConstraints
     },
-    validation: validateGeneratedPrompt(prompt, { sceneType, identityEnabled })
+    validation: validateGeneratedPrompt(prompt, { sceneType, identityEnabled, realismPacket })
   };
 }
 
 export function validateGeneratedPrompt(prompt, context = {}) {
   const errors = [];
   const warnings = [];
-  const required = ['[GOAL]', '[CAPTURE TYPE LOCK — CRITICAL]', '[CAMERA GEOMETRY]', '[PHYSICAL LIGHTING]', '[NEGATIVE CONSTRAINTS]', '[FINAL VERIFICATION]'];
+  const required = ['[GOAL]', '[ACTION-DRIVEN AUTHENTICITY]', '[CAPTURE TYPE LOCK — CRITICAL]', '[OBSERVABLE BACKGROUND ELEMENTS]', '[CAMERA GEOMETRY]', '[PHYSICAL LIGHTING]', '[MIRROR RULES]', '[AUTHENTIC IMPERFECTIONS]', '[NEGATIVE CONSTRAINTS]', '[FINAL VERIFICATION]'];
   for (const marker of required) if (!prompt.includes(marker)) errors.push(`Missing required section: ${marker}`);
   if (!/Physical illumination/i.test(prompt)) errors.push('Physical illumination rule is missing.');
   if (!/Exposure, ISO, HDR/i.test(prompt)) errors.push('Exposure/ISO/HDR separation rule is missing.');
+  if (!context.realismPacket?.subject || !context.realismPacket?.accessories || !context.realismPacket?.photography || !context.realismPacket?.background) errors.push('Realistic Image Generator JSON structure is incomplete.');
   if (context.sceneType?.capture?.includes('selfie') && !/reachable|arm-reach|arm length/i.test(prompt)) warnings.push('Selfie prompt should explicitly preserve reachable camera geometry.');
   return { valid: errors.length === 0, errors, warnings };
 }

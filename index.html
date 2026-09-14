@@ -1,33 +1,28 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="منشئ حتمي لبرومبتات الصور الواقعية العامة مع فحص فيزيائي للتعارضات" />
-  <meta name="theme-color" content="#0d100d" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Physics Prompt Studio</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <main class="shell">
-    <header class="masthead">
-      <div><p class="eyebrow">PHYSICS PROMPT STUDIO / GENERAL SCENES</p><h1>برومبتات واقعية من قيود واضحة، لا من التخمين</h1><p class="intro">الصفحة الرئيسية للمشاهد العامة فقط. الهندسة الرقمية هي المرجع، والإضاءة الفيزيائية منفصلة عن التعريض والمعالجة.</p><a class="car-link" href="car-selfie.html">فتح مختبر سيلفي السيارة المستقل ←</a></div>
-      <div class="status-badge"><strong>DETERMINISTIC</strong><span>نفس الحالة = نفس الناتج</span><small>المشهد العام مستقل عن مختبر السيارة</small></div>
+    <header class="hero">
+      <p class="eyebrow">Physics Prompt Studio</p>
+      <h1>واجهة فارغة</h1>
+      <p>تم حذف جميع محركات القواعد والتعليمات والتوليد. هذه الصفحة تحتفظ بهيكل التطبيق فقط.</p>
     </header>
-    <section class="preset-bar"><div><strong>Presets عامة</strong><small>كل Preset يحمّل حالة محددة وقابلة للتعديل.</small></div><select id="preset"></select><button id="applyPreset" type="button">تطبيق</button><button id="resetAll" class="ghost" type="button">إعادة الكل</button></section>
-    <section class="workspace">
-      <form id="promptForm" class="controls" novalidate>
-        <section class="form-section" data-section="reference"><div class="section-title"><span>01</span><div><h2>الفكرة والمرجع</h2><p>النص الحر يحدد الفكرة، والقيود المنظمة أدناه هي المرجع عند التعارض.</p></div><button class="section-reset" data-reset="reference" type="button">إعادة القسم</button></div><label class="field full">الفكرة الأساسية<textarea id="idea"></textarea></label><div class="grid two"><label class="upload-zone" for="referenceImage" id="uploadZone"><input id="referenceImage" type="file" accept="image/*" hidden/><strong>صورة مرجعية اختيارية</strong><small id="fileStatus">تبقى الصورة على جهازك؛ نسجل فقط وجودها ودورها.</small></label><label class="field">دور الصورة المرجعية<select id="referenceRole"></select></label></div></section>
-        <section class="form-section" data-section="scene"><div class="section-title"><span>02</span><div><h2>المشهد العام</h2><p>هذه الصفحة للمشاهد العامة، والمختبر المتخصص معزول في صفحة مستقلة.</p></div><button class="section-reset" data-reset="scene" type="button">إعادة القسم</button></div><div class="grid two"><label class="field">نوع الالتقاط<select id="captureType"></select></label><label class="field">الوقت<select id="time"></select></label><label class="field full">ابحث في الأماكن<input id="locationSearch" type="search" placeholder="مجلس، شارع، غرفة، مقهى..."/></label><label class="field full">المكان<select id="location"></select></label><label class="field full custom-field" id="customLocationWrap" hidden>الموقع المخصص<input id="customLocation"/></label><label class="field">عدد الأشخاص<select id="people"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label><label class="field">نسبة الصورة<select id="ratio"></select></label></div></section>
-        <section class="form-section" data-section="subject"><div class="section-title"><span>03</span><div><h2>الشخص والمظهر</h2><p>اختيارات صريحة بدل الافتراضات الخفية.</p></div><button class="section-reset" data-reset="subject" type="button">إعادة القسم</button></div><div class="grid two"><label class="field">العمر الظاهر<input id="age" type="number"/></label><label class="field">الوضعية<select id="pose"></select></label><label class="field full custom-field" id="customPoseWrap" hidden>الوضعية المخصصة<input id="customPose"/></label><label class="field">التعبير<select id="expression"></select></label><label class="field">الشعر<select id="hair"></select></label><label class="field full custom-field" id="customHairWrap" hidden>الشعر المخصص<input id="customHair"/></label><label class="field">اللحية / الشارب<select id="beard"></select></label><label class="field full custom-field" id="customBeardWrap" hidden>اللحية المخصصة<input id="customBeard"/></label><label class="field">النظارة<select id="glasses"></select></label><label class="field full custom-field" id="customGlassesWrap" hidden>النظارة المخصصة<input id="customGlasses"/></label><label class="field full">ابحث في الملابس<input id="clothingSearch" type="search" placeholder="ثوب، قميص، بولو، بدلة..."/></label><label class="field full">الملابس<select id="clothing"></select></label><label class="field full custom-field" id="customClothingWrap" hidden>الملابس المخصصة<input id="customClothing"/></label></div></section>
-        <section class="form-section" data-section="camera"><div class="section-title"><span>04</span><div><h2>هندسة الكاميرا</h2><p>Yaw / Pitch / Roll والعدسة والمسافة هي المصدر الهندسي الوحيد.</p></div><button class="section-reset" data-reset="camera" type="button">إعادة القسم</button></div><div class="grid two"><label class="field">الكادر<select id="framing"></select></label><label class="field">البعد البؤري المكافئ mm<input id="focalLength" type="number"/></label><label class="field">المسافة cm<input id="distance" type="number"/></label><label class="field">Yaw °<input id="yaw" type="number"/></label><label class="field">Pitch °<input id="pitch" type="number"/></label><label class="field">Roll °<input id="roll" type="number"/></label></div></section>
-        <section class="form-section" data-section="lighting"><div class="section-title"><span>05</span><div><h2>الإضاءة والمعالجة</h2><p>المعالجة لا تنشئ ضوءًا لم يصل فعليًا إلى الجسم.</p></div><button class="section-reset" data-reset="lighting" type="button">إعادة القسم</button></div><div class="grid two"><label class="field">مصدر الضوء<select id="lightSource"></select></label><label class="field full custom-field" id="customLightSourceWrap" hidden>مصدر مخصص<input id="customLightSource"/></label><label class="field">الاتجاه<select id="lightDirection"></select></label><label class="field">Light Falloff<select id="lightFalloff"></select></label><label class="field">Exposure<select id="exposure"></select></label><label class="field">HDR<select id="hdr"></select></label><label class="field">White Balance<select id="whiteBalance"></select></label></div></section>
-        <section class="form-section" data-section="realism"><div class="section-title"><span>06</span><div><h2>موديولات الواقعية</h2><p>صارم / تلقائي / إيقاف.</p></div><button class="section-reset" data-reset="realism" type="button">إعادة القسم</button></div><div id="realismModules" class="module-grid"></div></section>
-        <section class="form-section" data-section="notes"><div class="section-title"><span>07</span><div><h2>ملاحظات</h2></div><button class="section-reset" data-reset="notes" type="button">إعادة القسم</button></div><label class="field full"><textarea id="notes"></textarea></label><div id="warnings"></div></section>
-      </form>
-      <aside class="result-panel"><div class="result-head"><div><p class="eyebrow">LIVE OUTPUT</p><h2>الـPrompt الناتج</h2></div><span id="liveState" class="live-state">VALID</span></div><div class="output-tabs"><button class="tab active" data-view="detailed" type="button">مفصل</button><button class="tab" data-view="concise" type="button">مختصر</button><button class="tab" data-view="json" type="button">JSON</button><button class="tab" data-view="negative" type="button">Negative</button><button id="copy" type="button">نسخ</button></div><pre id="output"></pre><div class="checks"><div class="checks-title"><strong>Conflict Checker</strong><span id="warningCount">0</span></div><ul id="checklist"></ul></div><p class="tip">Fatal يمنع دائمًا. Error يمنع عند Strict. Warning للتنبيه.</p></aside>
+
+    <section class="card">
+      <h2>مساحة عمل</h2>
+      <textarea id="workspace" rows="12" placeholder="اكتب أي محتوى يدويًا هنا..."></textarea>
+      <div class="actions">
+        <button id="clearWorkspace" type="button">مسح</button>
+        <a class="button secondary" href="car-selfie.html">قسم السيارات</a>
+      </div>
     </section>
   </main>
-  <script type="module" src="app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

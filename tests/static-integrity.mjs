@@ -9,46 +9,74 @@ const exists = (p) => fs.existsSync(path.join(root, p));
 
 const required = [
   'index.html','app.js','styles.css','car-selfie.html','car-selfie.js','car-selfie.css',
-  'data/catalog.js','data/presets.js','data/carSelfieCatalog.js','core/state.js','core/geometry.js',
-  'core/validation.js','core/compiler.js','core/carSelfieValidation.js','core/carSelfieCompiler.js'
+  'data/catalog.js','data/presets.js','data/carSelfieCommonCatalog.js','data/carSelfieInsideCatalog.js','data/carSelfieOutsideCatalog.js',
+  'core/state.js','core/geometry.js','core/validation.js','core/compiler.js','core/carSelfieValidation.js',
+  'core/carSelfieInsideValidation.js','core/carSelfieOutsideValidation.js','core/carSelfieCompiler.js','core/carSelfieInsideCompiler.js','core/carSelfieOutsideCompiler.js'
 ];
 for (const file of required) assert.ok(exists(file), `missing ${file}`);
+assert.equal(exists('data/carSelfieCatalog.js'), false, 'legacy mixed carSelfieCatalog.js must be deleted');
 
 const mainFiles = ['app.js','data/catalog.js','data/presets.js','core/state.js','core/validation.js','core/compiler.js'];
-const forbidden = [/vehicleScene/,/rrs-2017/,/Range Rover/,/L494/,/steering wheel/i,/dashboard glow/i,/المشهد داخل السيارة/,/داخل رنج روفر/];
-for (const file of mainFiles) for (const pattern of forbidden) assert.ok(!pattern.test(read(file)), `${file} leaked car instruction: ${pattern}`);
+const forbiddenMain = [/vehicleScene/,/rrs-2017/,/Range Rover/,/L494/,/steering wheel/i,/dashboard glow/i,/المشهد داخل السيارة/,/داخل رنج روفر/];
+for (const file of mainFiles) for (const pattern of forbiddenMain) assert.ok(!pattern.test(read(file)), `${file} leaked car instruction: ${pattern}`);
 
 const index = read('index.html');
 const carPage = read('car-selfie.html');
-const app = read('app.js');
 const carApp = read('car-selfie.js');
+const insideCatalog = read('data/carSelfieInsideCatalog.js');
+const outsideCatalog = read('data/carSelfieOutsideCatalog.js');
+const insideCompiler = read('core/carSelfieInsideCompiler.js');
+const outsideCompiler = read('core/carSelfieOutsideCompiler.js');
+
 assert.match(index, /href="car-selfie\.html"/);
-assert.match(index, /src="app\.js"/);
-assert.ok(!index.includes('src="car-selfie.js"'));
-assert.match(carPage, /src="car-selfie\.js"/);
-assert.ok(!carPage.includes('src="app.js"'));
-assert.ok(!app.includes('carSelfieCatalog') && !app.includes('carSelfieCompiler'));
-assert.ok(carApp.includes('carSelfieCatalog') && carApp.includes('carSelfieCompiler'));
-
-for (const id of ['place','weather','cameraLens','colorProfile','lowLightProcessing','hairProfile','windowState','clutterLevel','externalLight','cabinEmitter','focalLength','aperture']) {
-  assert.match(carPage, new RegExp(`id="${id}"`), `car-selfie.html missing ${id}`);
-  assert.ok(carApp.includes(id), `car-selfie.js does not wire ${id}`);
-}
-assert.match(carPage, /XIAOMI 15 ULTRA LOCK/);
+assert.match(carPage, /data-mode-select="inside"/);
+assert.match(carPage, /data-mode-select="outside"/);
+assert.match(carPage, /data-mode-only="inside"/);
+assert.match(carPage, /data-mode-only="outside"/);
+assert.match(carPage, /geometryPreview/);
+assert.match(carPage, /data-step="1"/);
+assert.match(carPage, /data-step="6"/);
+assert.match(carPage, /فيزياء نسيج الملابس/);
+assert.match(carPage, /فيزياء الشعر/);
 assert.match(carPage, /الفوضى داخل السيارة/);
-assert.match(carPage, /الأماكن/);
+assert.ok(!carPage.includes('src="app.js"'));
+assert.match(carPage, /src="car-selfie\.js"/);
 
-const carCatalog = read('data/carSelfieCatalog.js');
-assert.match(carCatalog, /focalLengthEqMm: 23/);
-assert.match(carCatalog, /focalLengthEqMm: 70/);
-assert.ok(!/focalLengthEqMm:\s*75/.test(carCatalog), 'invented 75mm optic leaked into catalog');
-assert.match(carCatalog, /Leica Authentic/);
-assert.match(carCatalog, /HAIR|densityLock|hairline/i);
+assert.match(carApp, /carSelfieInsideCatalog/);
+assert.match(carApp, /carSelfieOutsideCatalog/);
+assert.ok(!carApp.includes('option.disabled'));
+assert.ok(!carApp.includes('option.hidden'));
+assert.match(carApp, /detectCarModeFromIntent/);
+assert.match(carApp, /initialRequest.*addEventListener\('input'/s);
 
-for (const file of ['data/catalog.js','data/presets.js','data/carSelfieCatalog.js','core/state.js','core/geometry.js','core/validation.js','core/compiler.js','core/carSelfieValidation.js','core/carSelfieCompiler.js']) {
+assert.ok(!insideCatalog.includes('standingPose'), 'inside catalog leaked outside standing pose');
+assert.ok(!insideCatalog.includes('paintCondition'), 'inside catalog leaked exterior paint field');
+assert.ok(!outsideCatalog.includes('clutterLevel'), 'outside catalog leaked cabin clutter');
+assert.ok(!outsideCatalog.includes('cabinEmitter'), 'outside catalog leaked cabin emitter');
+assert.ok(!outsideCatalog.includes("seat:"), 'outside catalog leaked seat state');
+assert.ok(!insideCompiler.includes('compileOutside'));
+assert.ok(!outsideCompiler.includes('compileInside'));
+assert.ok(!insideCompiler.includes('PAINT & BODY PHYSICS'));
+assert.ok(!outsideCompiler.includes('INTERIOR CLUTTER'));
+
+const commonCatalog = read('data/carSelfieCommonCatalog.js');
+assert.match(commonCatalog, /focalLengthEqMm:\s*21/);
+assert.match(commonCatalog, /focalLengthEqMm:\s*23/);
+assert.match(commonCatalog, /focalLengthEqMm:\s*70/);
+assert.ok(!/focalLengthEqMm:\s*75/.test(commonCatalog), 'invented 75mm optic leaked into common catalog');
+assert.match(commonCatalog, /Leica Authentic/);
+assert.match(commonCatalog, /densityLock:\s*true/);
+
+const deterministicFiles = [
+  'data/catalog.js','data/presets.js','data/carSelfieCommonCatalog.js','data/carSelfieInsideCatalog.js','data/carSelfieOutsideCatalog.js',
+  'core/state.js','core/geometry.js','core/validation.js','core/compiler.js','core/carSelfieValidation.js',
+  'core/carSelfieInsideValidation.js','core/carSelfieOutsideValidation.js','core/carSelfieCompiler.js','core/carSelfieInsideCompiler.js','core/carSelfieOutsideCompiler.js'
+];
+for (const file of deterministicFiles) {
   const text = read(file);
   assert.ok(!text.includes('Math.random'), `${file} contains randomness`);
   assert.ok(!text.includes('Date.now'), `${file} contains time nondeterminism`);
+  assert.ok(!/TODO|FIXME/.test(text), `${file} contains unfinished TODO/FIXME`);
 }
 
-console.log('Static integrity OK: isolated pages, deterministic domains, Xiaomi/places/clutter fields wired, no car logic leaked into main core.');
+console.log('Static integrity OK: dual car modes isolated, no disabled option hacks, deterministic filtering, no car logic leaked into main core.');

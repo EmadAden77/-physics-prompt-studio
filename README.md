@@ -1,52 +1,54 @@
-# Physics Prompt Studio V5
+# Physics Prompt Studio V7
 
-تطبيق ويب ثابت وحتمي لبناء برومبتات صور واقعية مع فحص للتعارضات الفيزيائية. منذ V5 يوجد فصل معماري كامل بين المشاهد العامة ومختبر سيلفي السيارة.
+تطبيق ويب ثابت وحتمي لبناء برومبتات صور واقعية مع Conflict Checker وفيزياء كاميرا/إضاءة/مواد صارمة.
 
 ## الصفحات
 
-- **المشاهد العامة:** `index.html` — بورتريه، شوارع، مجالس، منازل، مقاهٍ، لقطات عفوية وغيرها. لا يحتوي على أي منطق سيارة.
-- **Car Selfie Physics Lab:** `car-selfie.html` — نطاق مستقل للسيلفي داخل المقصورة، LHD، الانعكاسات، الحركة، اليدين، الخامات والإضاءة المحلية.
+- **General Studio:** `index.html` — المشاهد العامة، دون أي منطق سيارة.
+- **Car Selfie Physics Studio:** `car-selfie.html` — مختبر مستقل بوضعين متنافيين:
+  - تصوير سيلفي داخل السيارة.
+  - تصوير ذاتي بالخارج بجانب السيارة.
 
 الرابط المنشور:
 
 https://emadaden77.github.io/-physics-prompt-studio/
 
-مختبر السيارة مباشرة:
+مختبر السيارة:
 
 https://emadaden77.github.io/-physics-prompt-studio/car-selfie.html
 
 ## مبادئ مشتركة
 
-- **Deterministic:** لا `Math.random()` ولا اعتماد على الوقت الحالي داخل Core/Data.
-- **Physical Light Causality:** مصدر الضوء الفيزيائي وحده يحدد ما يضاء، والـExposure/HDR/WB لا يخلق ضوءًا.
-- **Camera Geometry Authority:** البعد البؤري والمسافة وYaw/Pitch/Roll هي المرجع الهندسي.
-- **Strict Validation:** الأخطاء البنيوية تمنع دائمًا، والأخطاء الفيزيائية تمنع في الوضع الصارم.
-- **Controlled Imperfection:** ضوضاء حساس، edge softness، WB غير مثالي وتفاوتات طبيعية بدون تجميل اصطناعي.
+- Deterministic: لا `Math.random()` ولا اعتماد على الوقت الحالي في Data/Core.
+- Physical Light Causality: الضوء الفيزيائي يحدد ما يضاء؛ Exposure/HDR/WB لا يخلق ضوءًا.
+- Camera Geometry Authority: العدسة + المسافة + Yaw/Pitch/Roll هي السلطة الهندسية.
+- Strict Validation: الأخطاء الفيزيائية تمنع في Strict وتظهر كتنبيه في Auto.
+- Controlled Imperfection: ضوضاء، edge softness، mixed WB وتفاوتات طبيعية بدون تجميل اصطناعي.
 
-## بنية الملفات
+## بنية السيارات V7
 
-### General Studio
+### Data
 
-- `index.html`
-- `styles.css`
-- `app.js`
-- `data/catalog.js`
-- `data/presets.js`
-- `core/state.js`
-- `core/geometry.js`
-- `core/validation.js`
-- `core/compiler.js`
+- `data/carSelfieCommonCatalog.js`
+- `data/carSelfieInsideCatalog.js`
+- `data/carSelfieOutsideCatalog.js`
 
-### Car Selfie Physics Lab
+### Core
+
+- `core/carSelfieValidation.js`
+- `core/carSelfieInsideValidation.js`
+- `core/carSelfieOutsideValidation.js`
+- `core/carSelfieCompiler.js`
+- `core/carSelfieInsideCompiler.js`
+- `core/carSelfieOutsideCompiler.js`
+
+### UI
 
 - `car-selfie.html`
 - `car-selfie.css`
 - `car-selfie.js`
-- `data/carSelfieCatalog.js`
-- `core/carSelfieValidation.js`
-- `core/carSelfieCompiler.js`
 
-التفاصيل المعمارية في `docs/architecture.md`.
+التفاصيل في `docs/architecture.md`.
 
 ## الاختبار
 
@@ -54,4 +56,4 @@ https://emadaden77.github.io/-physics-prompt-studio/car-selfie.html
 npm test
 ```
 
-يشغّل Syntax Checks، اختبارات الوحدات، اختبارات الحتمية، اختبارات فيزياء السيارة، واختبار Static Integrity الذي يمنع تسرب منطق السيارة إلى النطاق العام.
+يشغّل Syntax Checks، اختبارات الوحدات، الحتمية، فصل الوضعين، فيزياء Xiaomi/الضوء/الانعكاسات/القماش/الشعر/الوجه، وStatic Integrity الذي يمنع تسرب منطق السيارة إلى الصفحة العامة أو تسرب وضع داخل السيارة إلى الخارج والعكس.

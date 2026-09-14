@@ -25,17 +25,18 @@ const PATTERNS = {
   context: /(context|background|existing|current|repository|repo|project|audience|location|time|السياق|الخلفية|المشروع|المستودع|الحالي|الجمهور|الموقع|الوقت)/i,
   constraint: /(must|must not|do not|don't|never|only|exactly|required|preserve|keep|without|لا\s|يجب|ممنوع|فقط|حصراً|حصرًا|بالضبط|حافظ|احتفظ|بدون|لا تغيّر|لا تغير)/i,
   verification: /(before final|final check|double-check|recheck|before returning|قبل الإرسال|قبل النهائي|مراجعة نهائية|راجع .* قبل|تحقق .* قبل)/i,
+  deadline: /(deadline|due|by \w+day|by \d|before \d|within \d|موعد|موعد نهائي|قبل يوم|قبل تاريخ|خلال \d|بحلول)/i,
+  source: /(source|citation|cite|reference|from the attached|from this file|مصدر|مصادر|مرجع|مراجع|استشهد|الملف المرفق)/i,
+  safety: /(safety|safe|privacy|secret|credential|password|token|pii|خصوصية|سري|سرية|كلمة مرور|بيانات حساسة|مفتاح api)/i,
+  scope: /(scope|in scope|out of scope|only change|only edit|do not touch|النطاق|ضمن النطاق|خارج النطاق|عدّل فقط|عدل فقط|لا تلمس)/i,
+  approval: /(you may|authorized|approved|permission|go ahead|ابدأ|مصرح|مخوّل|مخول|موافق|لك الصلاحية|نفّذ|نفذ)/i,
   externalAction: /(send|publish|post|deploy|merge|push|delete|remove|email|message|purchase|book|create account|invite|share|نشر|أرسل|ارسل|ادمج|ادفع|احذف|أنشئ حساب|احجز|شارك|ادعُ)/i,
-  scopeExpansion: /(and anything else|as needed|whatever else|use your judgment to add|expand scope|أي شيء آخر|ما تراه مناسباً|ما تراه مناسبًا|وسع النطاق|أضف ما يلزم)/i,
-  approval: /(you may|authorized|approved|permission|go ahead|ابدأ|مصرح|مخوّل|مخول|موافق|لك الصلاحية|نفّذ)/i
+  localAction: /(edit|modify|write file|create file|run test|build|refactor|change code|عدّل|عدل|غيّر|غير|اكتب ملف|أنشئ ملف|شغل الاختبارات|شغّل الاختبارات|ابن|ابني|أعد الهيكلة)/i,
+  scopeExpansion: /(and anything else|as needed|whatever else|use your judgment to add|expand scope|أي شيء آخر|ما تراه مناسباً|ما تراه مناسبًا|وسع النطاق|أضف ما يلزم)/i
 };
 
 function normalizeNewlines(value) {
   return String(value ?? '').replace(/\r\n?/g, '\n');
-}
-
-function compactWhitespace(value) {
-  return value.replace(/[ \t]+/g, ' ').trim();
 }
 
 function splitBlocks(prompt) {
@@ -44,10 +45,8 @@ function splitBlocks(prompt) {
     .split(/\n\s*\n+/)
     .flatMap((paragraph) => {
       const lines = paragraph.split('\n').map((line) => line.trim()).filter(Boolean);
-      if (lines.length <= 1) return [paragraph.trim()].filter(Boolean);
-      return lines;
+      return lines.length <= 1 ? [paragraph.trim()].filter(Boolean) : lines;
     })
-    .map(compactWhitespace)
     .filter(Boolean);
 
   return paragraphs.map((text, index) => ({ id: `b${index + 1}`, text, index }));
@@ -64,7 +63,7 @@ function classifyBlock(block, index) {
   if (PATTERNS.output.test(text)) return 'output_contract';
   if (PATTERNS.success.test(text)) return 'evidence_and_success';
   if (PATTERNS.routing.test(text)) return 'task_shape_routing';
-  if (PATTERNS.constraint.test(text)) return 'must_preserve_constraints';
+  if (PATTERNS.constraint.test(text) || PATTERNS.safety.test(text) || PATTERNS.scope.test(text)) return 'must_preserve_constraints';
   if (PATTERNS.context.test(text)) return 'relevant_context';
   if (index === 0 || sentenceWeight(text) >= 5) return 'outcome';
   return 'relevant_context';
@@ -72,8 +71,7 @@ function classifyBlock(block, index) {
 
 function chooseOutcome(blocks) {
   if (!blocks.length) return null;
-  const ranked = [...blocks].sort((a, b) => sentenceWeight(b.text) - sentenceWeight(a.text));
-  return ranked[0];
+  return [...blocks].sort((a, b) => sentenceWeight(b.text) - sentenceWeight(a.text))[0];
 }
 
 function uniqueByText(blocks) {
@@ -110,52 +108,65 @@ function makeSectionRecord(name, blocks) {
     };
   }
 
-  const text = blocks.map((b) => b.text).join('\n');
-  return { name, label: LABELS[name], included: true, reason: null, text };
+  return {
+    name,
+    label: LABELS[name],
+    included: true,
+    reason: null,
+    text: blocks.map((block) => block.text).join('\n')
+  };
 }
 
-function buildConstraintMap(grouped) {
-  return grouped.must_preserve_constraints.map((block, index) => ({
+function isMustPreserve(text) {
+  return [
+    PATTERNS.constraint,
+    PATTERNS.output,
+    PATTERNS.success,
+    PATTERNS.verification,
+    PATTERNS.routing,
+    PATTERNS.deadline,
+    PATTERNS.source,
+    PATTERNS.safety,
+    PATTERNS.scope,
+    PATTERNS.approval
+  ].some((pattern) => pattern.test(text));
+}
+
+function locateTargetSection(block, grouped) {
+  return SECTION_ORDER.find((name) => grouped[name].some((candidate) => candidate.id === block.id)) ?? 'relevant_context';
+}
+
+function buildConstraintMap(blocks, grouped) {
+  const material = uniqueByText(blocks.filter((block) => isMustPreserve(block.text)));
+  return material.map((block, index) => ({
     id: `constraint_${index + 1}`,
     source_block_id: block.id,
     source_text: block.text,
     mapping: 'verbatim',
-    target_section: 'must_preserve_constraints',
+    target_section: locateTargetSection(block, grouped),
     target_text: block.text
   }));
 }
 
-function findEvidence(prompt, regex) {
-  const normalized = normalizeNewlines(prompt);
-  const lines = normalized.split('\n').map((line) => line.trim()).filter(Boolean);
-  const matches = lines.filter((line) => regex.test(line));
+function findEvidence(prompt, actionPattern) {
+  const lines = normalizeNewlines(prompt).split('\n').map((line) => line.trim()).filter(Boolean);
+  const matches = lines.filter((line) => PATTERNS.approval.test(line) && actionPattern.test(line));
   return matches.length === 1 ? matches[0] : null;
 }
 
 function buildAuthority(prompt) {
-  const externalEvidence = findEvidence(prompt, new RegExp(`(?=.*${PATTERNS.externalAction.source})(?=.*${PATTERNS.approval.source}).+`, 'i'));
-  const scopeEvidence = findEvidence(prompt, new RegExp(`(?=.*${PATTERNS.scopeExpansion.source})(?=.*${PATTERNS.approval.source}).+`, 'i'));
+  const localEvidence = findEvidence(prompt, PATTERNS.localAction);
+  const externalEvidence = findEvidence(prompt, PATTERNS.externalAction);
+  const scopeEvidence = findEvidence(prompt, PATTERNS.scopeExpansion);
+
+  const record = (evidence) => evidence
+    ? { state: 'explicitly_authorized', evidence: { source_text: evidence, action_text: evidence } }
+    : { state: 'not_established', evidence: null };
 
   return {
-    local: {
-      state: 'allowed',
-      evidence: {
-        source_text: prompt,
-        action_text: 'Compile the supplied prompt locally without executing it.'
-      }
-    },
-    external: externalEvidence
-      ? {
-          state: 'explicitly_authorized',
-          evidence: { source_text: externalEvidence, action_text: externalEvidence }
-        }
-      : { state: 'not_established', evidence: null },
-    scope_expansion: scopeEvidence
-      ? {
-          state: 'explicitly_authorized',
-          evidence: { source_text: scopeEvidence, action_text: scopeEvidence }
-        }
-      : { state: 'not_established', evidence: null }
+    local: record(localEvidence),
+    external: record(externalEvidence),
+    scope_expansion: record(scopeEvidence)
   };
 }
 
@@ -179,6 +190,35 @@ function detectScopeDrift(prompt, sectionRecords) {
   return issues;
 }
 
+function countOccurrences(haystack, needle) {
+  if (!needle) return 0;
+  let count = 0;
+  let offset = 0;
+  while (true) {
+    const index = haystack.indexOf(needle, offset);
+    if (index === -1) return count;
+    count += 1;
+    offset = index + needle.length;
+  }
+}
+
+function validateAuthority(packet, errors) {
+  for (const [kind, record] of Object.entries(packet.authority ?? {})) {
+    if (!['allowed', 'explicitly_authorized'].includes(record.state)) continue;
+    if (!record.evidence) {
+      errors.push(`Authority ${kind} is ${record.state} without evidence.`);
+      continue;
+    }
+    const { source_text: sourceText, action_text: actionText } = record.evidence;
+    if (countOccurrences(packet.original_prompt, sourceText) !== 1) {
+      errors.push(`Authority ${kind} source_text must occur exactly once in original_prompt.`);
+    }
+    if (countOccurrences(sourceText, actionText) !== 1) {
+      errors.push(`Authority ${kind} action_text must occur exactly once inside source_text.`);
+    }
+  }
+}
+
 export function validatePacket(packet) {
   const errors = [];
   const warnings = [];
@@ -190,9 +230,12 @@ export function validatePacket(packet) {
   }
 
   const ids = new Set();
+  const sourceMappings = new Set();
   for (const item of packet.constraint_map ?? []) {
     if (ids.has(item.id)) errors.push(`Duplicate constraint id: ${item.id}`);
     ids.add(item.id);
+    if (sourceMappings.has(item.source_text)) errors.push(`Constraint mapped more than once: ${item.source_text}`);
+    sourceMappings.add(item.source_text);
     if (!packet.original_prompt.includes(item.source_text)) {
       errors.push(`Constraint source text not found in original prompt: ${item.id}`);
     }
@@ -201,11 +244,12 @@ export function validatePacket(packet) {
     }
   }
 
-  const requiredNames = SECTION_ORDER;
   const actualNames = packet.sections?.map((section) => section.name) ?? [];
-  if (JSON.stringify(requiredNames) !== JSON.stringify(actualNames)) {
+  if (JSON.stringify(SECTION_ORDER) !== JSON.stringify(actualNames)) {
     errors.push('Canonical sections are missing or out of order.');
   }
+
+  validateAuthority(packet, errors);
 
   if (packet.scope_drift?.length) warnings.push(...packet.scope_drift);
   if ((packet.constraint_map?.length ?? 0) === 0) {
@@ -223,7 +267,7 @@ export function compilePrompt(sourcePrompt, options = {}) {
   const blocks = splitBlocks(originalPrompt);
   const grouped = buildSections(blocks);
   const sections = SECTION_ORDER.map((name) => makeSectionRecord(name, grouped[name]));
-  const constraintMap = buildConstraintMap(grouped);
+  const constraintMap = buildConstraintMap(blocks, grouped);
   const authority = buildAuthority(originalPrompt);
   const compiledText = renderCompiledPrompt(sections);
   const scopeDrift = detectScopeDrift(originalPrompt, sections);
@@ -257,6 +301,7 @@ export function createLedger(packet) {
     constraints: packet.constraint_map.map((item) => ({
       id: item.id,
       mapping: item.mapping,
+      target_section: item.target_section,
       text: item.source_text
     })),
     assumptions: packet.assumptions,

@@ -24,10 +24,26 @@ test('maps detected must-preserve constraints exactly once', () => {
   }
 });
 
-test('does not invent external authorization', () => {
+test('treats deliverables and acceptance instructions as must-preserve', () => {
+  const source = 'Build a calculator.\nReturn JSON only.\nVerify all tests pass before final output.';
+  const packet = compilePrompt(source);
+  assert.equal(packet.constraint_map.some((item) => item.source_text === 'Return JSON only.'), true);
+  assert.equal(packet.constraint_map.some((item) => item.source_text.includes('Verify all tests pass')), true);
+});
+
+test('does not invent any authorization', () => {
   const packet = compilePrompt('Summarize this text locally.');
+  assert.equal(packet.authority.local.state, 'not_established');
   assert.equal(packet.authority.external.state, 'not_established');
   assert.equal(packet.authority.scope_expansion.state, 'not_established');
+});
+
+test('records explicit external authorization only with source evidence', () => {
+  const source = 'You are authorized to publish the generated report.';
+  const packet = compilePrompt(source);
+  assert.equal(packet.authority.external.state, 'explicitly_authorized');
+  assert.equal(packet.authority.external.evidence.source_text, source);
+  assert.equal(packet.authority.external.evidence.action_text, source);
 });
 
 test('valid packet reaches ready state', () => {

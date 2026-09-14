@@ -10,7 +10,7 @@ export function buildCarSelfieAcceptance(state = {}) {
       ? { id: 'steering-wheel-hint', label: 'حافة المقود أو أعلى العدادات ظاهرة أسفل يسار/منتصف الإطار.' }
       : { id: 'passenger-no-false-wheel', label: 'لا يظهر المقود كأنه أمام الراكب مباشرة.' };
 
-    return [
+    const items = [
       { id: 'camera-geometry', label: `منظور الكاميرا يطابق ${state.distance}cm وYaw ${state.yaw}° وPitch ${state.pitch}° وRoll ${state.roll}°.` },
       seatSideItem,
       steeringItem,
@@ -26,6 +26,15 @@ export function buildCarSelfieAcceptance(state = {}) {
       { id: 'roll-imperfection', label: 'الكادر مائل طبيعيًا 1-3 درجات وغير مستوٍ تمامًا.' },
       { id: 'natural-composition', label: 'التكوين غير متمركز بشكل مثالي ولا توجد عناصر عائمة أو تشريح مستحيل.' }
     ];
+
+    if (driver) {
+      items.push({
+        id: 'master-driver-profile',
+        label: 'ملف السائق المعتمد متحقق: المرجع للهوية فقط، سيلفي أمامي ذاتي، مقصورة L494 2017 مناسبة للفترة، كثافة الشعر ثابتة، والإضاءة لا تُخلق بالـHDR أو التعريض.'
+      });
+    }
+
+    return items;
   }
 
   return [

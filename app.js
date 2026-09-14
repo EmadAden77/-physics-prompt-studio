@@ -1,6 +1,12 @@
 import { compilePrompt, createLedger } from './core/prompt-optimizer.js';
 import { SAUDI_LOCATIONS, CLOTHING_OPTIONS, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from './core/scene-builder.js';
 import {
+  EXTRA_CLOTHING_OPTIONS,
+  extraLocationsForScene,
+  enrichLocationPrompt,
+  enrichClothingPrompt
+} from './core/expanded-catalogs.js';
+import {
   generateImagePrompt,
   SCENE_TYPES,
   CAMERA_PROFILES,
@@ -42,7 +48,7 @@ const resetButton = $('resetButton');
 
 const CATALOGS = {
   location: SAUDI_LOCATIONS,
-  clothing: CLOTHING_OPTIONS,
+  clothing: [...CLOTHING_OPTIONS, ...EXTRA_CLOTHING_OPTIONS],
   pose: SELFIE_POSES,
   angle: SELFIE_ANGLES,
   lighting: LIGHTING_PROFILES,
@@ -107,8 +113,10 @@ function applySceneCompatibility() {
   const sceneType = controls.sceneType.value || 'front_selfie';
   const compatible = compatibilitySnapshot(sceneType, CATALOGS);
   const defaults = recommendedDefaults(sceneType);
+  const expandedLocations = extraLocationsForScene(sceneType);
+  const locationOptions = [...compatible.location, ...expandedLocations];
 
-  rebuildOptionalSelect(controls.location, compatible.location, 'تلقائي — مكان سعودي عادي بدون معالم', true);
+  rebuildOptionalSelect(controls.location, locationOptions, 'تلقائي — مكان سعودي واقعي جدًا بدون معالم', true);
   rebuildOptionalSelect(controls.pose, compatible.pose, 'تلقائي — وضعية متناسقة مع نوع المشهد');
   rebuildOptionalSelect(controls.angle, compatible.angle, 'تلقائي — زاوية متناسقة مع نوع المشهد');
   rebuildOptionalSelect(controls.lighting, compatible.lighting, 'تلقائي — إضاءة متناسقة مع نوع المشهد', true);
@@ -117,7 +125,7 @@ function applySceneCompatibility() {
 }
 
 populateFlat(controls.sceneType, SCENE_TYPES);
-populateGrouped(controls.clothing, CLOTHING_OPTIONS);
+populateGrouped(controls.clothing, CATALOGS.clothing);
 populateFlat(controls.aspectRatio, ASPECT_RATIOS);
 populateFlat(controls.expression, EXPRESSIONS);
 populateFlat(controls.backgroundActivity, BACKGROUND_ACTIVITY);
@@ -143,8 +151,8 @@ function autoInput() {
     backgroundActivity: controls.backgroundActivity.value,
     realismLevel: controls.realismLevel.value,
     framing: controls.framing.value,
-    location: enforceSaudiNoLandmarks(selectedPrompt(controls.location)),
-    clothing: selectedPrompt(controls.clothing),
+    location: enforceSaudiNoLandmarks(enrichLocationPrompt(selectedPrompt(controls.location))),
+    clothing: enrichClothingPrompt(selectedPrompt(controls.clothing)),
     pose: selectedPrompt(controls.pose),
     angle: selectedPrompt(controls.angle),
     lighting: selectedPrompt(controls.lighting),
@@ -158,8 +166,8 @@ function autoInput() {
 
 function sceneForOptimizer() {
   return {
-    location: enforceSaudiNoLandmarks(selectedPrompt(controls.location)),
-    clothing: selectedPrompt(controls.clothing),
+    location: enforceSaudiNoLandmarks(enrichLocationPrompt(selectedPrompt(controls.location))),
+    clothing: enrichClothingPrompt(selectedPrompt(controls.clothing)),
     pose: selectedPrompt(controls.pose),
     angle: selectedPrompt(controls.angle),
     lighting: selectedPrompt(controls.lighting),
@@ -182,7 +190,7 @@ function setMetrics(a, b, c) {
 function renderAuto(result) {
   latestResult = { type: 'auto', data: result };
   output.value = result.prompt;
-  detailsOutput.textContent = JSON.stringify({ config: result.config, validation: result.validation }, null, 2);
+  detailsOutput.textContent = JSON.stringify({ config: result.config, realism_packet: result.realism_packet, validation: result.validation }, null, 2);
   packetOutput.textContent = JSON.stringify(result, null, 2);
   setStatus(result.validation.valid ? 'ready' : 'invalid');
   setMetrics(['الوضع', 'AUTO'], ['الأقسام', String(result.sections.length)], ['التحقق', result.validation.valid ? 'PASS' : 'FAIL']);

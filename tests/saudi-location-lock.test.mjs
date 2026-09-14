@@ -33,9 +33,11 @@ test('hard lock is merged with custom constraints exactly once', () => {
   assert.equal(second, merged);
 });
 
-test('browser app enforces the lock in both auto generation and optimizer scene context', () => {
+test('browser app enforces the lock after realism enrichment in both generation paths', () => {
   const app = fs.readFileSync('app.js', 'utf8');
-  assert.match(app, /enforceSaudiNoLandmarks\(selectedPrompt\(controls\.location\)\)/);
+  const protectedLocationExpression = /enforceSaudiNoLandmarks\(enrichLocationPrompt\(selectedPrompt\(controls\.location\)\)\)/g;
+  const matches = app.match(protectedLocationExpression) || [];
+  assert.ok(matches.length >= 2, 'Saudi landmark lock must wrap the enriched selected location in auto and optimizer paths');
   assert.match(app, /mergeSaudiNoLandmarksConstraint\(controls\.customConstraints\.value\)/);
-  assert.match(app, /مكان سعودي عادي بدون معالم/);
+  assert.match(app, /مكان سعودي .*بدون معالم/);
 });

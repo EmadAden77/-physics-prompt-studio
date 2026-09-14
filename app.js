@@ -1,77 +1,129 @@
 import { compilePrompt, createLedger } from './core/prompt-optimizer.js';
 import { SAUDI_LOCATIONS, CLOTHING_OPTIONS, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from './core/scene-builder.js';
+import {
+  generateImagePrompt,
+  SCENE_TYPES,
+  CAMERA_PROFILES,
+  ASPECT_RATIOS,
+  EXPRESSIONS,
+  BACKGROUND_ACTIVITY,
+  REALISM_LEVELS,
+  FRAMING_OPTIONS
+} from './core/prompt-generator.js';
 
-const sourcePrompt = document.getElementById('sourcePrompt');
-const surface = document.getElementById('surface');
-const compileButton = document.getElementById('compileButton');
-const clearButton = document.getElementById('clearButton');
-const copyButton = document.getElementById('copyButton');
-const downloadButton = document.getElementById('downloadButton');
-const compiledOutput = document.getElementById('compiledOutput');
-const packetOutput = document.getElementById('packetOutput');
-const ledgerOutput = document.getElementById('ledgerOutput');
-const statusBadge = document.getElementById('statusBadge');
-const constraintCount = document.getElementById('constraintCount');
-const warningCount = document.getElementById('warningCount');
-const surfaceValue = document.getElementById('surfaceValue');
-const sceneLocation = document.getElementById('sceneLocation');
-const sceneClothing = document.getElementById('sceneClothing');
-const scenePose = document.getElementById('scenePose');
-const sceneAngle = document.getElementById('sceneAngle');
-const sceneLighting = document.getElementById('sceneLighting');
-const lightingNotes = document.getElementById('lightingNotes');
+const $ = (id) => document.getElementById(id);
+const controls = {
+  sceneType: $('sceneType'), location: $('sceneLocation'), clothing: $('sceneClothing'), pose: $('scenePose'), angle: $('sceneAngle'),
+  lighting: $('sceneLighting'), lightingNotes: $('lightingNotes'), camera: $('cameraProfile'), aspectRatio: $('aspectRatio'),
+  expression: $('expression'), backgroundActivity: $('backgroundActivity'), realismLevel: $('realismLevel'), framing: $('framing'),
+  cameraDistance: $('cameraDistance'), description: $('sceneDescription'), customConstraints: $('customConstraints'), identityReference: $('identityReference')
+};
+const sourcePrompt = $('sourcePrompt');
+const surface = $('surface');
+const output = $('promptOutput');
+const detailsOutput = $('detailsOutput');
+const packetOutput = $('packetOutput');
+const statusBadge = $('statusBadge');
+const metricOneLabel = $('metricOneLabel');
+const metricOneValue = $('metricOneValue');
+const metricTwoLabel = $('metricTwoLabel');
+const metricTwoValue = $('metricTwoValue');
+const metricThreeLabel = $('metricThreeLabel');
+const metricThreeValue = $('metricThreeValue');
+const copyButton = $('copyButton');
+const txtButton = $('txtButton');
+const jsonButton = $('jsonButton');
+const generateButton = $('generateButton');
+const optimizeButton = $('optimizeButton');
+const randomButton = $('randomButton');
+const resetButton = $('resetButton');
 
-let latestPacket = null;
+let currentMode = 'auto';
+let latestResult = null;
+let generateTimer = null;
 
-function populateSelect(select, options) {
-  const grouped = new Map();
+function populateGrouped(select, options) {
+  const groups = new Map();
   for (const item of options) {
     const group = item.group || 'خيارات';
-    if (!grouped.has(group)) grouped.set(group, []);
-    grouped.get(group).push(item);
+    if (!groups.has(group)) groups.set(group, []);
+    groups.get(group).push(item);
   }
-  for (const [group, items] of grouped) {
+  for (const [label, items] of groups) {
     const optgroup = document.createElement('optgroup');
-    optgroup.label = group;
-    for (const item of items) {
-      const option = document.createElement('option');
-      option.value = item.value;
-      option.textContent = item.label;
-      option.dataset.prompt = item.prompt;
-      optgroup.append(option);
-    }
+    optgroup.label = label;
+    for (const item of items) optgroup.append(makeOption(item));
     select.append(optgroup);
   }
 }
 
-function populateFlatSelect(select, options) {
-  for (const item of options) {
-    const option = document.createElement('option');
-    option.value = item.value;
-    option.textContent = item.label;
-    option.dataset.prompt = item.prompt;
-    select.append(option);
-  }
+function populateFlat(select, options) {
+  for (const item of options) select.append(makeOption(item));
 }
 
-populateSelect(sceneLocation, SAUDI_LOCATIONS);
-populateSelect(sceneClothing, CLOTHING_OPTIONS);
-populateFlatSelect(scenePose, SELFIE_POSES);
-populateFlatSelect(sceneAngle, SELFIE_ANGLES);
-populateSelect(sceneLighting, LIGHTING_PROFILES);
+function makeOption(item) {
+  const option = document.createElement('option');
+  option.value = item.value;
+  option.textContent = item.label;
+  option.dataset.prompt = item.prompt || '';
+  return option;
+}
+
+populateGrouped(controls.location, SAUDI_LOCATIONS);
+populateGrouped(controls.clothing, CLOTHING_OPTIONS);
+populateFlat(controls.pose, SELFIE_POSES);
+populateFlat(controls.angle, SELFIE_ANGLES);
+populateGrouped(controls.lighting, LIGHTING_PROFILES);
+populateFlat(controls.sceneType, SCENE_TYPES);
+populateFlat(controls.camera, CAMERA_PROFILES);
+populateFlat(controls.aspectRatio, ASPECT_RATIOS);
+populateFlat(controls.expression, EXPRESSIONS);
+populateFlat(controls.backgroundActivity, BACKGROUND_ACTIVITY);
+populateFlat(controls.realismLevel, REALISM_LEVELS);
+populateFlat(controls.framing, FRAMING_OPTIONS);
+
+controls.sceneType.value = 'front_selfie';
+controls.camera.value = 'xiaomi15_front';
+controls.aspectRatio.value = '9:16';
+controls.expression.value = 'neutral';
+controls.backgroundActivity.value = 'normal';
+controls.realismLevel.value = 'strict';
+controls.framing.value = 'chest_up';
 
 function selectedPrompt(select) {
   return select.selectedOptions[0]?.dataset.prompt || '';
 }
 
-function buildScene() {
+function autoInput() {
   return {
-    location: selectedPrompt(sceneLocation),
-    clothing: selectedPrompt(sceneClothing),
-    pose: selectedPrompt(scenePose),
-    angle: selectedPrompt(sceneAngle),
-    lighting: selectedPrompt(sceneLighting),
-    lighting_notes: lightingNotes.value.trim()
+    sceneType: controls.sceneType.value,
+    camera: controls.camera.value,
+    aspectRatio: controls.aspectRatio.value,
+    expression: controls.expression.value,
+    backgroundActivity: controls.backgroundActivity.value,
+    realismLevel: controls.realismLevel.value,
+    framing: controls.framing.value,
+    location: selectedPrompt(controls.location),
+    clothing: selectedPrompt(controls.clothing),
+    pose: selectedPrompt(controls.pose),
+    angle: selectedPrompt(controls.angle),
+    lighting: selectedPrompt(controls.lighting),
+    lightingNotes: controls.lightingNotes.value,
+    cameraDistance: controls.cameraDistance.value,
+    description: controls.description.value,
+    customConstraints: controls.customConstraints.value,
+    identityReference: controls.identityReference.checked
+  };
+}
+
+function sceneForOptimizer() {
+  return {
+    location: selectedPrompt(controls.location),
+    clothing: selectedPrompt(controls.clothing),
+    pose: selectedPrompt(controls.pose),
+    angle: selectedPrompt(controls.angle),
+    lighting: selectedPrompt(controls.lighting),
+    lighting_notes: controls.lightingNotes.value.trim()
   };
 }
 
@@ -80,93 +132,151 @@ function setStatus(status) {
   statusBadge.textContent = status.toUpperCase();
 }
 
-function render(packet) {
-  latestPacket = packet;
-  const ledger = createLedger(packet);
-  compiledOutput.value = packet.compiled_prompt.text;
-  packetOutput.textContent = JSON.stringify(packet, null, 2);
-  ledgerOutput.textContent = JSON.stringify(ledger, null, 2);
-  constraintCount.textContent = String(packet.constraint_map.length);
-  warningCount.textContent = String(packet.validation.warnings.length);
-  surfaceValue.textContent = packet.target_surface;
-  setStatus(packet.status);
-  copyButton.disabled = !packet.compiled_prompt.text;
-  downloadButton.disabled = false;
+function setMetrics(a, b, c) {
+  [[metricOneLabel, metricOneValue, a], [metricTwoLabel, metricTwoValue, b], [metricThreeLabel, metricThreeValue, c]].forEach(([label, value, item]) => {
+    label.textContent = item[0];
+    value.textContent = item[1];
+  });
 }
 
-function compile() {
+function renderAuto(result) {
+  latestResult = { type: 'auto', data: result };
+  output.value = result.prompt;
+  detailsOutput.textContent = JSON.stringify({ config: result.config, validation: result.validation }, null, 2);
+  packetOutput.textContent = JSON.stringify(result, null, 2);
+  setStatus(result.validation.valid ? 'ready' : 'invalid');
+  setMetrics(['الوضع', 'AUTO'], ['الأقسام', String(result.sections.length)], ['التحقق', result.validation.valid ? 'PASS' : 'FAIL']);
+  enableExports(Boolean(result.prompt));
+}
+
+function generateNow() {
+  if (currentMode !== 'auto') return;
+  renderAuto(generateImagePrompt(autoInput()));
+}
+
+function scheduleGenerate() {
+  if (currentMode !== 'auto') return;
+  clearTimeout(generateTimer);
+  generateTimer = setTimeout(generateNow, 90);
+}
+
+function optimizeNow() {
   const prompt = sourcePrompt.value;
   if (!prompt.trim()) {
-    latestPacket = null;
-    compiledOutput.value = '';
-    packetOutput.textContent = 'أدخل Prompt أولاً.';
-    ledgerOutput.textContent = 'أدخل Prompt أولاً.';
-    constraintCount.textContent = '0';
-    warningCount.textContent = '0';
-    surfaceValue.textContent = '—';
     setStatus('invalid');
-    copyButton.disabled = true;
-    downloadButton.disabled = true;
+    output.value = '';
+    detailsOutput.textContent = 'ألصق Prompt موجود أولاً.';
+    packetOutput.textContent = 'لا توجد نتيجة.';
+    enableExports(false);
     sourcePrompt.focus();
     return;
   }
-  render(compilePrompt(prompt, { surface: surface.value, scene: buildScene() }));
+  const packet = compilePrompt(prompt, { surface: surface.value, scene: sceneForOptimizer() });
+  latestResult = { type: 'optimize', data: packet };
+  output.value = packet.compiled_prompt.text;
+  detailsOutput.textContent = JSON.stringify(createLedger(packet), null, 2);
+  packetOutput.textContent = JSON.stringify(packet, null, 2);
+  setStatus(packet.status);
+  setMetrics(['الوضع', 'OPTIMIZE'], ['القيود', String(packet.constraint_map.length)], ['التحقق', packet.validation.valid ? 'PASS' : 'FAIL']);
+  enableExports(Boolean(packet.compiled_prompt.text));
 }
 
-function reset() {
+function enableExports(enabled) {
+  copyButton.disabled = !enabled;
+  txtButton.disabled = !enabled;
+  jsonButton.disabled = !enabled;
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('[data-mode]').forEach((button) => button.classList.toggle('active', button.dataset.mode === mode));
+  $('autoPanel').hidden = mode !== 'auto';
+  $('optimizerPanel').hidden = mode !== 'optimize';
+  if (mode === 'auto') generateNow();
+  else {
+    output.value = '';
+    detailsOutput.textContent = 'ألصق Prompt واضغط “تحسين Prompt”.';
+    packetOutput.textContent = 'لا توجد نتيجة بعد.';
+    setStatus('idle');
+    setMetrics(['الوضع', 'OPTIMIZE'], ['القيود', '0'], ['التحقق', '—']);
+    enableExports(false);
+  }
+}
+
+function randomOption(select) {
+  const options = [...select.options].filter((option) => option.value);
+  if (!options.length) return;
+  select.value = options[Math.floor(Math.random() * options.length)].value;
+}
+
+function randomize() {
+  [controls.location, controls.clothing, controls.pose, controls.angle, controls.lighting, controls.expression, controls.backgroundActivity, controls.framing].forEach(randomOption);
+  generateNow();
+}
+
+function resetAll() {
+  controls.sceneType.value = 'front_selfie';
+  controls.location.value = '';
+  controls.clothing.value = '';
+  controls.pose.value = '';
+  controls.angle.value = '';
+  controls.lighting.value = '';
+  controls.lightingNotes.value = '';
+  controls.camera.value = 'xiaomi15_front';
+  controls.aspectRatio.value = '9:16';
+  controls.expression.value = 'neutral';
+  controls.backgroundActivity.value = 'normal';
+  controls.realismLevel.value = 'strict';
+  controls.framing.value = 'chest_up';
+  controls.cameraDistance.value = '';
+  controls.description.value = '';
+  controls.customConstraints.value = '';
+  controls.identityReference.checked = true;
   sourcePrompt.value = '';
   surface.value = 'unknown';
-  sceneLocation.value = '';
-  sceneClothing.value = '';
-  scenePose.value = '';
-  sceneAngle.value = '';
-  sceneLighting.value = '';
-  lightingNotes.value = '';
-  compiledOutput.value = '';
-  packetOutput.textContent = 'لا توجد نتيجة بعد.';
-  ledgerOutput.textContent = 'لا توجد نتيجة بعد.';
-  constraintCount.textContent = '0';
-  warningCount.textContent = '0';
-  surfaceValue.textContent = '—';
-  latestPacket = null;
-  setStatus('idle');
-  copyButton.disabled = true;
-  downloadButton.disabled = true;
-  sourcePrompt.focus();
+  if (currentMode === 'auto') generateNow();
+  else setMode('optimize');
 }
 
-async function copyCompiled() {
-  if (!latestPacket?.compiled_prompt.text) return;
-  await navigator.clipboard.writeText(latestPacket.compiled_prompt.text);
-  const original = copyButton.textContent;
+async function copyPrompt() {
+  const text = output.value;
+  if (!text) return;
+  await navigator.clipboard.writeText(text);
+  const before = copyButton.textContent;
   copyButton.textContent = 'تم النسخ ✓';
-  setTimeout(() => { copyButton.textContent = original; }, 1400);
+  setTimeout(() => { copyButton.textContent = before; }, 1300);
 }
 
-function downloadPacket() {
-  if (!latestPacket) return;
-  const blob = new Blob([JSON.stringify(latestPacket, null, 2)], { type: 'application/json;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
+function download(filename, content, type) {
+  const url = URL.createObjectURL(new Blob([content], { type }));
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = 'prompt-optimizer-packet.json';
+  anchor.download = filename;
   document.body.append(anchor);
   anchor.click();
   anchor.remove();
   URL.revokeObjectURL(url);
 }
 
-function switchTab(button) {
-  const target = button.dataset.tab;
+copyButton.addEventListener('click', copyPrompt);
+txtButton.addEventListener('click', () => download('physics-prompt-studio.txt', output.value, 'text/plain;charset=utf-8'));
+jsonButton.addEventListener('click', () => latestResult && download('physics-prompt-studio.json', JSON.stringify(latestResult.data, null, 2), 'application/json;charset=utf-8'));
+generateButton.addEventListener('click', generateNow);
+optimizeButton.addEventListener('click', optimizeNow);
+randomButton.addEventListener('click', randomize);
+resetButton.addEventListener('click', resetAll);
+document.querySelectorAll('[data-mode]').forEach((button) => button.addEventListener('click', () => setMode(button.dataset.mode)));
+document.querySelectorAll('.tab').forEach((button) => button.addEventListener('click', () => {
   document.querySelectorAll('.tab').forEach((tab) => tab.classList.toggle('active', tab === button));
-  document.querySelectorAll('.tab-panel').forEach((panel) => panel.classList.toggle('active', panel.dataset.panel === target));
-}
-
-compileButton.addEventListener('click', compile);
-clearButton.addEventListener('click', reset);
-copyButton.addEventListener('click', copyCompiled);
-downloadButton.addEventListener('click', downloadPacket);
-document.querySelectorAll('.tab').forEach((tab) => tab.addEventListener('click', () => switchTab(tab)));
-sourcePrompt.addEventListener('keydown', (event) => {
-  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') compile();
+  document.querySelectorAll('.tab-panel').forEach((panel) => panel.classList.toggle('active', panel.dataset.panel === button.dataset.tab));
+}));
+Object.values(controls).forEach((control) => {
+  if (!control) return;
+  control.addEventListener('change', scheduleGenerate);
+  control.addEventListener('input', scheduleGenerate);
 });
+sourcePrompt.addEventListener('keydown', (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') optimizeNow();
+});
+
+setMode('auto');

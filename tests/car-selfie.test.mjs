@@ -9,7 +9,6 @@ import { compileCarSelfieDetailed, compileCarSelfieJson, compileCarSelfieNegativ
 const inside = (patch = {}) => normalizeCarState({ ...structuredClone(INSIDE_DEFAULT_STATE), ...patch, mode: 'inside' });
 const outside = (patch = {}) => normalizeCarState({ ...structuredClone(OUTSIDE_DEFAULT_STATE), ...patch, mode: 'outside' });
 
-// Isolation
 test('mode detection is deterministic', () => {
   assert.equal(detectCarModeFromIntent('واقف بجانب السيارة', 'inside'), 'outside');
   assert.equal(detectCarModeFromIntent('سيلفي داخل السيارة', 'outside'), 'inside');
@@ -44,7 +43,6 @@ test('outside compiler does not leak cabin clutter or seating instructions', () 
   assert.doesNotMatch(out, /VEHICLE & SEATING:/);
 });
 
-// Camera
 test('Xiaomi 15 Ultra front and rear optical authority is correct', () => {
   assert.equal(XIAOMI_15_ULTRA_PROFILE.front.focalLengthEqMm, 21);
   assert.equal(XIAOMI_15_ULTRA_PROFILE.front.aperture, 2.0);
@@ -92,7 +90,6 @@ test('hardware focal and aperture override attempted drift', () => {
   assert.equal(s.aperture, 1.8);
 });
 
-// Intent and filtering
 test('inside intent stays deterministic and keeps front camera', () => {
   const a = analyzeInsideIntent('سيلفي ليلي داخل السيارة متوقفة بثوب أبيض وفوضى خفيفة');
   const b = analyzeInsideIntent('سيلفي ليلي داخل السيارة متوقفة بثوب أبيض وفوضى خفيفة');
@@ -109,7 +106,6 @@ test('outside intent selects standing pose from text', () => {
   assert.equal(r.recommended.mode, 'outside');
 });
 
-// Physics
 test('inside handheld selfie enforces arm reach', () => {
   const s = inside({ captureMode: 'handheld-front', distance: 70 });
   assert.ok(validateCarState(s).some((item) => item.code === 'INSIDE_CAMERA_DISTANCE'));
@@ -181,6 +177,28 @@ test('strict blocks errors while auto reports without blocking', () => {
 test('negative prompt is mode-aware', () => {
   assert.match(compileCarSelfieNegative(inside()), /no exterior standing pose/i);
   assert.match(compileCarSelfieNegative(outside()), /no cabin clutter/i);
+});
+
+test('mandatory Anti-AI-Tells are emitted in both modes', () => {
+  for (const s of [inside(), outside()]) {
+    const out = compileCarSelfieDetailed(s);
+    assert.match(out, /ANTI-AI-TELLS:/);
+    assert.match(out, /skin pores/i);
+    assert.match(out, /facial lines/i);
+    assert.match(out, /stray hairs/i);
+    assert.match(out, /corneal reflections/i);
+    assert.match(out, /fabric fibers/i);
+    assert.match(out, /natural asymmetries|natural texture/i);
+  }
+});
+
+test('negative prompt contains the mandatory anti-AI blacklist', () => {
+  for (const s of [inside(), outside()]) {
+    const neg = compileCarSelfieNegative(s);
+    for (const token of ['AI-generated look','plastic skin','over-smoothed skin','symmetric face','perfectly styled hair','glossy hair','uniform fabric','no wrinkles','HDR overprocessing','teal-orange grading','dual shadows without dual sources','floating objects','3D render','airbrushed','beauty filter','artificial depth of field','fake lens flare','perfect composition','centered framing','dead eyes','missing corneal reflections','extra fingers','deformed hands','gibberish text','watermark']) {
+      assert.ok(neg.toLowerCase().includes(token.toLowerCase()), `missing anti-AI token: ${token}`);
+    }
+  }
 });
 
 test('JSON output is deterministic and records inactive mode exclusion', () => {

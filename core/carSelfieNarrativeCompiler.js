@@ -105,7 +105,7 @@ function narrativeParts(state, mode, compression = 0) {
 
   const identitySentence = masterDriver && state.referenceAttached
     ? compression >= 1
-      ? 'The reference fixes identity only, including facial structure, asymmetry, hairline and facial-hair pattern.'
+      ? 'The reference defines identity only, including facial structure, asymmetry, hairline and facial-hair pattern.'
       : 'The attached reference defines identity only: facial structure, asymmetry, skin tone, hairline, hair density and facial-hair pattern stay faithful, while pose, clothing, background and lighting come from this scene.'
     : '';
 
@@ -127,14 +127,16 @@ function narrativeParts(state, mode, compression = 0) {
 
   let modeStory;
   if (inside) {
-    const seat = option(INSIDE_CATALOG, 'seat', state.seat);
     const clutter = CLUTTER_BUDGET[state.clutterLevel] || CLUTTER_BUDGET.light;
-    const periodCue = masterDriver && state.vehicleProfile === master.vehicleLock.vehicleProfile
-      ? compression >= 1
-        ? 'Its Ebony/Ivory cabin is period-correct for 2017, with no newer-generation interior.'
-        : 'The Ebony/Ivory cabin is period-correct for 2017, with Ivory perforated leather, dark polished wood, realistic seat compression and no newer-generation dashboard or steering design.'
-      : '';
-    modeStory = `The subject is ${compactPhrase(seat?.prompt || 'seated naturally in the front cabin', 9)} inside ${compactPhrase(vehicle?.insidePrompt || 'the parked vehicle', 10)}, ${compactPhrase(vehicleState?.prompt || 'fully stationary', 5)}. ${periodCue} The cabin looks ordinary and controlled: ${clutter}. Every visible loose item rests naturally on a real surface under gravity.`;
+    if (masterDriver && state.vehicleProfile === master.vehicleLock.vehicleProfile) {
+      const periodCue = compression >= 1
+        ? 'Its 2017 Ebony/Ivory cabin is period-correct, with no newer-generation interior.'
+        : 'Its Ebony/Ivory cabin is period-correct for 2017, with Ivory perforated leather, dark polished wood, realistic seat compression and no newer-generation dashboard or steering design.';
+      modeStory = `He sits naturally in the front-left driver seat of a parked white 2017 Range Rover Sport L494. ${periodCue} The cabin stays controlled: ${clutter}. Visible loose items rest on real surfaces under gravity.`;
+    } else {
+      const seat = option(INSIDE_CATALOG, 'seat', state.seat);
+      modeStory = `The subject is ${compactPhrase(seat?.prompt || 'seated naturally in the front cabin', 9)} inside ${compactPhrase(vehicle?.insidePrompt || 'the parked vehicle', 10)}, ${compactPhrase(vehicleState?.prompt || 'fully stationary', 5)}. The cabin looks ordinary and controlled: ${clutter}. Every visible loose item rests naturally on a real surface under gravity.`;
+    }
   } else {
     const pose = option(OUTSIDE_CATALOG, 'standingPose', state.standingPose);
     modeStory = `The subject is beside ${compactPhrase(vehicle?.outsidePrompt || 'the parked vehicle', 10)}, ${compactPhrase(vehicleState?.prompt || 'fully stationary', 5)}, ${compactPhrase(pose?.prompt || 'standing naturally beside it', 9)}. Paint and glass carry restrained environmental reflections, while the tires sit firmly on the ground with ordinary contact shadows.`;
@@ -142,8 +144,8 @@ function narrativeParts(state, mode, compression = 0) {
 
   const finish = masterDriver
     ? compression >= 1
-      ? `It looks like an ordinary unedited Xiaomi night selfie, slightly imperfect and off-center.${notes ? ` Detail: ${notes}.` : ''}`
-      : `The result feels like an ordinary unedited Xiaomi front-camera night photo, with subtle shadow noise, mild edge softness, natural skin and material texture, slightly off-center handheld framing and no commercial polish.${notes ? ` A small requested detail remains natural: ${notes}.` : ''}`
+      ? `It looks like an unedited Xiaomi night selfie with fabric fibers, corneal catchlights and off-center framing.${notes ? ` Detail: ${notes}.` : ''}`
+      : `The result feels like an ordinary unedited Xiaomi front-camera night photo, with subtle shadow noise, mild edge softness, visible fabric fibers, corneal catchlights, natural skin and material texture, slightly off-center handheld framing and no commercial polish.${notes ? ` A small requested detail remains natural: ${notes}.` : ''}`
     : `The frame is slightly off-center and naturally imperfect, with fabric fibers, corneal catchlights, believable hands and no advertising polish.${notes ? ` A small requested detail remains natural: ${notes}.` : ''}`;
 
   return [subject, camera, environment, modeStory, anchorFor(state, mode), finish];

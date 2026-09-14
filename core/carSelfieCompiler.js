@@ -1,211 +1,102 @@
 import {
-  CAR_CATALOG,
-  CAR_DEFAULT_STATE,
-  XIAOMI_15_ULTRA_PROFILE,
-  analyzeCarSelfieIntent,
+  commonOption,
   getCameraOptic,
-  getClutterItems,
-  getFabricProfile
-} from '../data/carSelfieCatalog.js';
-import { normalizeCarState, carValidationStatus } from './carSelfieValidation.js';
+  getClothing,
+  getFabric,
+  getVehicle
+} from '../data/carSelfieCommonCatalog.js';
+import { analyzeInsideIntent } from '../data/carSelfieInsideCatalog.js';
+import { analyzeOutsideIntent } from '../data/carSelfieOutsideCatalog.js';
+import { carValidationStatus, normalizeCarState } from './carSelfieValidation.js';
+import { compileInsideNegative, compileInsideSections } from './carSelfieInsideCompiler.js';
+import { compileOutsideNegative, compileOutsideSections } from './carSelfieOutsideCompiler.js';
 
-const opt = (field, id) => (CAR_CATALOG[field] || []).find((item) => item.id === id);
-const p = (field, id) => opt(field, id)?.prompt || '';
+const prompt = (field, id) => commonOption(field, id)?.prompt || '';
 
-function referenceRule(s) {
-  if (s.referenceRole === 'none') return 'do not use a reference image';
-  if (s.referenceRole === 'identity-only') return 'use the attached reference only for identity. Preserve facial structure, head shape, apparent age, natural asymmetry, skin tone, eye spacing, nose, jaw, hairline, visible hair density, beard density and beard gaps. Do not copy pose, clothing, background, camera angle or lighting.';
-  return 'use the attached reference for identity and visible appearance only. Cabin, camera, physical lighting and geometry rules remain authoritative.';
+export function analyzeCarSelfieIntent(request = '', mode = 'inside', baseState = {}) {
+  return mode === 'outside' ? analyzeOutsideIntent(request, baseState) : analyzeInsideIntent(request, baseState);
 }
 
-function cameraRule(s) {
-  const lens = getCameraOptic(s.cameraLens);
-  const color = opt('colorProfile', s.colorProfile);
-  const low = opt('lowLightProcessing', s.lowLightProcessing);
-  if (!lens) return '';
-  const sideRule = lens.side === 'front'
-    ? 'This is the real front camera path: no Leica rear-lens branding, no OIS claim, fixed focus, and front-camera perspective behavior.'
-    : 'This is a rear Leica optical path. Leica Authentic/Vibrant may affect color rendering only; it cannot change geometry, exposure causality or the physical light that reached the sensor.';
-  return `${lens.prompt}. Fixed optical values: ${lens.focalLengthEqMm}mm equivalent, f/${lens.aperture}. ${color?.prompt || ''}. ${low?.prompt || ''}. ${sideRule}`;
+function referenceRule(state) {
+  if (state.referenceRole === 'none') return 'do not use a reference image';
+  if (state.referenceRole === 'identity-appearance') return 'use the attached reference for identity and visible appearance only; all camera, mode, vehicle, lighting and physics rules remain authoritative';
+  return 'use the attached reference for identity only; preserve identity-defining facial structure, apparent age, natural asymmetry, skin tone, hairline, visible hair density and facial-hair pattern; do not copy pose, clothing, background, camera angle or lighting';
 }
 
-function perspectiveRule(s) {
-  const lens = getCameraOptic(s.cameraLens);
-  if (!lens) return '';
-  if (lens.focalLengthEqMm <= 23) return 'Wide smartphone perspective must be physically visible: nearby facial planes may show mild natural perspective expansion, but no artificial face slimming, no impossible edge stretching and no DSLR-like compression.';
-  if (lens.focalLengthEqMm >= 70) return 'Telephoto perspective must show real compression and a narrower field of view. Do not fake a wide cabin view while keeping 70–100mm optics.';
-  return 'Perspective must match the selected focal length and subject distance.';
-}
+function commonSections(state) {
+  const lens = getCameraOptic(state.cameraLens);
+  const clothing = getClothing(state.clothing);
+  const fabric = getFabric(state.fabricType);
+  const place = commonOption('place', state.place);
+  const cameraDistortion = lens?.side === 'front'
+    ? 'Preserve normal wide front-camera perspective: nearer facial planes may appear slightly larger, but do not beautify, flatten or telephoto-compress the face.'
+    : 'Use perspective compression appropriate to the selected rear lens and real subject distance; do not simulate shallow DSLR bokeh beyond smartphone optics/computation.';
 
-function motionRule(s) {
-  const motion = opt('vehicleState', s.vehicleState);
-  if (!motion?.moving) return 'The vehicle is stationary. No wheel-rotation cues, road streaks, inertial lean or motion blur may appear. Loose items settle under gravity with ordinary contact.';
-  return 'The vehicle is moving. The phone must be physically mounted for the driver. Exterior motion softness follows the direction and magnitude of motion only. Shutter time must remain short enough to preserve a believable face; small loose objects may shift only in directions explained by acceleration, braking or turns.';
-}
-
-function handheldRule(s) {
-  const capture = opt('captureMode', s.captureMode);
-  if (!capture?.phoneHeld) return 'The phone is physically mounted. No hand or arm may pretend to hold the camera, and the camera viewpoint must coincide with a plausible mount location.';
-  if (capture.id === 'handheld-front') return 'The subject genuinely holds the phone at about 30–50 cm. Shoulder rotation, elbow flexion, wrist pitch and phone orientation must all be reachable. The phone-holding hand may remain outside frame, but no floating wrist, partial phantom arm or impossible camera position is allowed.';
-  return 'The phone is genuinely hand-held for the mirror composition. The arm must remain anatomically supported and the device orientation must match the reflection path.';
-}
-
-function seatGeometryRule(s) {
-  const seat = opt('seat', s.seat);
-  if (seat?.role === 'driver') return 'LEFT-HAND-DRIVE SPATIAL LOCK: subject in front-left driver seat; steering wheel physically left; instrument cluster behind that wheel; center console physically to the driver’s right; driver door and side window on the driver’s left. Never mirror into right-hand drive.';
-  return 'LEFT-HAND-DRIVE CABIN LOCK: subject in front-right passenger seat; steering wheel and instrument cluster remain on the physical left side of the cabin; center console lies to the passenger’s left. Never mirror the cabin.';
-}
-
-function lightRule(s) {
-  const external = opt('externalLight', s.externalLight);
-  const emitter = opt('cabinEmitter', s.cabinEmitter);
-  return `${external?.prompt || ''}. ${emitter?.prompt || ''}. Every visible shadow, highlight and reflection must be traceable to one of these selected sources. A second shadow direction is permitted only if a second real selected source reaches that surface. Exposure, HDR and denoising reveal or combine captured signal; they never create illumination on a surface that received none.`;
-}
-
-function reflectionRule(s) {
-  if (s.captureMode === 'rearview-mirror') return 'REAR-VIEW MIRROR LAW: treat the mirror as one real reflective plane. Camera ray, mirror normal and reflected subject ray must obey equal incidence/reflection angles. The reflected face, phone and cabin orientation must remain coherent; no duplicated subject, impossible hidden phone or contradictory left/right cabin.';
-  return 'GLASS REFLECTION LAW: windshield, side glass and panoramic roof show angle-dependent reflections only from exterior sky/lights or cabin sources they can physically see. Polished metal/wood highlights follow surface normals. No decorative floating highlights or duplicated objects.';
-}
-
-function placeRule(s) {
-  const place = opt('place', s.place);
-  const weather = opt('weather', s.weather);
-  if (!place) return '';
-  return `${place.prompt}. Ground/road: ${place.surface}. Edge treatment: ${place.curb}. Vegetation: ${place.vegetation}. Background people/privacy: ${place.people}. Weather/air: ${weather?.prompt || ''}. Keep the Saudi environment generic: no named city, famous landmark, readable venue branding or city-defining skyline.`;
-}
-
-function clothingRule(s) {
-  const clothing = opt('clothing', s.clothing);
-  const fabric = getFabricProfile(s.clothing);
-  if (!clothing || !fabric) return '';
-  return `${clothing.prompt}. FABRIC PHYSICS (${fabric.label}): surface ${fabric.roughness}; folds ${fabric.wrinkle}; optical response ${fabric.light}; seated/contact behavior ${fabric.compression}. Fabric may not shine, wrinkle or drape like a different material.`;
-}
-
-function hairRule(s) {
-  const hair = opt('hairProfile', s.hairProfile);
-  const window = opt('windowState', s.windowState);
-  const moving = opt('vehicleState', s.vehicleState)?.moving;
-  const airflow = s.windowState === 'closed'
-    ? 'Windows are closed: exterior wind cannot move hair. Only tiny gravity/pose settling is allowed.'
-    : moving
-      ? 'Real airflow may enter from the selected open window. Only exposed loose strands move in the physically correct direction and magnitude.'
-      : 'The open window allows only weak ambient airflow; do not invent dramatic hair motion.';
-  return `${hair?.prompt || ''}. HAIR DENSITY LOCK: visible density, hairline coverage and strand population remain constant across lighting, angle and motion. Specular highlights follow strand tangents and real light direction; brightness changes may not masquerade as density changes. ${hair?.airflowResponse || ''}. ${window?.prompt || ''}. ${airflow}`;
-}
-
-function faceRule(s) {
-  const expression = opt('expression', s.expression);
-  return `${expression?.prompt || ''}. Muscle basis: ${expression?.muscleRule || ''}. FACIAL ANATOMY: eyelids, pupils, sclera exposure, mouth corners, cheeks and jaw must move as one anatomically coupled expression. Preserve natural asymmetry. Skin must retain pores, fine lines, peach fuzz, tiny tonal variation and physically plausible subsurface/specular response. No waxy smoothing, glass eyes, doubled catchlights without matching sources, or uncanny symmetry.`;
-}
-
-function clutterRule(s) {
-  const level = opt('clutterLevel', s.clutterLevel);
-  const items = getClutterItems(s.clutterLevel);
-  if (!level) return '';
-  if (!items.length) return `${level.prompt}. No loose objects should appear unless the user notes explicitly add them.`;
-  const descriptions = items.map((item) => `${item.prompt}; ${item.physics}`).join(' | ');
-  return `${level.prompt}. CLUTTER SET: ${descriptions}. Gravity is always downward relative to the vehicle floor. Every item needs real support/contact, contact shadow and material-appropriate reflection. During motion, inertia may shift loose items only consistently with acceleration; nothing floats, clips through trim, blocks pedals or intersects the steering wheel.`;
-}
-
-function nightNoiseRule(s) {
-  if (s.time !== 'night') return 'Day/golden capture should not contain fake high-ISO night grain or computational night smearing.';
-  const low = opt('lowLightProcessing', s.lowLightProcessing);
-  const moving = opt('vehicleState', s.vehicleState)?.moving;
-  return moving
-    ? 'LOW-LIGHT SENSOR BEHAVIOR: favor a shorter exposure to protect the face from motion smear; accept realistic shadow noise, limited dynamic range and small local clipping. Do not erase all noise.'
-    : `LOW-LIGHT SENSOR BEHAVIOR: ${low?.prompt || ''}. Multi-frame alignment may reduce noise only where frames align; moving hands, people outside or reflections may retain slight residual noise/ghost risk. Do not invent texture that was never captured.`;
+  return [
+    `INITIAL INTENT: ${state.initialRequest.trim() || (state.mode === 'inside' ? 'natural in-car selfie' : 'natural self-portrait beside a parked car')}`,
+    `XIAOMI 15 ULTRA CAMERA LOCK: ${lens?.prompt || ''}. Hardware authority: ${state.focalLength}mm equivalent, f/${state.aperture}. These values come from the selected optic and may not drift.`,
+    `CAMERA PROCESSING: ${prompt('colorProfile', state.colorProfile)}; ${prompt('lowLightProcessing', state.lowLightProcessing)}; ${prompt('exposure', state.exposure)}; ${prompt('hdr', state.hdr)}; ${prompt('whiteBalance', state.whiteBalance)}. HDR/exposure/denoising may reveal or merge captured signal but never create physical illumination.`,
+    `CAMERA GEOMETRY: ${state.focalLength}mm equivalent at ${state.distance}cm; yaw ${state.yaw}°; pitch ${state.pitch}°; roll ${state.roll}°. ${cameraDistortion}`,
+    `PLACE: ${place?.prompt || ''}. ROAD/SURFACE: ${place?.surface || ''}. CURB: ${place?.curb || ''}. VEGETATION: ${place?.vegetation || ''}. PEOPLE/PRIVACY: ${place?.people || ''}. WEATHER: ${prompt('weather', state.weather)}.`,
+    `PHYSICAL EXTERIOR LIGHTING: ${prompt('externalLight', state.externalLight)}. One source can create only its own coherent shadow/highlight family. A second opposing shadow requires a real second source with plausible position and intensity. Reflections obey incidence/view geometry.`,
+    `SUBJECT: apparent age ${state.apparentAge}; ${prompt('expression', state.expression)}; ${prompt('gazeTarget', state.gazeTarget)}; ${prompt('skinDetail', state.skinDetail)}. Eye convergence, eyelids, cheeks, mouth corners and neck rotation must remain anatomically coupled; avoid uncanny symmetry, glassy eyes and waxy skin.`,
+    `CLOTHING: ${clothing?.prompt || ''}. FABRIC TYPE: ${fabric?.prompt || ''}. LIGHT RESPONSE: ${prompt('fabricSheen', state.fabricSheen)}. WRINKLES: ${prompt('wrinkleProfile', state.wrinkleProfile)}. Folds follow gravity, joints, material stiffness and contact; highlights follow real fiber/finish response.`,
+    `HAIR PHYSICS: ${prompt('hairProfile', state.hairProfile)}. ${prompt('hairMotion', state.hairMotion)}. ${prompt('hairSpecular', state.hairSpecular)}. Hair density and hairline are invariant across angle, light and motion; only visibility and strand orientation may change.`,
+    `REFERENCE: ${referenceRule(state)}. Preserve natural identity, asymmetry and skin texture without cosmetic reinterpretation.`
+  ];
 }
 
 export function compileCarSelfieDetailed(input = {}) {
-  const s = normalizeCarState(input);
-  const status = carValidationStatus(s);
-  if (status.blocked) return ['OUTPUT BLOCKED BY STRICT CAR SELFIE PHYSICS', ...status.issues.filter((item) => item.severity !== 'warning').map((item) => `- ${item.code}: ${item.message}`)].join('\n');
-
-  const autoWarnings = status.issues.length ? `AUTO CHECK NOTES: ${status.issues.map((item) => `${item.code}: ${item.message}`).join(' | ')}` : '';
-
+  const state = normalizeCarState(input);
+  const status = carValidationStatus(state);
+  if (status.blocked) {
+    return ['OUTPUT BLOCKED BY CAR PHYSICS CHECKER', ...status.issues.filter((item) => item.severity !== 'warning').map((item) => `- ${item.code}: ${item.message}`)].join('\n');
+  }
+  const modeSections = state.mode === 'outside' ? compileOutsideSections(state) : compileInsideSections(state);
   return [
-    'GENERATE ONE PHOTOREALISTIC IMAGE — XIAOMI 15 ULTRA CAR SELFIE PHYSICS V2',
+    'CAR SELFIE PHYSICS STUDIO V7 — PHOTOREALISTIC PROMPT SPECIFICATION',
     '',
-    `INITIAL INTENT: ${s.initialRequest.trim() || 'natural in-car selfie'}`,
-    `VEHICLE: ${p('vehicleProfile', s.vehicleProfile)}; ${p('vehicleState', s.vehicleState)}.`,
-    `PLACE / SAUDI STREET PHYSICS: ${placeRule(s)}`,
-    `SEATING: ${p('seat', s.seat)}. ${seatGeometryRule(s)}`,
-    `CAPTURE TYPE LOCK: ${p('captureMode', s.captureMode)}. ${handheldRule(s)}`,
-    `XIAOMI 15 ULTRA CAMERA LOCK: ${cameraRule(s)}`,
-    `CAMERA GEOMETRY: ${p('framing', s.framing)}; optical subject distance ${s.distance}cm; yaw ${s.yaw}°; pitch ${s.pitch}°; roll ${s.roll}°. Focal length and aperture are hardware-derived and cannot be overridden. ${perspectiveRule(s)}`,
-    `MOTION / SHUTTER CONSISTENCY: ${motionRule(s)} ${nightNoiseRule(s)}`,
-    `SUBJECT: apparent age ${s.apparentAge}; ${faceRule(s)}`,
-    `CLOTHING: ${clothingRule(s)}`,
-    `HAIR PHYSICS: ${hairRule(s)}`,
-    `HANDS / CONTACT: ${p('handPose', s.handPose)}. Correct shoulder rotation, elbow support, wrist angle, seat contact, gravity and steering-wheel contact. No hovering fingers or unsupported limbs.`,
-    `REFERENCE: ${referenceRule(s)} No beautification, de-aging, face slimming, eye enlargement, synthetic symmetry or skin smoothing.`,
-    `CABIN MATERIALS: ${p('cabinMaterial', s.cabinMaterial)}; ${p('clusterType', s.clusterType)}; ${p('roofType', s.roofType)}. Materials must show correct roughness, leather compression, stitching, reflection geometry and restrained wear.`,
-    `CAR INTERIOR CLUTTER: ${clutterRule(s)}`,
-    `PHYSICAL LIGHTING: ${lightRule(s)}`,
-    `CAMERA PROCESSING: ${p('exposure', s.exposure)}; ${p('hdr', s.hdr)}; ${p('whiteBalance', s.whiteBalance)}. Computational processing must never create a shadow/highlight direction unsupported by physical sources.`,
-    `REFLECTION GEOMETRY: ${reflectionRule(s)}`,
-    'DEPTH / CABIN LOGIC: dashboard scale, seat spacing, roof height, pillars, mirrors, windows and center console must agree with one coherent cabin. No impossible cabin expansion, floating controls or newer-generation parts when a period-specific profile is selected.',
-    s.notes.trim() ? `USER NOTES: ${s.notes.trim()}` : '',
-    autoWarnings,
+    `ACTIVE MODE: ${state.mode === 'outside' ? 'OUTSIDE BESIDE CAR' : 'INSIDE CAR'}. The inactive mode is forbidden and contributes zero fields or instructions.`,
+    ...commonSections(state),
+    ...modeSections,
+    state.notes.trim() ? `USER NOTES: ${state.notes.trim()}` : '',
     '',
-    'FORENSIC QA BEFORE FINALIZING: verify Xiaomi lens/aperture identity, front-vs-rear camera path, Leica profile eligibility, LHD geometry, arm reach, seat side, steering-wheel location, hand contact, mirror reflection rays, window reflections, direct-sun/streetlight direction, secondary-shadow causality, dashboard/phone falloff, HDR causality, noise/shutter consistency, fabric roughness/folds, hair-density lock, facial muscle anatomy, skin microtexture, clutter gravity/contact/inertia, Saudi road/curb/vegetation logic, stranger privacy, and absence of impossible anatomy or mirrored cabin logic.'
+    'FORENSIC QA BEFORE FINALIZING: verify active-mode isolation, Xiaomi optic authority, camera support, arm reach or remote support, light-source causality, shadow directions, glass/paint reflections, fabric folds, fixed hair density, facial muscle coupling, privacy of strangers, vehicle contact/grounding and absence of impossible anatomy or floating objects.'
   ].filter(Boolean).join('\n');
 }
 
 export function compileCarSelfieConcise(input = {}) {
-  const s = normalizeCarState(input);
-  const status = carValidationStatus(s);
-  if (status.blocked) return compileCarSelfieDetailed(s);
-  const lens = getCameraOptic(s.cameraLens);
-  return `Photorealistic Xiaomi 15 Ultra in-car image. ${p('vehicleProfile', s.vehicleProfile)}; ${p('vehicleState', s.vehicleState)}; ${p('seat', s.seat)}; ${p('captureMode', s.captureMode)}. Camera hardware locked to ${lens?.focalLengthEqMm}mm eq f/${lens?.aperture}, ${p('colorProfile', s.colorProfile)}; ${p('framing', s.framing)} at ${s.distance}cm, yaw ${s.yaw}°, pitch ${s.pitch}°, roll ${s.roll}°. LHD cabin never mirrored. ${placeRule(s)} Subject age ${s.apparentAge}; ${p('expression', s.expression)}; ${clothingRule(s)} ${hairRule(s)} ${p('handPose', s.handPose)}. ${clutterRule(s)} Lighting: ${lightRule(s)} ${reflectionRule(s)} Preserve realistic smartphone HDR/noise limits, skin pores, fabric response, gravity, contact and motion/shutter physics.`;
+  const state = normalizeCarState(input);
+  const status = carValidationStatus(state);
+  if (status.blocked) return compileCarSelfieDetailed(state);
+  const lens = getCameraOptic(state.cameraLens);
+  const vehicle = getVehicle(state.vehicleProfile);
+  return `Photorealistic ${state.mode === 'inside' ? 'inside-car selfie' : 'outside self-portrait beside a parked car'} using Xiaomi 15 Ultra ${lens?.focalLengthEqMm}mm f/${lens?.aperture}. ${vehicle?.[state.mode === 'inside' ? 'insidePrompt' : 'outsidePrompt'] || ''}. ${state.distance}cm, yaw ${state.yaw}°, pitch ${state.pitch}°, roll ${state.roll}°. ${prompt('externalLight', state.externalLight)}. ${prompt('clothing', state.clothing)}; ${prompt('fabricType', state.fabricType)}; ${prompt('hairProfile', state.hairProfile)}; ${prompt('expression', state.expression)}. Enforce physical light causality, fixed hair density, real fabric folds, realistic skin, privacy-safe background people, deterministic geometry and absolute separation from the inactive mode.`;
 }
 
-export function compileCarSelfieNegative() {
-  return [
-    'no right-hand-drive mirroring',
-    'no steering wheel on passenger side',
-    'no duplicated steering wheel',
-    'no 75mm Xiaomi 15 Ultra rear lens; use the real 70mm telephoto if telephoto is selected',
-    'no Leica Authentic/Vibrant on the front camera',
-    'no f/1.63 claim on the front camera',
-    'no front-camera OIS claim',
-    'no handheld driver selfie while the car is moving',
-    'no arm reach beyond plausible geometry',
-    'no impossible mirror reflection',
-    'no duplicated face in glass or mirrors',
-    'no unexplained opposing shadow directions',
-    'no HDR-generated illumination',
-    'no dashboard or phone glow lighting the whole cabin',
-    'no zero-noise night shadows',
-    'no plastic skin or glassy eyes',
-    'no changing hair density or hairline',
-    'no synthetic fabric gloss inconsistent with material',
-    'no floating clutter or gravity-defying bottles/papers/cables',
-    'no famous Saudi landmark or named city',
-    'no clear identifiable stranger faces',
-    'no newer-generation cabin for period-specific L494',
-    'no impossible bokeh or DSLR-like depth rendering'
-  ].join(', ');
+export function compileCarSelfieNegative(input = {}) {
+  const state = normalizeCarState(input);
+  const common = 'no random mode mixing, no invented camera optics, no 75mm Xiaomi lens, no Leica rear look on front camera, no impossible arm reach, no floating phone, no impossible hand anatomy, no waxy skin, no glassy eyes, no changing hair density, no random fabric creases, no unexplained opposing shadows, no synthetic relighting, no HDR-created light, no identifiable stranger faces, no famous landmark or named city';
+  return `${common}, ${state.mode === 'outside' ? compileOutsideNegative() : compileInsideNegative()}`;
 }
 
 export function compileCarSelfieJson(input = {}) {
-  const s = normalizeCarState(input);
-  const intent = analyzeCarSelfieIntent(s.initialRequest);
-  const validation = carValidationStatus(s);
+  const state = normalizeCarState(input);
+  const validation = carValidationStatus(state);
+  const intent = analyzeCarSelfieIntent(state.initialRequest, state.mode, state);
   return JSON.stringify({
-    version: 'car-selfie-v2-xiaomi-physics',
-    domain: 'isolated-car-selfie',
+    version: 'car-selfie-v7',
+    domain: 'isolated-car-selfie-dual-mode',
     deterministic: true,
-    cameraAuthority: XIAOMI_15_ULTRA_PROFILE,
+    activeMode: state.mode,
+    inactiveModeExcluded: state.mode === 'inside' ? 'outside' : 'inside',
     intent,
-    state: s,
+    state,
     validation,
     outputs: {
-      detailed: compileCarSelfieDetailed(s),
-      concise: compileCarSelfieConcise(s),
-      negative: compileCarSelfieNegative()
+      detailed: compileCarSelfieDetailed(state),
+      concise: compileCarSelfieConcise(state),
+      negative: compileCarSelfieNegative(state)
     }
   }, null, 2);
 }
-
-export { analyzeCarSelfieIntent, CAR_DEFAULT_STATE };

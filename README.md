@@ -1,46 +1,50 @@
-# Physics Prompt Studio V8
+# Physics Prompt Studio V9
 
-تطبيق ويب ثابت وحتمي لبناء برومبتات صور واقعية مع Conflict Checker وفيزياء كاميرا/إضاءة/مواد صارمة.
+تطبيق ويب ثابت وحتمي لبناء برومبتات صور واقعية مع فصل بين المواصفات الهندسية، النص المرسل للنموذج، والتحقق بعد التوليد.
 
 ## الصفحات
 
-- **General Studio:** `index.html` — المشاهد العامة، دون أي منطق سيارة.
-- **Car Selfie Physics Studio:** `car-selfie.html` — مختبر مستقل بوضعين متنافيين: داخل السيارة وخارجها بجانب السيارة.
+- **General Studio:** `index.html` — المشاهد العامة.
+- **Car Selfie Studio:** `car-selfie.html` — داخل السيارة أو خارجها بجانب السيارة.
 
-الرابط المنشور:
+التطبيق:
 
 https://emadaden77.github.io/-physics-prompt-studio/
 
-مختبر السيارة:
+قسم السيارات:
 
 https://emadaden77.github.io/-physics-prompt-studio/car-selfie.html
 
-## بنية السيارات V8
+## V9 — Narrative First
 
-بدل إرسال برومبت طويل جدًا، V8 يفصل العمل إلى ثلاث طبقات:
+المخرج الافتراضي للسيارات لم يعد Technical Spec طويلًا. الملف الجديد:
 
-1. `core/carSelfieEngineeringSpec.js` — مواصفات هندسية داخلية JSON لا تُرسل للنموذج.
-2. `core/carSelfieMinimalPrompt.js` — البرومبت الافتراضي المضغوط بحد أقصى 250 كلمة.
-3. `core/carSelfieAcceptance.js` — قائمة تحقق بعد التوليد مع تقرير ACCEPT / REJECT / INCOMPLETE.
+`core/carSelfieNarrativeCompiler.js`
 
-النسخة التفصيلية القديمة باقية في `core/carSelfieCompiler.js` للتجارب فقط.
+يبني وصفًا سرديًا واحدًا قصيرًا من الحالة، مع Visual Anchor واضح، Clutter Budget، ووصف طبيعي للشخص والكاميرا والمكان والضوء.
 
-## الواجهة
+`compileCarSelfieDetailed()` أصبح هو المسار السردي. النسخة التقنية القديمة محفوظة في:
 
-Step 6 يعرض أربعة تبويبات:
+`compileCarSelfieTechnicalSpec()`
 
-- برومبت مضغوط.
-- برومبت تفصيلي.
-- مواصفات هندسية.
-- قائمة تحقق.
+وتظهر في الواجهة باسم **Technical Spec (legacy)** للمقارنة فقط.
 
-وتوجد قائمة تحقق تفاعلية ✓ / ✗ وزر **تقرير قبول الصورة**.
+## المخرجات
+
+Step 6 يعرض:
+
+- **سردي** — الافتراضي.
+- **مضغوط** — النسخة الأقصر من V8.
+- **Technical Spec (legacy)** — للمقارنة.
+- **مواصفات هندسية** — لا تُرسل للنموذج.
+- **قائمة تحقق** — بعد مشاهدة الصورة.
 
 ## الحتمية
 
-- لا `Math.random()` ولا `Date.now()` داخل Data/Core.
-- نفس normalized state = نفس Minimal Prompt + نفس Engineering Spec + نفس Acceptance list.
-- Visual Anchor للسائق يثبت نافذة السائق يمين الإطار وحافة المقود أسفل-منتصف-يسار والمقصورة غير معكوسة.
+- لا `Math.random()` ولا `Date.now()` في Data/Core.
+- نفس normalized state = نفس النص السردي حرفيًا.
+- Visual Anchor لا يُحذف أثناء الضغط التلقائي.
+- إذا تجاوز السرد 300 كلمة، يختصر Camera Processing ثم Place Details ثم Clothing Description حتميًا.
 
 ## الاختبار
 
@@ -48,6 +52,6 @@ Step 6 يعرض أربعة تبويبات:
 npm test
 ```
 
-يتحقق من حد 250 كلمة، Visual Anchor، ربط Engineering Spec بالـAcceptance، الحتمية، فصل الوضعين، Xiaomi optics، وقواعد الفيزياء السابقة.
+الاختبارات تغطي طول السرد، Anchors للسائق/الراكب/الخارج، غياب نبرة `MUST / MANDATORY / FAIL`، القائمة السلبية الموحدة، الحتمية، ووجود المسار التقني القديم منفصلًا.
 
-التفاصيل الكاملة: `docs/architecture.md`.
+التفاصيل: `docs/architecture.md`.

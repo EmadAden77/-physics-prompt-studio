@@ -5,7 +5,7 @@ import { EXTRA_SCENE_TYPES, baseSceneTypeFor, narrowOptions } from '../core/scen
 import { buildAutomaticSceneDescription } from '../core/automatic-scene-description.js';
 
 test('expanded scene catalog is broad and unique', () => {
-  assert.ok(EXTRA_SCENE_TYPES.length >= 40);
+  assert.ok(EXTRA_SCENE_TYPES.length >= 75);
   assert.equal(new Set(EXTRA_SCENE_TYPES.map((item) => item.value)).size, EXTRA_SCENE_TYPES.length);
 });
 
@@ -14,6 +14,9 @@ test('specialized scenes route to the correct base capture families', () => {
   assert.equal(baseSceneTypeFor('mirror_elevator_selfie'), 'mirror_selfie');
   assert.equal(baseSceneTypeFor('third_person_walking_candid'), 'candid_third_person');
   assert.equal(baseSceneTypeFor('harsh_noon_outdoor_selfie'), 'outdoor_selfie');
+  assert.equal(baseSceneTypeFor('three_people_group_selfie'), 'front_selfie');
+  assert.equal(baseSceneTypeFor('lying_bed_selfie'), 'front_selfie');
+  assert.equal(baseSceneTypeFor('third_person_full_body_walking'), 'full_body_third_person');
 });
 
 test('specialized option narrowing prefers context-matched choices', () => {

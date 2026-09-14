@@ -1,4 +1,8 @@
 import { getCameraOptic, getVehicle } from '../data/carSelfieCommonCatalog.js';
+import {
+  INSIDE_DRIVER_MASTER_PROFILE,
+  usesInsideDriverMasterProfile
+} from '../data/carSelfieInsideMasterProfile.js';
 
 const deg = (value) => Number(value || 0) * Math.PI / 180;
 const round = (value) => Math.round(value * 100) / 100;
@@ -30,15 +34,37 @@ function outsideSubjectAnchor(state) {
 export function buildCarSelfieEngineeringSpec(state = {}) {
   const inside = state.mode !== 'outside';
   const driver = inside && state.seat === 'driver-left';
+  const masterDriver = usesInsideDriverMasterProfile(state);
   const lens = getCameraOptic(state.cameraLens);
   const vehicle = getVehicle(state.vehicleProfile);
   const camera = cameraPositionFromEye(state);
   const outsideAnchor = outsideSubjectAnchor(state);
 
   return {
-    version: 'car-selfie-engineering-v1',
+    version: 'car-selfie-engineering-v1.1-master-driver',
     active_mode: inside ? 'inside' : 'outside',
     model_delivery: false,
+    master_profile: masterDriver ? {
+      active: true,
+      id: INSIDE_DRIVER_MASTER_PROFILE.id,
+      identity_reference_role: 'identity-only',
+      capture_type: 'self-held-front-camera',
+      required_device: 'Xiaomi 15 Ultra',
+      required_vehicle: '2017 Range Rover Sport L494',
+      steering: 'left',
+      period_correct_cabin: true,
+      driver_window_frame_side: 'right-half',
+      passenger_area_frame_side: 'left-half',
+      steering_wheel_hint_region: 'bottom-center-left',
+      physical_light_causality: true,
+      exposure_cannot_create_light: true,
+      fixed_hair_density: true,
+      forbid_beautification: true,
+      acceptance_id: 'master-driver-profile'
+    } : {
+      active: false,
+      id: null
+    },
     coordinate_system: {
       origin: inside ? 'driver_eye' : 'vehicle_driver_eye_reference',
       units: 'cm',

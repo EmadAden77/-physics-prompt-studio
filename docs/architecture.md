@@ -1,93 +1,79 @@
-# Architecture V8 — Layered Car Selfie Studio
+# Architecture V9 — Narrative-First Car Selfie Studio
 
-## الفكرة الأساسية
+## الفكرة
 
-قسم السيارات لم يعد يعتمد على برومبت ضخم لمحاولة فرض كل قانون فيزيائي على مولّد الصورة. تم فصل النظام إلى ثلاث طبقات مستقلة:
+قسم السيارات لا يرسل قائمة تقنية طويلة إلى مولّد الصورة. الحالة تبقى دقيقة وحتمية داخليًا، لكن النص المرسل للنموذج أصبح وصفًا سرديًا قصيرًا يصف الصورة كما لو أنها موجودة فعلًا.
 
-1. **ENGINEERING SPEC LAYER** — داخلية فقط، لا تُرسل للنموذج.
-2. **PROMPT LAYER** — نص قصير ومركز بحد أقصى 250 كلمة.
-3. **ACCEPTANCE LAYER** — قائمة تحقق بشرية بعد مشاهدة الصورة.
+البنية ما زالت بثلاث طبقات:
 
-الوضعان `inside` و`outside` ما زالا منفصلين حتميًا كما في V7، لكن كلاهما يمر عبر هذه الطبقات الثلاث.
+1. **ENGINEERING SPEC** — داخلية فقط، لا تُرسل للنموذج.
+2. **NARRATIVE PROMPT** — المخرج الافتراضي، نحو 200–280 كلمة وبحد أقصى 300.
+3. **ACCEPTANCE** — تحقق بصري بعد التوليد.
 
-## 1. Engineering Spec Layer
+## Narrative Compiler
 
-الملف: `core/carSelfieEngineeringSpec.js`
+الملف: `core/carSelfieNarrativeCompiler.js`
 
-يحوّل الحالة normalized state إلى JSON هندسي يتضمن:
+الدالة `compileNarrative(state, mode)` تبني فقرة واحدة مترابطة من الحالة. تصف الشخص، الكاميرا، البيئة، السيارة، الضوء، الأنسجة، الشعر، الفوضى أو الوقوف، ثم تضيف Visual Anchor واحدًا فقط.
 
-- `camera_position`: x/y/z بالسنتيمتر بالنسبة لمرجع عين السائق/السيارة مع focal length وyaw/pitch/roll.
-- `steering_wheel_visibility`: المنطقة المطلوبة في الإطار ونسبة الظهور المستهدفة.
-- `window_view`: جهة النافذة والمحتوى البيئي الإلزامي.
-- `subject_seat_anchors`: نقاط العين والكتفين والحوض أو نقاط الوقوف خارج السيارة.
-- `vehicle_reference`: LHD وحالة المركبة.
+Anchors:
 
-كل requirement هندسي يحمل `acceptance_id` يربطه بنقطة تحقق بشرية. `model_delivery=false` يمنع اعتبار هذا JSON جزءًا من البرومبت.
+- السائق: نافذة السائق يمين الإطار، حافة المقود أسفل-منتصف-يسار، الراكب يسار، والمقصورة غير معكوسة.
+- الراكب: نافذة الراكب يسار الإطار، والكونسول يمين الإطار، والمقصورة غير معكوسة.
+- الخارج: الشخص بجانب السيارة مع تماس أرضي حقيقي، وإطارات وظلال تماس.
 
-## 2. Prompt Layer
+كلمة `mandatory` لا تظهر داخل النص السردي رغم أن الـAnchor إلزامي برمجيًا، لأن V9 يمنع نبرة `MUST / MANDATORY / FAIL` داخل المخرج السردي.
 
-الملف: `core/carSelfieMinimalPrompt.js`
+## Clutter Budget
 
-المخرجات الافتراضية قصيرة، وهي فقط:
+داخل السيارة تتحول الفوضى إلى جملة قصيرة حسب المستوى:
 
-- SUBJECT
-- MODE
-- VEHICLE
-- CAMERA
-- ENVIRONMENT
-- LIGHT
-- VISUAL ANCHOR
-- QUALITY
+- clean: لا عناصر سائبة ظاهرة.
+- minimal: عنصر صغير واحد خارج مركز الإطار.
+- light: عنصر واضح واحد كحد أقصى.
+- moderate: عنصران واضحان كحد أقصى.
+- heavy: ثلاثة عناصر واضحة كحد أقصى، كلها مدعومة فيزيائيًا.
 
-البرومبت المضغوط لا يحتوي Engineering JSON ولا قائمة Acceptance ولا الأقسام الطويلة القديمة. يوجد guard برمجي يرمي خطأ إذا تجاوز النص 250 كلمة، والاختبارات تقيس ذلك على عدة حالات.
+## الضغط التلقائي
 
-Visual Anchor للسائق داخل السيارة يثبت صورة الإطار النهائية: نافذة السائق في النصف الأيمن، حافة المقود أسفل-منتصف-يسار، منطقة الراكب يسار، ولا يوجد mirroring.
+إذا تجاوز الوصف 300 كلمة، يختصر المحرك حتميًا بهذا الترتيب:
 
-النسخة القديمة الطويلة تبقى في `core/carSelfieCompiler.js` كتجربة عبر تبويب **برومبت تفصيلي** فقط.
+1. Camera processing.
+2. Place details.
+3. Clothing description.
 
-## 3. Acceptance Layer
+Visual Anchor لا يُحذف أبدًا. الملاحظات الحرة تُقص إلى 24 كلمة قبل التجميع لمنع كسر الميزانية.
 
-الملف: `core/carSelfieAcceptance.js`
+## Compiler Routing
 
-يعيد 10–15 نقطة حسب الوضع. المستخدم يضع ✓ أو ✗ بعد رؤية الصورة. تتضمن نقاط الداخل:
+`compileCarSelfieDetailed()` أصبح يستدعي `compileNarrative()`.
 
-- جهة نافذة السائق.
-- ظهور حافة المقود.
-- LHD غير معكوس.
-- عدم وجود شعارات/نصوص مقروءة.
-- مسام الجلد والشعيرات الشاردة.
-- أسفلت/رصيف منطقي.
-- حد أقصى عنصران واضحان من الفوضى.
-- سببية الإضاءة والظلال.
-- Roll طبيعي 1–3 درجات.
+النسخة التقنية القديمة لم تُحذف؛ انتقلت إلى `compileCarSelfieTechnicalSpec()` وتظهر فقط في تبويب **Technical Spec (legacy)**.
 
-زر **تقرير قبول الصورة** يحول العلامات إلى `ACCEPT / REJECT / INCOMPLETE` بدون إرسالها للنموذج.
+`compileCarSelfieNegative()` يعيد قائمة سلبية موحدة قصيرة، بينما `compileCarSelfieJson()` يحتفظ بالحالة الكاملة ومخرجات narrative/concise/negative/legacy.
 
-## واجهة V8
+## الواجهة
 
-`car-selfie.js` أعيد تنظيمه حول الطبقات الثلاث بدل دوال output القديمة. Step 6 يعرض:
+الافتراضي في `car-selfie.js` و`car-selfie.html` هو **سردي**.
 
-- برومبت مضغوط — الافتراضي.
-- برومبت تفصيلي — النسخة القديمة للتجربة.
-- مواصفات هندسية — JSON داخلي.
-- قائمة تحقق — نص checklist.
+Step 6 يعرض:
 
-وتوجد أسفلها قائمة تحقق تفاعلية ✓ / ✗ وتقرير قبول. خيار `promptMode` يسمح بتعيين المضغوط أو التفصيلي كافتراضي.
+- سردي — الافتراضي.
+- مضغوط — نسخة V8 الأقصر.
+- Technical Spec (legacy) — للمقارنة فقط.
+- مواصفات هندسية.
+- قائمة تحقق.
 
-## الحتمية
+## الحتمية والاختبار
 
-- لا `Math.random()`.
-- لا `Date.now()` في Data/Core.
-- نفس normalized state ينتج نفس Minimal Prompt وEngineering Spec وAcceptance list.
-
-## الاختبار
+لا `Math.random()` ولا `Date.now()` في Data/Core. نفس normalized state ينتج نفس السرد حرفيًا.
 
 `npm test` يتحقق من:
 
-- حد 250 كلمة.
-- وجود Visual Anchor.
-- تطابق كل requirement هندسي مع Acceptance ID.
-- وجود 10–15 نقطة تحقق.
-- عدم تسرب Engineering/Acceptance إلى البرومبت المضغوط.
+- السرد ≤ 300 كلمة.
+- Anchor مناسب لكل وضع/مقعد.
+- غياب `MUST / MANDATORY / FAIL` من السرد.
+- القائمة السلبية الموحدة.
 - الحتمية.
-- فصل inside/outside وقواعد V7/V7.1 السابقة.
+- بقاء Technical Spec كمسار legacy منفصل.
+- استمرار Engineering/Acceptance وفصل inside/outside.

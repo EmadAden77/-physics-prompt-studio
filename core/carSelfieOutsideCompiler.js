@@ -4,6 +4,16 @@ import { OUTSIDE_CATALOG } from '../data/carSelfieOutsideCatalog.js';
 const opt = (field, id) => (OUTSIDE_CATALOG[field] || []).find((item) => item.id === id) || null;
 const p = (field, id) => opt(field, id)?.prompt || '';
 
+const HARD_ACCEPTANCE = `HARD ACCEPTANCE CRITERIA (image FAILS if any is violated):
+1. Skin must show visible pores, fine vellus hair, and subtle tonal variation. If skin appears perfectly smooth, airbrushed, or waxy, the image FAILS.
+2. Hair must show visible individual strand separation and 2-4 physically plausible stray hairs. If hair appears uniformly glossy or helmet-like, the image FAILS.
+3. Facial symmetry must be naturally imperfect. If the face is perfectly mirrored, the image FAILS.
+4. Denim and other fabrics must show: seam bunching at shoulder/elbow, gravity-driven wrinkles, matte fiber response, and slight indigo/value variation. If fabric appears as a smooth painted surface, the image FAILS.
+5. Camera tilt must be 1-3 degrees off-perfect-level. If composition is perfectly level and centered, the image FAILS.
+6. Corneal reflections must show source-consistent catchlights. If eyes are glassy or have symmetrical artificial catchlights, the image FAILS.
+7. No brand text, logo, or readable signage may appear in the frame unless explicitly requested. If visible brand text appears, the image FAILS.
+8. Composition must be slightly off-center (subject not dead-center). If perfectly centered, the image FAILS.`;
+
 export function compileOutsideSections(state) {
   const vehicle = getVehicle(state.vehicleProfile);
   const lens = commonOption('cameraLens', state.cameraLens);
@@ -23,8 +33,9 @@ export function compileOutsideSections(state) {
     `GLASS PHYSICS: windshield and side glass combine transmission with angle-dependent Fresnel reflection. Reflected sky, poles, storefront spill or nearby objects must correspond to what the glass can physically see.`,
     `WHEELS & TIRES: wheel perspective matches body perspective; tires contact the ground with realistic flattening/contact shadow, no floating wheels, no impossible rim orientation.`,
     `OUTDOOR HAIR/POSE INTERACTION: clothing hems and loose hair may move only in the same coherent airflow direction supported by the selected weather. Contact with the car creates local fabric compression or fold changes only where contact occurs.`,
-    `ANTI-AI-TELLS: preserve visible skin pores, age-appropriate facial lines, a few physically plausible stray hairs, source-consistent corneal reflections/catchlights, visible fabric fibers at realistic viewing distance, and small natural asymmetries/variations in skin, hair, stitching, paint micro-reflections and folds. Do not beautify, airbrush, perfectly groom, symmetrize or sterilize natural texture.`
-  ];
+    `ANTI-AI-TELLS: preserve visible skin pores, age-appropriate facial lines, a few physically plausible stray hairs, source-consistent corneal reflections/catchlights, visible fabric fibers at realistic viewing distance, and small natural asymmetries/variations in skin, hair, stitching, paint micro-reflections and folds. Do not beautify, airbrush, perfectly groom, symmetrize or sterilize natural texture.`,
+    HARD_ACCEPTANCE
+  ].filter(Boolean);
 }
 
 export function compileOutsideNegative() {
@@ -40,6 +51,13 @@ export function compileOutsideNegative() {
     'no person intersecting the vehicle',
     'no unsupported remote camera',
     'no studio key light unless physically present in the scene',
+    'no brand logos',
+    'no readable text on any object',
+    'no perfectly centered composition',
+    'no perfectly level camera',
+    'no airbrushed skin',
+    'no helmet-like glossy hair',
+    'no perfectly symmetric face',
     'AI-generated look, plastic skin, over-smoothed skin, symmetric face, perfectly styled hair, glossy hair, uniform fabric, no wrinkles, oversaturated colors, HDR overprocessing, teal-orange grading, impossible lighting, dual shadows without dual sources, floating objects, cartoon, 3D render, digital art, illustration, airbrushed, retouched, beauty filter, smooth bokeh, artificial depth of field, fake lens flare, perfect composition, centered framing, dead eyes, missing corneal reflections, wrong finger count, extra fingers, deformed hands, gibberish text, watermark'
   ].join(', ');
 }

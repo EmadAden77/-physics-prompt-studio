@@ -10,6 +10,7 @@ import {
   REALISM_LEVELS,
   FRAMING_OPTIONS
 } from './core/prompt-generator.js';
+import { compatibilitySnapshot, recommendedDefaults } from './core/scene-compatibility.js';
 
 const $ = (id) => document.getElementById(id);
 const controls = {
@@ -38,9 +39,27 @@ const optimizeButton = $('optimizeButton');
 const randomButton = $('randomButton');
 const resetButton = $('resetButton');
 
+const CATALOGS = {
+  location: SAUDI_LOCATIONS,
+  clothing: CLOTHING_OPTIONS,
+  pose: SELFIE_POSES,
+  angle: SELFIE_ANGLES,
+  lighting: LIGHTING_PROFILES,
+  camera: CAMERA_PROFILES,
+  framing: FRAMING_OPTIONS
+};
+
 let currentMode = 'auto';
 let latestResult = null;
 let generateTimer = null;
+
+function makeOption(item) {
+  const option = document.createElement('option');
+  option.value = item.value;
+  option.textContent = item.label;
+  option.dataset.prompt = item.prompt || '';
+  return option;
+}
 
 function populateGrouped(select, options) {
   const groups = new Map();
@@ -61,34 +80,54 @@ function populateFlat(select, options) {
   for (const item of options) select.append(makeOption(item));
 }
 
-function makeOption(item) {
-  const option = document.createElement('option');
-  option.value = item.value;
-  option.textContent = item.label;
-  option.dataset.prompt = item.prompt || '';
-  return option;
+function rebuildOptionalSelect(select, options, placeholder, grouped = false) {
+  const previous = select.value;
+  select.replaceChildren();
+  const auto = document.createElement('option');
+  auto.value = '';
+  auto.textContent = placeholder;
+  select.append(auto);
+  if (grouped) populateGrouped(select, options);
+  else populateFlat(select, options);
+  if (previous && options.some((item) => item.value === previous)) select.value = previous;
+  else select.value = '';
 }
 
-populateGrouped(controls.location, SAUDI_LOCATIONS);
-populateGrouped(controls.clothing, CLOTHING_OPTIONS);
-populateFlat(controls.pose, SELFIE_POSES);
-populateFlat(controls.angle, SELFIE_ANGLES);
-populateGrouped(controls.lighting, LIGHTING_PROFILES);
+function rebuildRequiredSelect(select, options, preferredValue) {
+  const previous = select.value;
+  select.replaceChildren();
+  populateFlat(select, options);
+  const preserved = previous && options.some((item) => item.value === previous) ? previous : null;
+  const preferred = options.some((item) => item.value === preferredValue) ? preferredValue : null;
+  select.value = preserved || preferred || options[0]?.value || '';
+}
+
+function applySceneCompatibility() {
+  const sceneType = controls.sceneType.value || 'front_selfie';
+  const compatible = compatibilitySnapshot(sceneType, CATALOGS);
+  const defaults = recommendedDefaults(sceneType);
+
+  rebuildOptionalSelect(controls.location, compatible.location, 'تلقائي — مكان متناسق مع نوع المشهد', true);
+  rebuildOptionalSelect(controls.pose, compatible.pose, 'تلقائي — وضعية متناسقة مع نوع المشهد');
+  rebuildOptionalSelect(controls.angle, compatible.angle, 'تلقائي — زاوية متناسقة مع نوع المشهد');
+  rebuildOptionalSelect(controls.lighting, compatible.lighting, 'تلقائي — إضاءة متناسقة مع نوع المشهد', true);
+  rebuildRequiredSelect(controls.camera, compatible.camera, defaults.camera);
+  rebuildRequiredSelect(controls.framing, compatible.framing, defaults.framing);
+}
+
 populateFlat(controls.sceneType, SCENE_TYPES);
-populateFlat(controls.camera, CAMERA_PROFILES);
+populateGrouped(controls.clothing, CLOTHING_OPTIONS);
 populateFlat(controls.aspectRatio, ASPECT_RATIOS);
 populateFlat(controls.expression, EXPRESSIONS);
 populateFlat(controls.backgroundActivity, BACKGROUND_ACTIVITY);
 populateFlat(controls.realismLevel, REALISM_LEVELS);
-populateFlat(controls.framing, FRAMING_OPTIONS);
 
 controls.sceneType.value = 'front_selfie';
-controls.camera.value = 'xiaomi15_front';
 controls.aspectRatio.value = '9:16';
 controls.expression.value = 'neutral';
 controls.backgroundActivity.value = 'normal';
 controls.realismLevel.value = 'strict';
-controls.framing.value = 'chest_up';
+applySceneCompatibility();
 
 function selectedPrompt(select) {
   return select.selectedOptions[0]?.dataset.prompt || '';
@@ -216,6 +255,7 @@ function randomize() {
 
 function resetAll() {
   controls.sceneType.value = 'front_selfie';
+  applySceneCompatibility();
   controls.location.value = '';
   controls.clothing.value = '';
   controls.pose.value = '';
@@ -265,13 +305,17 @@ generateButton.addEventListener('click', generateNow);
 optimizeButton.addEventListener('click', optimizeNow);
 randomButton.addEventListener('click', randomize);
 resetButton.addEventListener('click', resetAll);
+controls.sceneType.addEventListener('change', () => {
+  applySceneCompatibility();
+  scheduleGenerate();
+});
 document.querySelectorAll('[data-mode]').forEach((button) => button.addEventListener('click', () => setMode(button.dataset.mode)));
 document.querySelectorAll('.tab').forEach((button) => button.addEventListener('click', () => {
   document.querySelectorAll('.tab').forEach((tab) => tab.classList.toggle('active', tab === button));
   document.querySelectorAll('.tab-panel').forEach((panel) => panel.classList.toggle('active', panel.dataset.panel === button.dataset.tab));
 }));
 Object.values(controls).forEach((control) => {
-  if (!control) return;
+  if (!control || control === controls.sceneType) return;
   control.addEventListener('change', scheduleGenerate);
   control.addEventListener('input', scheduleGenerate);
 });

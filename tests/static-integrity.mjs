@@ -11,7 +11,8 @@ const required = [
   'index.html','app.js','styles.css','car-selfie.html','car-selfie.js','car-selfie.css',
   'data/catalog.js','data/presets.js','data/carSelfieCommonCatalog.js','data/carSelfieInsideCatalog.js','data/carSelfieOutsideCatalog.js',
   'core/state.js','core/geometry.js','core/validation.js','core/compiler.js','core/carSelfieValidation.js',
-  'core/carSelfieInsideValidation.js','core/carSelfieOutsideValidation.js','core/carSelfieCompiler.js','core/carSelfieInsideCompiler.js','core/carSelfieOutsideCompiler.js'
+  'core/carSelfieInsideValidation.js','core/carSelfieOutsideValidation.js','core/carSelfieCompiler.js','core/carSelfieInsideCompiler.js','core/carSelfieOutsideCompiler.js',
+  'core/carSelfieEngineeringSpec.js','core/carSelfieMinimalPrompt.js','core/carSelfieAcceptance.js'
 ];
 for (const file of required) assert.ok(exists(file), `missing ${file}`);
 assert.equal(exists('data/carSelfieCatalog.js'), false, 'legacy mixed carSelfieCatalog.js must be deleted');
@@ -27,6 +28,9 @@ const insideCatalog = read('data/carSelfieInsideCatalog.js');
 const outsideCatalog = read('data/carSelfieOutsideCatalog.js');
 const insideCompiler = read('core/carSelfieInsideCompiler.js');
 const outsideCompiler = read('core/carSelfieOutsideCompiler.js');
+const minimalPrompt = read('core/carSelfieMinimalPrompt.js');
+const engineeringSpec = read('core/carSelfieEngineeringSpec.js');
+const acceptance = read('core/carSelfieAcceptance.js');
 
 assert.match(index, /href="car-selfie\.html"/);
 assert.match(carPage, /data-mode-select="inside"/);
@@ -39,15 +43,36 @@ assert.match(carPage, /data-step="6"/);
 assert.match(carPage, /فيزياء نسيج الملابس/);
 assert.match(carPage, /فيزياء الشعر/);
 assert.match(carPage, /الفوضى داخل السيارة/);
+assert.match(carPage, /id="promptMode"/);
+assert.match(carPage, /data-view="compact"/);
+assert.match(carPage, /data-view="detailed"/);
+assert.match(carPage, /data-view="engineering"/);
+assert.match(carPage, /data-view="acceptance"/);
+assert.match(carPage, /قائمة التحقق البصري/);
+assert.match(carPage, /id="acceptanceChecklist"/);
+assert.match(carPage, /id="acceptanceReportButton"/);
 assert.ok(!carPage.includes('src="app.js"'));
 assert.match(carPage, /src="car-selfie\.js"/);
 
-assert.match(carApp, /carSelfieInsideCatalog/);
-assert.match(carApp, /carSelfieOutsideCatalog/);
+assert.match(carApp, /carSelfieEngineeringSpec/);
+assert.match(carApp, /carSelfieMinimalPrompt/);
+assert.match(carApp, /carSelfieAcceptance/);
 assert.ok(!carApp.includes('option.disabled'));
 assert.ok(!carApp.includes('option.hidden'));
 assert.match(carApp, /detectCarModeFromIntent/);
 assert.match(carApp, /initialRequest.*addEventListener\('input'/s);
+
+assert.match(minimalPrompt, /250-word budget/);
+assert.match(minimalPrompt, /VISUAL ANCHOR:/);
+assert.match(minimalPrompt, /driver's door window with exterior street view appears on the RIGHT half of the frame/);
+assert.match(engineeringSpec, /camera_position/);
+assert.match(engineeringSpec, /steering_wheel_visibility/);
+assert.match(engineeringSpec, /window_view/);
+assert.match(engineeringSpec, /subject_seat_anchors/);
+assert.match(engineeringSpec, /model_delivery:\s*false/);
+assert.match(acceptance, /نافذة السائق/);
+assert.match(acceptance, /حافة المقود/);
+assert.match(acceptance, /تقرير|ACCEPT|REJECT/);
 
 assert.ok(!insideCatalog.includes('standingPose'), 'inside catalog leaked outside standing pose');
 assert.ok(!insideCatalog.includes('paintCondition'), 'inside catalog leaked exterior paint field');
@@ -70,7 +95,8 @@ assert.match(commonCatalog, /densityLock:\s*true/);
 const deterministicFiles = [
   'data/catalog.js','data/presets.js','data/carSelfieCommonCatalog.js','data/carSelfieInsideCatalog.js','data/carSelfieOutsideCatalog.js',
   'core/state.js','core/geometry.js','core/validation.js','core/compiler.js','core/carSelfieValidation.js',
-  'core/carSelfieInsideValidation.js','core/carSelfieOutsideValidation.js','core/carSelfieCompiler.js','core/carSelfieInsideCompiler.js','core/carSelfieOutsideCompiler.js'
+  'core/carSelfieInsideValidation.js','core/carSelfieOutsideValidation.js','core/carSelfieCompiler.js','core/carSelfieInsideCompiler.js','core/carSelfieOutsideCompiler.js',
+  'core/carSelfieEngineeringSpec.js','core/carSelfieMinimalPrompt.js','core/carSelfieAcceptance.js'
 ];
 for (const file of deterministicFiles) {
   const text = read(file);
@@ -79,4 +105,4 @@ for (const file of deterministicFiles) {
   assert.ok(!/TODO|FIXME/.test(text), `${file} contains unfinished TODO/FIXME`);
 }
 
-console.log('Static integrity OK: dual car modes isolated, no disabled option hacks, deterministic filtering, no car logic leaked into main core.');
+console.log('Static integrity OK: V8 three-layer car architecture isolated, deterministic, and model-facing prompt separated from engineering/acceptance layers.');

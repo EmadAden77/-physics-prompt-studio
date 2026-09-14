@@ -1,22 +1,25 @@
-import { COMMON_CATALOG, detectCarModeFromIntent } from './data/carSelfieCommonCatalog.js';
-import { INSIDE_CATALOG, INSIDE_DEFAULT_STATE } from './data/carSelfieInsideCatalog.js';
-import { OUTSIDE_CATALOG, OUTSIDE_DEFAULT_STATE } from './data/carSelfieOutsideCatalog.js';
-import {
-  analyzeCarSelfieIntent,
-  compileCarSelfieConcise,
-  compileCarSelfieDetailed,
-  compileCarSelfieJson,
-  compileCarSelfieNegative
-} from './core/carSelfieCompiler.js';
+import { detectCarModeFromIntent } from './data/carSelfieCommonCatalog.js';
+import { INSIDE_DEFAULT_STATE } from './data/carSelfieInsideCatalog.js';
+import { OUTSIDE_DEFAULT_STATE } from './data/carSelfieOutsideCatalog.js';
+import { analyzeCarSelfieIntent, compileCarSelfieDetailed } from './core/carSelfieCompiler.js';
 import {
   carValidationStatus,
   compatibleOptions,
   defaultStateForMode,
   normalizeCarState
 } from './core/carSelfieValidation.js';
+import { buildCarSelfieEngineeringSpec } from './core/carSelfieEngineeringSpec.js';
+import { compileCarSelfieMinimalPrompt, countPromptWords } from './core/carSelfieMinimalPrompt.js';
+import {
+  buildCarSelfieAcceptance,
+  createCarSelfieAcceptanceReport,
+  formatCarSelfieAcceptance
+} from './core/carSelfieAcceptance.js';
 
 const $ = (id) => document.getElementById(id);
-const STORAGE_KEY = 'physics-prompt-studio-car-selfie-v7';
+const STORAGE_KEY = 'physics-prompt-studio-car-selfie-v8';
+const LEGACY_STORAGE_KEY = 'physics-prompt-studio-car-selfie-v7';
+
 const SELECT_FIELDS = Object.freeze([
   'vehicleProfile','vehicleState','seat','standingPose','paintCondition','captureMode','cameraLens','colorProfile','lowLightProcessing','framing',
   'expression','gazeTarget','skinDetail','clothing','fabricType','fabricSheen','wrinkleProfile','hairProfile','hairMotion','hairSpecular','handPose',
@@ -33,21 +36,23 @@ const OUTSIDE_FIELDS = Object.freeze(['vehicleState','standingPose','paintCondit
 
 let activeMode = 'inside';
 let activeStep = 1;
-let activeView = 'detailed';
+let activeView = 'compact';
+let preferredPromptMode = 'compact';
 let referenceAttached = false;
 let intentTyping = false;
 let states = {
   inside: normalizeCarState(INSIDE_DEFAULT_STATE),
   outside: normalizeCarState(OUTSIDE_DEFAULT_STATE)
 };
+let acceptanceMarks = { inside: {}, outside: {} };
 
-const catalogForActiveMode = () => activeMode === 'outside' ? OUTSIDE_CATALOG : INSIDE_CATALOG;
 const activeFields = () => [...COMMON_FIELDS, ...(activeMode === 'outside' ? OUTSIDE_FIELDS : INSIDE_FIELDS)];
 
 function fillSelect(field, state) {
   const select = $(field);
   if (!select) return;
   const options = compatibleOptions(field, state);
+  if (!options.length) return;
   const current = select.value || state[field];
   select.replaceChildren(...options.map((item) => {
     const option = document.createElement('option');
@@ -57,7 +62,7 @@ function fillSelect(field, state) {
   }));
   if (options.some((item) => item.id === current)) select.value = current;
   else if (options.some((item) => item.id === state[field])) select.value = state[field];
-  else if (options[0]) select.value = options[0].id;
+  else select.value = options[0].id;
 }
 
 function writeSimpleFields(state) {
@@ -65,6 +70,7 @@ function writeSimpleFields(state) {
   for (const field of ['initialRequest','notes','referenceRole']) if ($(field)) $(field).value = state[field] ?? '';
   if ($('focalLength')) $('focalLength').value = `${state.focalLength} mm`;
   if ($('aperture')) $('aperture').value = `f/${state.aperture}`;
+  if ($('promptMode')) $('promptMode').value = preferredPromptMode;
 }
 
 function collectDomState() {
@@ -80,11 +86,7 @@ function collectDomState() {
 function stabilizeUi(seedState) {
   let state = normalizeCarState(seedState);
   for (let pass = 0; pass < 3; pass += 1) {
-    for (const field of SELECT_FIELDS) {
-      if (!$(field)) continue;
-      if (!catalogForActiveMode()[field] && !COMMON_CATALOG[field]) continue;
-      fillSelect(field, state);
-    }
+    for (const field of SELECT_FIELDS) fillSelect(field, state);
     writeSimpleFields(state);
     state = collectDomState();
   }
@@ -104,15 +106,44 @@ function showModeBlocks() {
   });
   $('previewMode').textContent = activeMode === 'inside' ? 'INSIDE' : 'OUTSIDE';
   $('modeSummary').textContent = activeMode === 'inside'
-    ? 'الوضع النشط: داخل السيارة. المتاح هو المقعد، المقصورة، LHD، اليدان، النوافذ، الفوضى والمصادر الداخلية. جميع تعليمات الوقوف بجانب السيارة محذوفة من الحالة النشطة.'
-    : 'الوضع النشط: خارج السيارة بجانبها. المتاح هو وضعية الوقوف، الطلاء، الهيكل والزجاج والإطارات. جميع تعليمات المقعد والعدادات والفوضى والمصادر الداخلية محذوفة من الحالة النشطة.';
+    ? 'الوضع النشط: داخل السيارة. طبقة البرومبت لا تستقبل المواصفات الهندسية ولا قائمة القبول؛ هذه تبقى داخل التطبيق للتحقق بعد التوليد.'
+    : 'الوضع النشط: خارج السيارة بجانبها. طبقة البرومبت قصيرة، بينما هندسة الوقوف والكاميرا والتحقق تبقى في طبقة داخلية مستقلة.';
 }
 
-function outputFor(state) {
-  if (activeView === 'concise') return compileCarSelfieConcise(state);
-  if (activeView === 'json') return compileCarSelfieJson(state);
-  if (activeView === 'negative') return compileCarSelfieNegative(state);
-  return compileCarSelfieDetailed(state);
+function blockedMessage(status) {
+  return ['OUTPUT BLOCKED BY CAR PHYSICS CHECKER', ...status.issues.filter((item) => item.severity !== 'warning').map((item) => `- ${item.code}: ${item.message}`)].join('\n');
+}
+
+function outputFor(state, status) {
+  if (activeView === 'engineering') return JSON.stringify(buildCarSelfieEngineeringSpec(state), null, 2);
+  if (activeView === 'acceptance') return formatCarSelfieAcceptance(state);
+  if (activeView === 'detailed') return compileCarSelfieDetailed(state);
+  if (status.blocked) return blockedMessage(status);
+  return compileCarSelfieMinimalPrompt(state);
+}
+
+function syncOutputTabs() {
+  document.querySelectorAll('[data-view]').forEach((button) => {
+    button.classList.toggle('active', button.dataset.view === activeView);
+  });
+}
+
+function updateOutputMeta(state) {
+  if (!$('outputMeta')) return;
+  if (activeView === 'compact') {
+    const words = countPromptWords(compileCarSelfieMinimalPrompt(state));
+    $('outputMeta').textContent = `${words} كلمة · يُرسل للنموذج`;
+    $('outputMeta').dataset.kind = 'model';
+  } else if (activeView === 'detailed') {
+    $('outputMeta').textContent = 'نسخة تجريبية طويلة · تُرسل للنموذج فقط عند اختيارك';
+    $('outputMeta').dataset.kind = 'model';
+  } else if (activeView === 'engineering') {
+    $('outputMeta').textContent = 'مواصفات داخلية للتحقق · لا تُرسل للنموذج';
+    $('outputMeta').dataset.kind = 'internal';
+  } else {
+    $('outputMeta').textContent = 'قائمة تحقق بشرية بعد التوليد · لا تُرسل للنموذج';
+    $('outputMeta').dataset.kind = 'internal';
+  }
 }
 
 function updatePreview(state, status) {
@@ -151,10 +182,10 @@ function updatePreview(state, status) {
   $('pitchReadout').textContent = `${state.pitch}°`;
   $('rollReadout').textContent = `${state.roll}°`;
   $('previewNote').textContent = inside
-    ? 'المؤشر داخل المقصورة. اتجاه الخط يتغير مع Yaw/Pitch، والهاتف يدور بصريًا مع Roll.'
+    ? 'هذه معاينة هندسية داخلية. الإحداثيات الكاملة تظهر في تبويب «مواصفات هندسية» ولا تُضاف للبرومبت المضغوط.'
     : remote
-      ? 'الهاتف خارج السيارة على دعم ثابت/ريموت. هذا يسمح بعدسة Leica الخلفية 23mm أو 70mm دون ادعاء سيلفي يدوي مستحيل.'
-      : 'الهاتف عند مسافة ذراع خارج السيارة ويستخدم الكاميرا الأمامية فقط.';
+      ? 'الهاتف على دعم ثابت. المواصفات الهندسية منفصلة عن النص المرسل للنموذج.'
+      : 'الهاتف عند مسافة ذراع. التحقق الهندسي يتم بعد التوليد بقائمة القبول.';
 
   const mini = document.querySelector('.mini-status');
   mini.dataset.state = status.blocked ? 'blocked' : status.issues.length ? 'check' : 'valid';
@@ -175,17 +206,73 @@ function renderIssues(status) {
   }));
 }
 
+function setAcceptanceMark(id, mark) {
+  const current = acceptanceMarks[activeMode][id];
+  if (current === mark) delete acceptanceMarks[activeMode][id];
+  else acceptanceMarks[activeMode][id] = mark;
+  renderAcceptance(states[activeMode]);
+  saveState();
+}
+
+function renderAcceptance(state) {
+  const items = buildCarSelfieAcceptance(state);
+  const marks = acceptanceMarks[activeMode];
+  const container = $('acceptanceChecklist');
+  container.replaceChildren(...items.map((item) => {
+    const row = document.createElement('div');
+    row.className = 'acceptance-row';
+    row.dataset.result = marks[item.id] || 'unset';
+
+    const label = document.createElement('span');
+    label.textContent = item.label;
+
+    const actions = document.createElement('div');
+    actions.className = 'acceptance-actions';
+    const pass = document.createElement('button');
+    pass.type = 'button';
+    pass.textContent = '✓';
+    pass.className = marks[item.id] === 'pass' ? 'selected pass' : 'pass';
+    pass.setAttribute('aria-label', `قبول: ${item.label}`);
+    pass.addEventListener('click', () => setAcceptanceMark(item.id, 'pass'));
+
+    const fail = document.createElement('button');
+    fail.type = 'button';
+    fail.textContent = '✗';
+    fail.className = marks[item.id] === 'fail' ? 'selected fail' : 'fail';
+    fail.setAttribute('aria-label', `رفض: ${item.label}`);
+    fail.addEventListener('click', () => setAcceptanceMark(item.id, 'fail'));
+
+    actions.append(pass, fail);
+    row.append(label, actions);
+    return row;
+  }));
+
+  const values = Object.values(marks);
+  const passed = values.filter((value) => value === 'pass').length;
+  const failed = values.filter((value) => value === 'fail').length;
+  $('acceptanceProgress').textContent = `${passed}/${items.length} ناجح · ${failed} مرفوض`;
+  $('acceptanceReport').textContent = createCarSelfieAcceptanceReport(state, marks);
+}
+
+function resetAcceptance(mode = activeMode) {
+  acceptanceMarks[mode] = {};
+}
+
 function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ activeMode, states }));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ activeMode, preferredPromptMode, states, acceptanceMarks }));
 }
 
 function render(seed = states[activeMode]) {
   showModeBlocks();
   const state = stabilizeUi(seed);
   const status = carValidationStatus(state);
-  $('output').textContent = outputFor(state);
+  states[activeMode] = state;
+  syncOutputTabs();
+  $('output').textContent = outputFor(state, status);
+  updateOutputMeta(state);
   renderIssues(status);
   updatePreview(state, status);
+  renderAcceptance(state);
   saveState();
 }
 
@@ -193,7 +280,10 @@ function switchMode(mode, requestOverride = null) {
   if (mode !== 'inside' && mode !== 'outside') return;
   if (activeMode !== mode) states[activeMode] = collectDomState();
   activeMode = mode;
-  if (requestOverride !== null) states[activeMode] = normalizeCarState({ ...states[activeMode], initialRequest: requestOverride, mode: activeMode });
+  if (requestOverride !== null) {
+    states[activeMode] = normalizeCarState({ ...states[activeMode], initialRequest: requestOverride, mode: activeMode });
+    resetAcceptance(activeMode);
+  }
   referenceAttached = Boolean(states[activeMode].referenceAttached);
   render(states[activeMode]);
 }
@@ -212,14 +302,16 @@ function applyIntent({ realtime = false } = {}) {
     referenceRole,
     notes: realtime ? states[activeMode].notes : $('notes').value
   });
+  resetAcceptance(activeMode);
   $('intentSummary').textContent = analysis.tags.length ? `تحليل حتمي: ${analysis.tags.join(' · ')}` : 'لم يجد كلمات حاسمة؛ استخدم إعدادات الوضع الافتراضية الحتمية.';
   render(states[activeMode]);
 }
 
 function handleControlChange(event) {
   const target = event.target;
-  if (!target.id || target.id === 'initialRequest' || target.id === 'referenceImage') return;
+  if (!target.id || ['initialRequest','referenceImage','promptMode'].includes(target.id)) return;
   states[activeMode] = collectDomState();
+  resetAcceptance(activeMode);
   render(states[activeMode]);
 }
 
@@ -232,12 +324,46 @@ function setStep(step) {
   $('nextStep').textContent = activeStep === 5 ? 'عرض المخرجات' : 'التالي';
 }
 
+function setView(view) {
+  if (!['compact','detailed','engineering','acceptance'].includes(view)) return;
+  activeView = view;
+  if (view === 'compact' || view === 'detailed') preferredPromptMode = view;
+  if ($('promptMode')) $('promptMode').value = preferredPromptMode;
+  render(states[activeMode]);
+}
+
+function loadSavedState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY) || 'null';
+    const saved = JSON.parse(raw);
+    if (!saved?.states) return;
+    states = {
+      inside: normalizeCarState({ ...INSIDE_DEFAULT_STATE, ...saved.states.inside, mode: 'inside' }),
+      outside: normalizeCarState({ ...OUTSIDE_DEFAULT_STATE, ...saved.states.outside, mode: 'outside' })
+    };
+    activeMode = saved.activeMode === 'outside' ? 'outside' : 'inside';
+    preferredPromptMode = saved.preferredPromptMode === 'detailed' ? 'detailed' : 'compact';
+    activeView = preferredPromptMode;
+    acceptanceMarks = {
+      inside: saved.acceptanceMarks?.inside || {},
+      outside: saved.acceptanceMarks?.outside || {}
+    };
+  } catch {
+    states = { inside: normalizeCarState(INSIDE_DEFAULT_STATE), outside: normalizeCarState(OUTSIDE_DEFAULT_STATE) };
+    acceptanceMarks = { inside: {}, outside: {} };
+  }
+}
+
 for (const button of document.querySelectorAll('[data-mode-select]')) {
   button.addEventListener('click', () => switchMode(button.dataset.modeSelect));
 }
 for (const button of document.querySelectorAll('[data-step-target]')) {
   button.addEventListener('click', () => setStep(button.dataset.stepTarget));
 }
+for (const button of document.querySelectorAll('[data-view]')) {
+  button.addEventListener('click', () => setView(button.dataset.view));
+}
+
 $('prevStep').addEventListener('click', () => setStep(activeStep - 1));
 $('nextStep').addEventListener('click', () => setStep(activeStep + 1));
 $('analyzeIntent').addEventListener('click', () => applyIntent({ realtime: false }));
@@ -250,25 +376,26 @@ $('initialRequest').addEventListener('input', () => {
 
 document.querySelector('.wizard').addEventListener('change', handleControlChange);
 document.querySelector('.wizard').addEventListener('input', (event) => {
-  if (event.target.id !== 'initialRequest' && event.target.id !== 'notes') handleControlChange(event);
+  if (!['initialRequest','notes','promptMode'].includes(event.target.id)) handleControlChange(event);
   if (event.target.id === 'notes') {
     states[activeMode] = collectDomState();
+    resetAcceptance(activeMode);
     render(states[activeMode]);
   }
+});
+
+$('promptMode').addEventListener('change', (event) => {
+  preferredPromptMode = event.target.value === 'detailed' ? 'detailed' : 'compact';
+  setView(preferredPromptMode);
 });
 
 $('referenceImage').addEventListener('change', (event) => {
   referenceAttached = Boolean(event.target.files?.length);
   $('fileStatus').textContent = referenceAttached ? `تم اختيار: ${event.target.files[0].name}` : 'لم تُرفق صورة';
   states[activeMode] = normalizeCarState({ ...collectDomState(), referenceAttached });
+  resetAcceptance(activeMode);
   render(states[activeMode]);
 });
-
-document.querySelectorAll('[data-view]').forEach((button) => button.addEventListener('click', () => {
-  activeView = button.dataset.view;
-  document.querySelectorAll('[data-view]').forEach((item) => item.classList.toggle('active', item === button));
-  render(states[activeMode]);
-}));
 
 $('copy').addEventListener('click', async () => {
   await navigator.clipboard.writeText($('output').textContent);
@@ -276,18 +403,12 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => { $('copy').textContent = 'نسخ'; }, 900);
 });
 
-try {
-  const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-  if (saved?.states) {
-    states = {
-      inside: normalizeCarState({ ...INSIDE_DEFAULT_STATE, ...saved.states.inside, mode: 'inside' }),
-      outside: normalizeCarState({ ...OUTSIDE_DEFAULT_STATE, ...saved.states.outside, mode: 'outside' })
-    };
-    activeMode = saved.activeMode === 'outside' ? 'outside' : 'inside';
-  }
-} catch {
-  states = { inside: normalizeCarState(INSIDE_DEFAULT_STATE), outside: normalizeCarState(OUTSIDE_DEFAULT_STATE) };
-}
+$('acceptanceReportButton').addEventListener('click', () => {
+  $('acceptanceReport').textContent = createCarSelfieAcceptanceReport(states[activeMode], acceptanceMarks[activeMode]);
+  $('acceptanceReport').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+});
 
+loadSavedState();
+referenceAttached = Boolean(states[activeMode].referenceAttached);
 setStep(1);
 render(states[activeMode]);

@@ -1,177 +1,121 @@
 import {
-  CAR_CATALOG,
-  CAR_DEFAULT_STATE,
-  CAR_CLUTTER_LEVELS,
+  COMMON_CATALOG,
+  commonCompatibility,
+  commonOption,
   getCameraOptic,
-  getFabricProfile,
-  isCarOptionCompatible
-} from '../data/carSelfieCatalog.js';
+  getClothing,
+  getFabric,
+  normalizeCommonDerivedState
+} from '../data/carSelfieCommonCatalog.js';
+import { INSIDE_CATALOG, INSIDE_DEFAULT_STATE, isInsideOptionCompatible } from '../data/carSelfieInsideCatalog.js';
+import { OUTSIDE_CATALOG, OUTSIDE_DEFAULT_STATE, isOutsideOptionCompatible } from '../data/carSelfieOutsideCatalog.js';
+import { validateInsideState } from './carSelfieInsideValidation.js';
+import { validateOutsideState } from './carSelfieOutsideValidation.js';
 
-const opt = (field, id) => (CAR_CATALOG[field] || []).find((item) => item.id === id);
 const issue = (severity, code, message, field) => Object.freeze({ severity, code, message, field });
+const COMMON_KEYS = Object.freeze([
+  'mode','initialRequest','referenceAttached','referenceRole','vehicleProfile','cameraLens','colorProfile','lowLightProcessing',
+  'time','place','weather','externalLight','physicsMode','apparentAge','expression','gazeTarget','skinDetail','clothing','fabricType',
+  'fabricSheen','wrinkleProfile','hairProfile','hairMotion','hairSpecular','framing','focalLength','aperture','distance','yaw','pitch','roll',
+  'exposure','hdr','whiteBalance','notes','motion'
+]);
+const INSIDE_KEYS = Object.freeze(['vehicleState','seat','captureMode','handPose','cabinMaterial','clusterType','roofType','windowState','clutterLevel','cabinEmitter']);
+const OUTSIDE_KEYS = Object.freeze(['vehicleState','captureMode','standingPose','paintCondition']);
 
-const LEGACY_LIGHT_MAP = Object.freeze({
-  'day-window-light': ['day-direct-sun', 'none'],
-  'golden-window-light': ['golden-sun', 'none'],
-  'dashboard-glow': ['dark-road-ambient', 'dashboard-only'],
-  'streetlight-spill': ['night-led-street', 'dashboard-only'],
-  'parking-light-spill': ['night-parking-led', 'dashboard-only'],
-  'phone-screen-fill': ['dark-road-ambient', 'phone-only'],
-  'dome-light': ['dark-road-ambient', 'dome-light']
-});
+function pick(input, keys) {
+  const out = {};
+  for (const key of keys) if (Object.prototype.hasOwnProperty.call(input, key)) out[key] = input[key];
+  return out;
+}
+
+export function catalogForMode(mode) {
+  return mode === 'outside' ? OUTSIDE_CATALOG : INSIDE_CATALOG;
+}
+
+export function defaultStateForMode(mode) {
+  return mode === 'outside' ? OUTSIDE_DEFAULT_STATE : INSIDE_DEFAULT_STATE;
+}
 
 export function normalizeCarState(input = {}) {
-  const s = { ...CAR_DEFAULT_STATE, ...input };
-
-  if (input.locationContext && !input.place) s.place = input.locationContext === 'generic-parking' ? 'public-parking' :
-    input.locationContext === 'residential-street' ? 'quiet-residential-street' :
-    input.locationContext === 'roadside-stop' ? 'desert-road' :
-    input.locationContext === 'villa-driveway' ? 'villa-driveway' :
-    input.locationContext === 'ordinary-road' ? 'highway-service-road' :
-    CAR_DEFAULT_STATE.place;
-
-  if (input.lightSource && !input.externalLight) {
-    const mapped = LEGACY_LIGHT_MAP[input.lightSource];
-    if (mapped) [s.externalLight, s.cabinEmitter] = mapped;
-  }
-  if (s.physicsMode === 'advisory') s.physicsMode = 'auto';
-
-  s.initialRequest = String(s.initialRequest ?? '');
-  s.notes = String(s.notes ?? '');
-  s.referenceAttached = Boolean(s.referenceAttached);
-  for (const key of ['apparentAge', 'distance', 'yaw', 'pitch', 'roll']) s[key] = Number(s[key]);
-
-  const optic = getCameraOptic(s.cameraLens);
-  if (optic) {
-    s.focalLength = optic.focalLengthEqMm;
-    s.aperture = optic.aperture;
-  } else {
-    s.focalLength = Number(s.focalLength);
-    s.aperture = Number(s.aperture);
-  }
-  return s;
+  const mode = input.mode === 'outside' ? 'outside' : 'inside';
+  const defaults = defaultStateForMode(mode);
+  const allowed = [...COMMON_KEYS, ...(mode === 'outside' ? OUTSIDE_KEYS : INSIDE_KEYS)];
+  const state = { ...defaults, ...pick(input, allowed), mode };
+  state.motion = mode === 'inside' && state.vehicleState === 'moving' ? 'moving' : 'stationary';
+  state.initialRequest = String(state.initialRequest ?? '');
+  state.notes = String(state.notes ?? '');
+  state.referenceAttached = Boolean(state.referenceAttached);
+  for (const key of ['apparentAge','distance','yaw','pitch','roll']) state[key] = Number(state[key]);
+  const derived = normalizeCommonDerivedState(state);
+  return { ...derived, mode };
 }
 
-function validateCatalogOptions(s, issues) {
-  for (const [field, options] of Object.entries(CAR_CATALOG)) {
-    if (!options.some((item) => item.id === s[field])) issues.push(issue('fatal', 'UNKNOWN_OPTION', `قيمة غير معروفة في ${field}.`, field));
-  }
+export function isOptionCompatible(field, id, input = {}) {
+  const state = normalizeCarState(input);
+  if ((COMMON_CATALOG[field] || []).length && !commonCompatibility(field, id, state)) return false;
+  return state.mode === 'outside' ? isOutsideOptionCompatible(field, id, state) : isInsideOptionCompatible(field, id, state);
 }
 
-function validateCamera(s, issues) {
-  const capture = opt('captureMode', s.captureMode);
-  const lens = getCameraOptic(s.cameraLens);
-  const color = opt('colorProfile', s.colorProfile);
-  const lowLight = opt('lowLightProcessing', s.lowLightProcessing);
-  if (!capture || !lens || !color || !lowLight) return;
+export function compatibleOptions(field, input = {}) {
+  const state = normalizeCarState(input);
+  const catalog = catalogForMode(state.mode);
+  return Object.freeze((catalog[field] || []).filter((item) => isOptionCompatible(field, item.id, state)));
+}
 
-  if (!capture.allowedMotion.includes(s.vehicleState)) issues.push(issue('error', 'CAPTURE_MOTION_CONFLICT', 'نوع الالتقاط لا يتوافق مع حالة حركة المركبة.', 'captureMode'));
-  if (!capture.allowedCameraSides.includes(lens.side) || !lens.allowedCapture.includes(capture.id)) issues.push(issue('error', 'CAMERA_CAPTURE_SIDE_CONFLICT', 'العدسة المختارة لا يمكن استخدامها مع هندسة الالتقاط الحالية.', 'cameraLens'));
-  if (!color.allowedCameraSides.includes(lens.side)) issues.push(issue('error', 'COLOR_PROFILE_CAMERA_CONFLICT', 'ملف الألوان غير متوافق مع جهة الكاميرا. Leica Authentic/Vibrant خاص بالعدسات الخلفية هنا.', 'colorProfile'));
-  if (!lowLight.allowedCameraSides.includes(lens.side) || !lowLight.allowedTimes.includes(s.time)) issues.push(issue('error', 'LOW_LIGHT_PROFILE_CONFLICT', 'معالجة الإضاءة المنخفضة لا تتوافق مع الكاميرا أو الوقت المحدد.', 'lowLightProcessing'));
-  if (lowLight.requiresStationary && s.vehicleState === 'moving') issues.push(issue('error', 'MULTIFRAME_WHILE_MOVING', 'المعالجة الليلية متعددة الإطارات تتطلب مشهدًا ثابتًا؛ أثناء الحركة استخدم معالجة قياسية مع ضوضاء/غالق واقعيين.', 'lowLightProcessing'));
-
-  if (s.focalLength !== lens.focalLengthEqMm || s.aperture !== lens.aperture) issues.push(issue('fatal', 'CAMERA_HARDWARE_DRIFT', 'البعد البؤري أو فتحة العدسة لا تطابق Xiaomi 15 Ultra. القيم يجب أن تأتي من ملف العدسة فقط.', 'cameraLens'));
-
-  if (capture.id === 'handheld-front') {
-    if (lens.id !== 'front-21') issues.push(issue('error', 'FRONT_SELFIE_OPTIC_LOCK', 'السيلفي اليدوي الأمامي يجب أن يستخدم كاميرا Xiaomi 15 Ultra الأمامية فقط.', 'cameraLens'));
-    if (s.distance < 30 || s.distance > 50) issues.push(issue('error', 'ARM_REACH_DISTANCE', 'السيلفي اليدوي يتطلب مسافة ذراع واقعية تقريبًا 30–50 سم.', 'distance'));
-    if (Math.abs(s.yaw) > 35 || Math.abs(s.pitch) > 25 || Math.abs(s.roll) > 10) issues.push(issue('error', 'ARM_REACH_ANGLE', 'زوايا السيلفي اليدوي خرجت عن نطاق ذراع/معصم طبيعي.', 'yaw'));
-  } else {
-    if (s.distance < capture.distanceRangeCm[0] || s.distance > capture.distanceRangeCm[1]) issues.push(issue('error', 'CAR_DISTANCE_CONFLICT', `هذا الالتقاط يتوقع مسافة ${capture.distanceRangeCm[0]}–${capture.distanceRangeCm[1]} سم تقريبًا.`, 'distance'));
-    if (Math.abs(s.yaw) > capture.maxAbsYawDeg || Math.abs(s.pitch) > capture.maxAbsPitchDeg || Math.abs(s.roll) > capture.maxAbsRollDeg) issues.push(issue('error', 'CAPTURE_ANGLE_CONFLICT', 'Yaw/Pitch/Roll لا تتوافق مع موضع تثبيت الهاتف داخل المقصورة.', 'yaw'));
+function validateCommon(state, issues) {
+  const catalog = catalogForMode(state.mode);
+  const relevantFields = [...Object.keys(COMMON_CATALOG), ...(state.mode === 'outside' ? OUTSIDE_KEYS : INSIDE_KEYS)];
+  for (const field of new Set(relevantFields)) {
+    const options = catalog[field];
+    if (options && !options.some((item) => item.id === state[field])) issues.push(issue('fatal', 'UNKNOWN_OPTION', `قيمة غير معروفة في ${field}.`, field));
   }
 
-  if (lens.id === 'rear-tele-70' && s.distance < 75) issues.push(issue('error', 'TELEPHOTO_DISTANCE_CONFLICT', 'عدسة 70mm داخل المقصورة تحتاج مسافة أكبر لتجنب كادر/منظور غير منطقي؛ استخدم 75 سم أو أكثر.', 'distance'));
-  if (lens.id === 'rear-ultratele-100' && s.distance < 100) issues.push(issue('error', 'ULTRATELE_DISTANCE_CONFLICT', 'عدسة 100mm داخل المقصورة تحتاج مسافة لا تقل تقريبًا عن 100 سم وكادرًا شديد الضيق.', 'distance'));
-}
+  if (!Number.isFinite(state.apparentAge) || state.apparentAge < 1 || state.apparentAge > 100) issues.push(issue('fatal', 'AGE_RANGE', 'العمر الظاهر يجب أن يكون بين 1 و100.', 'apparentAge'));
+  if (!Number.isFinite(state.distance) || state.distance < 20 || state.distance > 600) issues.push(issue('fatal', 'DISTANCE_RANGE', 'مسافة الكاميرا خارج المجال المدعوم 20–600 سم.', 'distance'));
+  if (![state.yaw,state.pitch,state.roll].every(Number.isFinite) || Math.abs(state.yaw) > 60 || Math.abs(state.pitch) > 40 || Math.abs(state.roll) > 20) issues.push(issue('fatal', 'ANGLE_RANGE', 'Yaw/Pitch/Roll خارج المجال العام المدعوم.', 'yaw'));
 
-function validateMotionAndHands(s, issues) {
-  const motion = opt('vehicleState', s.vehicleState);
-  const capture = opt('captureMode', s.captureMode);
-  const seat = opt('seat', s.seat);
-  const hand = opt('handPose', s.handPose);
-  if (motion?.moving && capture?.phoneHeld) issues.push(issue('error', 'HANDHELD_WHILE_MOVING', 'السيلفي اليدوي أثناء تحرك المركبة مرفوض؛ الهاتف يجب أن يكون مثبتًا فعليًا.', 'captureMode'));
-  if (motion?.moving && seat?.role === 'driver' && s.captureMode !== 'dashboard-fixed') issues.push(issue('error', 'DRIVER_MOVING_CAPTURE', 'السائق أثناء الحركة يحتاج كاميرا مثبتة على لوحة القيادة.', 'captureMode'));
-  if (motion?.moving && seat?.role === 'driver' && !['both-hands-wheel', 'one-hand-wheel'].includes(s.handPose)) issues.push(issue('error', 'DRIVER_HANDS_CONFLICT', 'وضع اليدين لا يتوافق مع قيادة متحركة واقعية.', 'handPose'));
-  if (hand && !isCarOptionCompatible('handPose', hand.id, s)) issues.push(issue('error', 'HAND_POSE_COMPATIBILITY', 'وضع اليدين غير متوافق مع المقعد أو الحركة أو تثبيت الهاتف.', 'handPose'));
-  if (motion?.moving && seat?.role === 'driver' && ['side-glance', 'mild-surprise'].includes(s.expression)) issues.push(issue('warning', 'DRIVER_ATTENTION_WARNING', 'التعبير المختار ممكن لحظةً لكنه أقل اتساقًا مع قيادة مركزة؛ لا تجعل العينين بعيدتين عن الطريق مدة غير منطقية.', 'expression'));
-}
+  const lens = getCameraOptic(state.cameraLens);
+  if (!lens) issues.push(issue('fatal', 'CAMERA_LENS_MISSING', 'عدسة Xiaomi غير معروفة.', 'cameraLens'));
+  else if (state.focalLength !== lens.focalLengthEqMm || state.aperture !== lens.aperture) issues.push(issue('fatal', 'CAMERA_HARDWARE_DRIFT', 'البعد البؤري والفتحة مشتقان من العتاد ولا يجوز تجاوزهما يدويًا.', 'cameraLens'));
 
-function validatePlaceAndWeather(s, issues) {
-  const place = opt('place', s.place);
-  const weather = opt('weather', s.weather);
-  if (place && !place.allowedVehicleStates.includes(s.vehicleState)) issues.push(issue('error', 'PLACE_MOTION_CONFLICT', 'المكان المختار لا يتوافق مع حالة المركبة الحالية.', 'place'));
-  if (place && weather && (!place.allowedWeather.includes(weather.id) || !weather.compatiblePlaces.includes(place.placeKind))) issues.push(issue('error', 'WEATHER_PLACE_CONFLICT', 'الطقس المختار لا يتوافق مع نوع المكان.', 'weather'));
+  if (!commonCompatibility('colorProfile', state.colorProfile, state)) issues.push(issue('error', 'COLOR_PROFILE_CAMERA', 'بصمة الألوان لا تتوافق مع جهة الكاميرا؛ Leica للعدسات الخلفية فقط.', 'colorProfile'));
+  if (!commonCompatibility('lowLightProcessing', state.lowLightProcessing, state)) issues.push(issue('error', 'LOW_LIGHT_CONFLICT', 'معالجة الإضاءة المنخفضة لا تتوافق مع العدسة/الوقت/الحركة.', 'lowLightProcessing'));
+  if (!commonCompatibility('weather', state.weather, state)) issues.push(issue('error', 'WEATHER_PLACE_CONFLICT', 'الطقس لا يتوافق مع المكان.', 'weather'));
+  if (!commonCompatibility('externalLight', state.externalLight, state)) issues.push(issue('error', 'EXTERNAL_LIGHT_CONFLICT', 'الإضاءة الخارجية لا تتوافق مع الوقت أو نوع المكان.', 'externalLight'));
 
-  const forbidden = ['riyadh', 'jeddah', 'mecca', 'medina', 'الرياض', 'جدة', 'مكة', 'المدينة', 'kingdom centre', 'برج المملكة'];
-  const text = `${place?.label || ''} ${place?.prompt || ''}`.toLowerCase();
-  if (forbidden.some((term) => text.includes(term))) issues.push(issue('fatal', 'NAMED_LOCATION_LEAK', 'قائمة الأماكن يجب أن تبقى عامة دون مدينة أو معلم معروف.', 'place'));
-}
+  const place = commonOption('place', state.place);
+  const forbidden = ['riyadh','jeddah','mecca','medina','الرياض','جدة','مكة','المدينة','kingdom centre','برج المملكة'];
+  const placeText = `${place?.label || ''} ${place?.prompt || ''}`.toLowerCase();
+  if (forbidden.some((term) => placeText.includes(term))) issues.push(issue('fatal', 'NAMED_LOCATION_LEAK', 'الأماكن يجب أن تبقى عامة بلا مدن أو معالم معروفة.', 'place'));
 
-function validateLighting(s, issues) {
-  const place = opt('place', s.place);
-  const external = opt('externalLight', s.externalLight);
-  const emitter = opt('cabinEmitter', s.cabinEmitter);
-  if (external) {
-    if (!external.allowedTimes.includes(s.time)) issues.push(issue('error', 'EXTERNAL_LIGHT_TIME', 'الإضاءة الخارجية لا تتوافق مع الوقت.', 'externalLight'));
-    if (place && !external.allowedPlaceKinds.includes(place.placeKind)) issues.push(issue('error', 'EXTERNAL_LIGHT_PLACE', 'مصدر الإضاءة الخارجي لا يتوافق مع بنية المكان.', 'externalLight'));
-  }
-  if (emitter && !emitter.allowedTimes.includes(s.time)) issues.push(issue('error', 'CABIN_LIGHT_TIME', 'مصدر الإضاءة الداخلي لا يتوافق مع الوقت.', 'cabinEmitter'));
-  if (emitter?.requiresPhoneFacingSubject && !['handheld-front', 'dashboard-fixed', 'center-console-fixed', 'rearview-mirror'].includes(s.captureMode)) issues.push(issue('error', 'PHONE_EMITTER_GEOMETRY', 'إضاءة شاشة الهاتف تتطلب أن تواجه الشاشة الشخص فعليًا.', 'cabinEmitter'));
-  if (s.time === 'day' && s.cabinEmitter !== 'none') issues.push(issue('warning', 'CABIN_EMITTER_DAY', 'يمكن تشغيل مصدر داخلي نهارًا، لكنه يجب أن يبقى أضعف بكثير من الشمس/السماء ولا يغيّر اتجاه الظلال الرئيسي.', 'cabinEmitter'));
-  if (s.hdr === 'auto-realistic' && s.externalLight === 'dark-road-ambient' && s.cabinEmitter === 'none') issues.push(issue('warning', 'HDR_CANNOT_CREATE_LIGHT', 'HDR لن يجعل الوجه مضاءً إذا لم يصل إليه ضوء فعلي؛ اقبل ظلالًا عميقة وضوضاء واقعية.', 'hdr'));
-}
+  const clothing = getClothing(state.clothing);
+  const fabric = getFabric(state.fabricType);
+  if (!clothing?.fabrics.includes(state.fabricType)) issues.push(issue('error', 'CLOTHING_FABRIC_CONFLICT', 'نوع القماش لا يتوافق مع قطعة الملابس المختارة.', 'fabricType'));
+  if (!fabric?.sheen.includes(state.fabricSheen)) issues.push(issue('error', 'FABRIC_SHEEN_CONFLICT', 'تفاعل القماش مع الضوء لا يتوافق مع نوع القماش.', 'fabricSheen'));
+  if (!fabric?.wrinkles.includes(state.wrinkleProfile)) issues.push(issue('error', 'FABRIC_WRINKLE_CONFLICT', 'نمط التجاعيد لا يتوافق مع صلابة/دراپ القماش.', 'wrinkleProfile'));
 
-function validateHairAndFabric(s, issues) {
-  const hair = opt('hairProfile', s.hairProfile);
-  const fabric = getFabricProfile(s.clothing);
-  if (hair && hair.densityLock !== true) issues.push(issue('fatal', 'HAIR_DENSITY_UNLOCKED', 'كل ملف شعر يجب أن يفرض ثبات الكثافة وخط الشعر.', 'hairProfile'));
-  if (!fabric) issues.push(issue('fatal', 'FABRIC_PHYSICS_MISSING', 'قطعة الملابس بلا ملف فيزياء قماش مرتبط.', 'clothing'));
-  if (s.hairProfile === 'covered' && !['black-abaya-hijab', 'embroidered-abaya', 'neutral-abaya-chiffon-hijab'].includes(s.clothing)) issues.push(issue('warning', 'COVERED_HAIR_WITHOUT_HEAD_COVER', 'تم اختيار شعر مغطى بدون قطعة ملابس تتضمن غطاء رأس؛ تأكد أن الملاحظات تذكر الغطاء.', 'hairProfile'));
-}
+  const hair = commonOption('hairProfile', state.hairProfile);
+  if (hair?.densityLock !== true) issues.push(issue('fatal', 'HAIR_DENSITY_UNLOCKED', 'كثافة الشعر وخط الشعر يجب أن يبقيا ثابتين دائمًا.', 'hairProfile'));
+  if (!commonCompatibility('hairMotion', state.hairMotion, state)) issues.push(issue('error', 'HAIR_MOTION_MODE', 'حركة الشعر لا تتوافق مع وضع الداخل/الخارج.', 'hairMotion'));
+  if (!commonCompatibility('gazeTarget', state.gazeTarget, state)) issues.push(issue('error', 'GAZE_MODE_CONFLICT', 'اتجاه النظر لا يتوافق مع وضع التصوير.', 'gazeTarget'));
 
-function validateMirrorAndReflections(s, issues) {
-  if (s.captureMode === 'rearview-mirror') {
-    const lens = getCameraOptic(s.cameraLens);
-    if (lens?.side !== 'rear') issues.push(issue('error', 'MIRROR_REAR_CAMERA_REQUIRED', 'تصوير المرآة الداخلية في هذا النظام يتطلب عدسة خلفية موجهة إلى سطح المرآة.', 'cameraLens'));
-    if (Math.abs(s.yaw) > 35 || Math.abs(s.pitch) > 25) issues.push(issue('error', 'MIRROR_LINE_OF_SIGHT', 'زاوية الكاميرا تكسر خط النظر الواقعي للمرآة الداخلية.', 'yaw'));
-  }
-}
-
-function validateCabinAndClutter(s, issues) {
-  if (s.vehicleProfile === 'l494-2017-white' && s.clusterType === 'modern-digital') issues.push(issue('error', 'PERIOD_CABIN_CONFLICT', 'عدادات حديثة قد تحوّل L494 2017 إلى مقصورة جيل أحدث.', 'clusterType'));
-  const clutter = CAR_CLUTTER_LEVELS.find((item) => item.id === s.clutterLevel);
-  if (s.vehicleState === 'moving' && clutter?.id === 'heavy') issues.push(issue('warning', 'HEAVY_CLUTTER_MOVING', 'الفوضى الشديدة أثناء الحركة يجب أن تبقى خارج مسار الدواسات والمقود وأن تتحرك فقط ضمن قيود الجاذبية/التسارع.', 'clutterLevel'));
+  if (state.referenceRole !== 'none' && !state.referenceAttached) issues.push(issue('warning', 'REFERENCE_NOT_ATTACHED', 'تم اختيار استخدام مرجع هوية بدون صورة مرفقة.', 'referenceRole'));
+  if (state.hdr === 'auto-realistic' && state.time === 'night' && state.externalLight === 'night-signage-spill') issues.push(issue('warning', 'HDR_SIGNAL_ONLY', 'HDR يحمي الإشارة الموجودة لكنه لا يخلق ضوءًا على أسطح لم يصلها المصدر فعليًا.', 'hdr'));
 }
 
 export function validateCarState(input = {}) {
-  const s = normalizeCarState(input);
+  const state = normalizeCarState(input);
   const issues = [];
-  validateCatalogOptions(s, issues);
-  if (!Number.isFinite(s.apparentAge) || s.apparentAge < 1 || s.apparentAge > 100) issues.push(issue('fatal', 'AGE_RANGE', 'العمر الظاهر يجب أن يكون بين 1 و100.', 'apparentAge'));
-  if (!Number.isFinite(s.distance) || s.distance < 20 || s.distance > 250) issues.push(issue('fatal', 'DISTANCE_RANGE', 'المسافة البصرية خارج نطاق المقصورة 20–250 سم.', 'distance'));
-  if (!Number.isFinite(s.yaw) || !Number.isFinite(s.pitch) || !Number.isFinite(s.roll) || Math.abs(s.yaw) > 60 || Math.abs(s.pitch) > 40 || Math.abs(s.roll) > 20) issues.push(issue('fatal', 'ANGLE_RANGE', 'زاوية الكاميرا خارج النطاق العام للمقصورة.', 'yaw'));
-
-  validateCamera(s, issues);
-  validateMotionAndHands(s, issues);
-  validatePlaceAndWeather(s, issues);
-  validateLighting(s, issues);
-  validateHairAndFabric(s, issues);
-  validateMirrorAndReflections(s, issues);
-  validateCabinAndClutter(s, issues);
-
-  for (const field of ['captureMode', 'cameraLens', 'colorProfile', 'lowLightProcessing', 'handPose', 'place', 'weather', 'externalLight', 'cabinEmitter']) {
-    if (opt(field, s[field]) && !isCarOptionCompatible(field, s[field], s)) issues.push(issue('error', 'OPTION_COMPATIBILITY', `الخيار ${field} غير متناسق مع حالة السيارة الحالية.`, field));
-  }
-  if (s.referenceRole !== 'none' && !s.referenceAttached) issues.push(issue('warning', 'CAR_REFERENCE_NOT_ATTACHED', 'تم اختيار دور مرجعي دون صورة مرفقة.', 'referenceRole'));
+  validateCommon(state, issues);
+  if (state.mode === 'outside') validateOutsideState(state, issues);
+  else validateInsideState(state, issues);
   return Object.freeze(issues);
 }
 
 export function carValidationStatus(input = {}) {
-  const s = normalizeCarState(input);
-  const issues = validateCarState(s);
-  const strict = s.physicsMode === 'strict';
+  const state = normalizeCarState(input);
+  const issues = validateCarState(state);
+  const strict = state.physicsMode === 'strict';
   const blocked = issues.some((item) => item.severity === 'fatal' || (strict && item.severity === 'error'));
-  return Object.freeze({ issues, strict, blocked });
+  return Object.freeze({ state: Object.freeze({ ...state }), issues, strict, blocked });
 }

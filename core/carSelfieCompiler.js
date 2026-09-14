@@ -46,10 +46,10 @@ function legacyCommonSections(state) {
   return [
     `INITIAL INTENT: ${state.initialRequest.trim() || (state.mode === 'inside' ? 'natural in-car selfie' : 'natural self-portrait beside a parked car')}`,
     `XIAOMI 15 ULTRA CAMERA LOCK: ${lens?.prompt || ''}. Hardware authority: ${state.focalLength}mm equivalent, f/${state.aperture}.`,
-    `CAMERA PROCESSING: ${prompt('colorProfile', state.colorProfile)}; ${prompt('lowLightProcessing', state.lowLightProcessing)}; ${prompt('exposure', state.exposure)}; ${prompt('hdr', state.hdr)}; ${prompt('whiteBalance', state.whiteBalance)}.`,
+    `CAMERA PROCESSING: ${prompt('colorProfile', state.colorProfile)}; ${prompt('lowLightProcessing', state.lowLightProcessing)}; ${prompt('exposure', state.exposure)}; ${prompt('hdr', state.hdr)}; ${prompt('whiteBalance', state.whiteBalance)}. HDR/exposure/denoising may reveal captured signal but never create physical illumination.`,
     `CAMERA GEOMETRY: ${state.focalLength}mm equivalent at ${state.distance}cm; yaw ${state.yaw}°; pitch ${state.pitch}°; roll ${state.roll}°. ${cameraDistortion}`,
     `PLACE: ${place?.prompt || ''}. ROAD/SURFACE: ${place?.surface || ''}. CURB: ${place?.curb || ''}. VEGETATION: ${place?.vegetation || ''}. PEOPLE/PRIVACY: ${place?.people || ''}. WEATHER: ${prompt('weather', state.weather)}.`,
-    `PHYSICAL EXTERIOR LIGHTING: ${prompt('externalLight', state.externalLight)}.`,
+    `PHYSICAL EXTERIOR LIGHTING: ${prompt('externalLight', state.externalLight)}. A second opposing shadow requires a real second source with plausible position and intensity.`,
     `SUBJECT: apparent age ${state.apparentAge}; ${prompt('expression', state.expression)}; ${prompt('gazeTarget', state.gazeTarget)}; ${prompt('skinDetail', state.skinDetail)}.`,
     `CLOTHING: ${clothing?.prompt || ''}. FABRIC TYPE: ${fabric?.prompt || ''}. LIGHT RESPONSE: ${prompt('fabricSheen', state.fabricSheen)}. WRINKLES: ${prompt('wrinkleProfile', state.wrinkleProfile)}.`,
     `HAIR PHYSICS: ${prompt('hairProfile', state.hairProfile)}. ${prompt('hairMotion', state.hairMotion)}. ${prompt('hairSpecular', state.hairSpecular)}.`,

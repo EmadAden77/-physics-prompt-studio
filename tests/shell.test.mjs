@@ -5,21 +5,21 @@ import fs from 'node:fs';
 const exists = (path) => fs.existsSync(path);
 const read = (path) => fs.readFileSync(path, 'utf8');
 
-test('rules-engine directories are removed', () => {
-  assert.equal(exists('core'), false);
-  assert.equal(exists('data'), false);
-  assert.equal(exists('docs'), false);
-});
-
-test('application shell remains', () => {
-  for (const file of ['index.html','app.js','styles.css','car-selfie.html','car-selfie.js','car-selfie.css']) {
+test('prompt optimizer application files exist', () => {
+  for (const file of ['index.html', 'app.js', 'styles.css', 'core/prompt-optimizer.js']) {
     assert.equal(exists(file), true, `missing ${file}`);
   }
 });
 
-test('car shell contains no prompt engine hooks', () => {
-  const source = `${read('car-selfie.html')}\n${read('car-selfie.js')}`;
-  for (const token of ['compileCarSelfie','NEGATIVE_LIST','HARD ACCEPTANCE','VISUAL ANCHOR','Physics Checker','Master Profile']) {
-    assert.equal(source.includes(token), false, `unexpected legacy rule token: ${token}`);
+test('interface exposes optimizer outputs', () => {
+  const html = read('index.html');
+  for (const token of ['Prompt Optimizer', 'Compiled Prompt', 'Ledger', 'JSON Packet', 'statusBadge']) {
+    assert.equal(html.includes(token), true, `missing UI token: ${token}`);
   }
+});
+
+test('browser app imports the local optimizer engine', () => {
+  const source = read('app.js');
+  assert.equal(source.includes("./core/prompt-optimizer.js"), true);
+  assert.equal(source.includes('compilePrompt'), true);
 });

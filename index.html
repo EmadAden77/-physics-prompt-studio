@@ -13,93 +13,61 @@
       <div>
         <p class="eyebrow">Physics Prompt Studio</p>
         <h1>Prompt Optimizer</h1>
-        <p class="lede">حوّل الطلب الطويل إلى Execution Brief محافظ على القيود، مع خريطة قيود، صلاحيات، كشف انحراف النطاق، وValidation قبل حالة READY.</p>
+        <p class="lede">حوّل الطلب إلى Execution Brief منظم، وأضف مشهدًا بصريًا مضبوطًا عبر المكان والملابس ووضعية السيلفي وزاوية الكاميرا والإضاءة الفيزيائية.</p>
       </div>
       <a class="button secondary" href="car-selfie.html">قسم السيارات القديم</a>
     </header>
 
+    <section class="scene-builder card" aria-label="بناء المشهد">
+      <div class="section-head">
+        <div>
+          <p class="kicker">SCENE BUILDER</p>
+          <h2>تشكيل المشهد</h2>
+        </div>
+        <span class="pill">اختيارات صريحة تحفظ داخل الـPacket</span>
+      </div>
+
+      <div class="scene-grid">
+        <label class="field"><span>المكان داخل السعودية</span><select id="sceneLocation"><option value="">بدون تحديد</option></select></label>
+        <label class="field"><span>الملابس</span><select id="sceneClothing"><option value="">بدون تحديد</option></select></label>
+        <label class="field"><span>وضعية السيلفي</span><select id="scenePose"><option value="">بدون تحديد</option></select></label>
+        <label class="field"><span>زاوية تصوير السيلفي</span><select id="sceneAngle"><option value="">بدون تحديد</option></select></label>
+        <label class="field lighting-field"><span>الإضاءة الفيزيائية النهارية / الليلية</span><select id="sceneLighting"><option value="">بدون تحديد</option></select></label>
+        <label class="field lighting-notes"><span>ملاحظات إضافية للإضاءة</span><input id="lightingNotes" type="text" placeholder="مثال: المصدر الأساسي عمود LED على يسار الكادر، والخلفية أغمق تدريجيًا"></label>
+      </div>
+      <p class="hint scene-hint">الإضاءة هنا سببية: مصدر الضوء يحدد ما يضيء والظلال والانعكاسات. Exposure / ISO / HDR لا تُعامل كمصدر ضوء.</p>
+    </section>
+
     <section class="workspace-grid" aria-label="مساحة العمل">
       <article class="card input-card">
-        <div class="section-head">
-          <div>
-            <p class="kicker">01</p>
-            <h2>الطلب الأصلي</h2>
-          </div>
-          <span class="pill">يُحفظ حرفيًا</span>
-        </div>
-
+        <div class="section-head"><div><p class="kicker">01</p><h2>الطلب الأصلي</h2></div><span class="pill">يُحفظ حرفيًا</span></div>
         <label for="surface">Target surface</label>
-        <select id="surface">
-          <option value="unknown">غير محدد</option>
-          <option value="chatgpt">ChatGPT</option>
-          <option value="codex">Codex</option>
-          <option value="openai_api">OpenAI API</option>
-          <option value="other">Other</option>
-        </select>
-
+        <select id="surface"><option value="unknown">غير محدد</option><option value="chatgpt">ChatGPT</option><option value="codex">Codex</option><option value="openai_api">OpenAI API</option><option value="other">Other</option></select>
         <label for="sourcePrompt">Prompt</label>
         <textarea id="sourcePrompt" rows="18" spellcheck="false" placeholder="الصق البرومبت أو الطلب هنا..."></textarea>
-
-        <div class="actions">
-          <button id="compileButton" class="primary" type="button">تحليل وتحسين</button>
-          <button id="clearButton" class="secondary" type="button">مسح</button>
-        </div>
+        <div class="actions"><button id="compileButton" class="primary" type="button">تحليل وتحسين</button><button id="clearButton" class="secondary" type="button">مسح</button></div>
         <p class="hint">المحرك لا ينفذ الطلب. وظيفته تجميعه وتحسين بنيته فقط.</p>
       </article>
 
       <article class="card result-card">
-        <div class="section-head">
-          <div>
-            <p class="kicker">02</p>
-            <h2>النتيجة</h2>
-          </div>
-          <span id="statusBadge" class="status idle">IDLE</span>
-        </div>
-
-        <div class="metrics" aria-live="polite">
-          <div class="metric"><span>القيود</span><strong id="constraintCount">0</strong></div>
-          <div class="metric"><span>التحذيرات</span><strong id="warningCount">0</strong></div>
-          <div class="metric"><span>السطح</span><strong id="surfaceValue">—</strong></div>
-        </div>
-
-        <div class="tabs" role="tablist" aria-label="مخرجات التحليل">
-          <button class="tab active" data-tab="compiled" type="button">Compiled Prompt</button>
-          <button class="tab" data-tab="ledger" type="button">Ledger</button>
-          <button class="tab" data-tab="packet" type="button">JSON Packet</button>
-        </div>
-
-        <section class="tab-panel active" data-panel="compiled">
-          <textarea id="compiledOutput" rows="18" readonly placeholder="سيظهر الـCompiled Prompt هنا..."></textarea>
-        </section>
-
-        <section class="tab-panel" data-panel="ledger">
-          <pre id="ledgerOutput" class="code-panel">لا توجد نتيجة بعد.</pre>
-        </section>
-
-        <section class="tab-panel" data-panel="packet">
-          <pre id="packetOutput" class="code-panel">لا توجد نتيجة بعد.</pre>
-        </section>
-
-        <div class="actions result-actions">
-          <button id="copyButton" class="primary" type="button" disabled>نسخ Compiled Prompt</button>
-          <button id="downloadButton" class="secondary" type="button" disabled>تنزيل JSON</button>
-        </div>
+        <div class="section-head"><div><p class="kicker">02</p><h2>النتيجة</h2></div><span id="statusBadge" class="status idle">IDLE</span></div>
+        <div class="metrics" aria-live="polite"><div class="metric"><span>القيود</span><strong id="constraintCount">0</strong></div><div class="metric"><span>التحذيرات</span><strong id="warningCount">0</strong></div><div class="metric"><span>السطح</span><strong id="surfaceValue">—</strong></div></div>
+        <div class="tabs" role="tablist" aria-label="مخرجات التحليل"><button class="tab active" data-tab="compiled" type="button">Compiled Prompt</button><button class="tab" data-tab="ledger" type="button">Ledger</button><button class="tab" data-tab="packet" type="button">JSON Packet</button></div>
+        <section class="tab-panel active" data-panel="compiled"><textarea id="compiledOutput" rows="18" readonly placeholder="سيظهر الـCompiled Prompt هنا..."></textarea></section>
+        <section class="tab-panel" data-panel="ledger"><pre id="ledgerOutput" class="code-panel">لا توجد نتيجة بعد.</pre></section>
+        <section class="tab-panel" data-panel="packet"><pre id="packetOutput" class="code-panel">لا توجد نتيجة بعد.</pre></section>
+        <div class="actions result-actions"><button id="copyButton" class="primary" type="button" disabled>نسخ Compiled Prompt</button><button id="downloadButton" class="secondary" type="button" disabled>تنزيل JSON</button></div>
       </article>
     </section>
 
     <section class="card rules-card">
-      <div class="section-head">
-        <div>
-          <p class="kicker">03</p>
-          <h2>القواعد الأساسية</h2>
-        </div>
-      </div>
+      <div class="section-head"><div><p class="kicker">03</p><h2>القواعد الأساسية</h2></div></div>
       <div class="rules-grid">
-        <div><strong>Original Prompt</strong><span>يُحفظ كما أُدخل بدون إعادة كتابة.</span></div>
+        <div><strong>Original Prompt</strong><span>يُحفظ كما أُدخل بدون إعادة كتابة، حتى عند استخدام Scene Builder.</span></div>
+        <div><strong>Scene Controls</strong><span>المكان والملابس والوضعية والزاوية والإضاءة تُسجل كمصدر مستقل وصريح.</span></div>
+        <div><strong>Physical Lighting</strong><span>الضوء الفعلي منفصل عن Exposure / ISO / HDR والمعالجة الحسابية.</span></div>
         <div><strong>7 Canonical Sections</strong><span>Outcome → Context → Constraints → Evidence → Output → Routing → Verification.</span></div>
-        <div><strong>Constraint Map</strong><span>كل قيد مكتشف يرتبط مرة واحدة بمكانه في النسخة المجمعة.</span></div>
-        <div><strong>Authority</strong><span>يفصل بين العمل المحلي، الأفعال الخارجية، وتوسيع النطاق.</span></div>
-        <div><strong>Scope Drift</strong><span>يرصد المفاهيم التي لم يصرح بها المصدر.</span></div>
+        <div><strong>Constraint Map</strong><span>كل قيد من النص أو Scene Builder يرتبط مرة واحدة بمكانه في النسخة المجمعة.</span></div>
         <div><strong>Validation</strong><span>لا تصبح النتيجة READY إلا إذا اجتازت التحقق البنيوي.</span></div>
       </div>
     </section>

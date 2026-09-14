@@ -4,7 +4,13 @@ import { detectCarModeFromIntent, XIAOMI_15_ULTRA_PROFILE } from '../data/carSel
 import { INSIDE_DEFAULT_STATE, analyzeInsideIntent, isInsideOptionCompatible } from '../data/carSelfieInsideCatalog.js';
 import { OUTSIDE_DEFAULT_STATE, analyzeOutsideIntent, isOutsideOptionCompatible } from '../data/carSelfieOutsideCatalog.js';
 import { carValidationStatus, compatibleOptions, normalizeCarState, validateCarState } from '../core/carSelfieValidation.js';
-import { compileCarSelfieDetailed, compileCarSelfieJson, compileCarSelfieNegative } from '../core/carSelfieCompiler.js';
+import {
+  compileCarSelfieDetailed,
+  compileCarSelfieJson,
+  compileCarSelfieNegative,
+  compileCarSelfieTechnicalSpec
+} from '../core/carSelfieCompiler.js';
+import { NEGATIVE_LIST } from '../core/carSelfieNarrativeCompiler.js';
 
 const inside = (patch = {}) => normalizeCarState({ ...structuredClone(INSIDE_DEFAULT_STATE), ...patch, mode: 'inside' });
 const outside = (patch = {}) => normalizeCarState({ ...structuredClone(OUTSIDE_DEFAULT_STATE), ...patch, mode: 'outside' });
@@ -28,15 +34,15 @@ test('outside normalized state contains no inside-only fields', () => {
   assert.equal('cabinEmitter' in s, false);
 });
 
-test('inside compiler does not leak outside standing instructions', () => {
-  const out = compileCarSelfieDetailed(inside());
+test('legacy inside technical compiler does not leak outside instructions', () => {
+  const out = compileCarSelfieTechnicalSpec(inside());
   assert.match(out, /MODE: INSIDE CAR SELFIE ONLY/);
   assert.doesNotMatch(out, /STANDING POSE:/);
   assert.doesNotMatch(out, /PAINT & BODY PHYSICS:/);
 });
 
-test('outside compiler does not leak cabin clutter or seating instructions', () => {
-  const out = compileCarSelfieDetailed(outside());
+test('legacy outside technical compiler does not leak cabin instructions', () => {
+  const out = compileCarSelfieTechnicalSpec(outside());
   assert.match(out, /MODE: OUTSIDE BESIDE-CAR SELF-PORTRAIT ONLY/);
   assert.doesNotMatch(out, /INTERIOR CLUTTER:/);
   assert.doesNotMatch(out, /CABIN EMITTER:/);
@@ -133,37 +139,39 @@ test('fabric type filters from selected clothing', () => {
   assert.deepEqual(ids, ['cotton-poplin', 'poly-cotton']);
 });
 
-test('hair density lock is emitted and mode-specific motion is enforced', () => {
+test('narrative keeps fixed hair density while validation enforces airflow compatibility', () => {
   const out = compileCarSelfieDetailed(outside({ hairMotion: 'light-breeze' }));
-  assert.match(out, /Hair density and hairline are invariant/i);
+  assert.match(out, /Hair keeps its real density and hairline/i);
   const bad = inside({ hairMotion: 'light-breeze' });
   assert.ok(validateCarState(bad).some((item) => item.code === 'HAIR_MOTION_MODE' || item.code === 'OUTDOOR_HAIR_MOTION_INSIDE'));
 });
 
-test('facial anatomy and skin micro-detail are emitted', () => {
+test('narrative emits natural skin and facial detail without technical muscle lists', () => {
   const out = compileCarSelfieDetailed(outside({ expression: 'small-smile', skinDetail: 'fine-lines' }));
-  assert.match(out, /zygomatic|muscle|Eye convergence|eyelid/i);
-  assert.match(out, /pores|fine age-appropriate lines/i);
+  assert.match(out, /slight natural closed-mouth smile/i);
+  assert.match(out, /visible pores|fine facial texture/i);
+  assert.doesNotMatch(out, /zygomatic activation|orbicularis/i);
 });
 
-test('physical light causality forbids unexplained opposing shadows', () => {
-  const out = compileCarSelfieDetailed(outside({ time: 'day', externalLight: 'day-direct-sun', lowLightProcessing: 'standard' }));
+test('legacy technical output retains explicit physical light causality', () => {
+  const out = compileCarSelfieTechnicalSpec(outside({ time: 'day', externalLight: 'day-direct-sun', lowLightProcessing: 'standard' }));
   assert.match(out, /second opposing shadow requires a real second source/i);
   assert.match(out, /never create physical illumination/i);
 });
 
-test('outside body reflection and tire grounding rules are emitted', () => {
-  const out = compileCarSelfieDetailed(outside());
+test('legacy outside technical output retains body reflection and tire grounding rules', () => {
+  const out = compileCarSelfieTechnicalSpec(outside());
   assert.match(out, /Paint reflections are environment-dependent/i);
   assert.match(out, /tires contact the ground/i);
   assert.match(out, /Fresnel reflection/i);
 });
 
-test('inside clutter obeys gravity/contact and is absent outside', () => {
+test('narrative clutter obeys gravity and remains absent from outside mode', () => {
   const inOut = compileCarSelfieDetailed(inside({ clutterLevel: 'moderate' }));
-  assert.match(inOut, /gravity|contact shadow/i);
+  assert.match(inOut, /at most two clearly visible supported items/i);
+  assert.match(inOut, /gravity/i);
   const exOut = compileCarSelfieDetailed(outside());
-  assert.doesNotMatch(exOut, /INTERIOR CLUTTER:/);
+  assert.doesNotMatch(exOut, /clutter|loose object/i);
 });
 
 test('strict blocks errors while auto reports without blocking', () => {
@@ -174,30 +182,26 @@ test('strict blocks errors while auto reports without blocking', () => {
   assert.ok(carValidationStatus(badAuto).issues.some((item) => item.severity === 'error'));
 });
 
-test('negative prompt is mode-aware', () => {
-  assert.match(compileCarSelfieNegative(inside()), /no exterior standing pose/i);
-  assert.match(compileCarSelfieNegative(outside()), /no cabin clutter/i);
+test('negative prompt is unified across modes', () => {
+  assert.equal(compileCarSelfieNegative(inside()), NEGATIVE_LIST);
+  assert.equal(compileCarSelfieNegative(outside()), NEGATIVE_LIST);
 });
 
-test('mandatory Anti-AI-Tells are emitted in both modes', () => {
+test('narrative embeds anti-AI realism as natural visual description', () => {
   for (const s of [inside(), outside()]) {
     const out = compileCarSelfieDetailed(s);
-    assert.match(out, /ANTI-AI-TELLS:/);
-    assert.match(out, /skin pores/i);
-    assert.match(out, /facial lines/i);
-    assert.match(out, /stray hairs/i);
-    assert.match(out, /corneal reflections/i);
+    assert.match(out, /visible pores/i);
+    assert.match(out, /flyaways/i);
     assert.match(out, /fabric fibers/i);
-    assert.match(out, /natural asymmetries|natural texture/i);
+    assert.match(out, /corneal catchlights/i);
+    assert.match(out, /natural asymmetry/i);
   }
 });
 
-test('negative prompt contains the mandatory anti-AI blacklist', () => {
-  for (const s of [inside(), outside()]) {
-    const neg = compileCarSelfieNegative(s);
-    for (const token of ['AI-generated look','plastic skin','over-smoothed skin','symmetric face','perfectly styled hair','glossy hair','uniform fabric','no wrinkles','HDR overprocessing','teal-orange grading','dual shadows without dual sources','floating objects','3D render','airbrushed','beauty filter','artificial depth of field','fake lens flare','perfect composition','centered framing','dead eyes','missing corneal reflections','extra fingers','deformed hands','gibberish text','watermark']) {
-      assert.ok(neg.toLowerCase().includes(token.toLowerCase()), `missing anti-AI token: ${token}`);
-    }
+test('negative prompt contains the V9 compact anti-AI list', () => {
+  const neg = compileCarSelfieNegative(inside());
+  for (const token of ['no CGI','no 3D render','no plastic skin','no airbrushed skin','no beauty filter','no brand logos','no readable text','no mirrored cabin','no floating objects','no impossibly symmetric face','no perfectly centered composition','no perfectly level camera']) {
+    assert.ok(neg.toLowerCase().includes(token.toLowerCase()), `missing V9 negative token: ${token}`);
   }
 });
 
@@ -209,4 +213,5 @@ test('JSON output is deterministic and records inactive mode exclusion', () => {
   const json = JSON.parse(a);
   assert.equal(json.activeMode, 'outside');
   assert.equal(json.inactiveModeExcluded, 'inside');
+  assert.equal(json.version, 'car-selfie-v9-narrative');
 });

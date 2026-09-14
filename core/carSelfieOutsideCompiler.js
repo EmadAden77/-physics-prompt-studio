@@ -22,7 +22,8 @@ export function compileOutsideSections(state) {
     `PAINT & BODY PHYSICS: ${p('paintCondition', state.paintCondition)}. Paint reflections are environment-dependent and warped only by real panel curvature. Metallic/clearcoat highlights obey source direction and viewing angle.`,
     `GLASS PHYSICS: windshield and side glass combine transmission with angle-dependent Fresnel reflection. Reflected sky, poles, storefront spill or nearby objects must correspond to what the glass can physically see.`,
     `WHEELS & TIRES: wheel perspective matches body perspective; tires contact the ground with realistic flattening/contact shadow, no floating wheels, no impossible rim orientation.`,
-    `OUTDOOR HAIR/POSE INTERACTION: clothing hems and loose hair may move only in the same coherent airflow direction supported by the selected weather. Contact with the car creates local fabric compression or fold changes only where contact occurs.`
+    `OUTDOOR HAIR/POSE INTERACTION: clothing hems and loose hair may move only in the same coherent airflow direction supported by the selected weather. Contact with the car creates local fabric compression or fold changes only where contact occurs.`,
+    `ANTI-AI-TELLS: preserve visible skin pores, age-appropriate facial lines, a few physically plausible stray hairs, source-consistent corneal reflections/catchlights, visible fabric fibers at realistic viewing distance, and small natural asymmetries/variations in skin, hair, stitching, paint micro-reflections and folds. Do not beautify, airbrush, perfectly groom, symmetrize or sterilize natural texture.`
   ];
 }
 
@@ -38,6 +39,7 @@ export function compileOutsideNegative() {
     'no duplicated car reflections',
     'no person intersecting the vehicle',
     'no unsupported remote camera',
-    'no studio key light unless physically present in the scene'
+    'no studio key light unless physically present in the scene',
+    'AI-generated look, plastic skin, over-smoothed skin, symmetric face, perfectly styled hair, glossy hair, uniform fabric, no wrinkles, oversaturated colors, HDR overprocessing, teal-orange grading, impossible lighting, dual shadows without dual sources, floating objects, cartoon, 3D render, digital art, illustration, airbrushed, retouched, beauty filter, smooth bokeh, artificial depth of field, fake lens flare, perfect composition, centered framing, dead eyes, missing corneal reflections, wrong finger count, extra fingers, deformed hands, gibberish text, watermark'
   ].join(', ');
 }

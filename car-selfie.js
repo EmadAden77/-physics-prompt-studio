@@ -1,7 +1,11 @@
 import { detectCarModeFromIntent } from './data/carSelfieCommonCatalog.js';
 import { INSIDE_DEFAULT_STATE } from './data/carSelfieInsideCatalog.js';
 import { OUTSIDE_DEFAULT_STATE } from './data/carSelfieOutsideCatalog.js';
-import { analyzeCarSelfieIntent, compileCarSelfieDetailed } from './core/carSelfieCompiler.js';
+import {
+  analyzeCarSelfieIntent,
+  compileCarSelfieDetailed,
+  compileCarSelfieTechnicalSpec
+} from './core/carSelfieCompiler.js';
 import {
   carValidationStatus,
   compatibleOptions,
@@ -10,6 +14,7 @@ import {
 } from './core/carSelfieValidation.js';
 import { buildCarSelfieEngineeringSpec } from './core/carSelfieEngineeringSpec.js';
 import { compileCarSelfieMinimalPrompt, countPromptWords } from './core/carSelfieMinimalPrompt.js';
+import { countNarrativeWords } from './core/carSelfieNarrativeCompiler.js';
 import {
   buildCarSelfieAcceptance,
   createCarSelfieAcceptanceReport,
@@ -17,8 +22,8 @@ import {
 } from './core/carSelfieAcceptance.js';
 
 const $ = (id) => document.getElementById(id);
-const STORAGE_KEY = 'physics-prompt-studio-car-selfie-v8';
-const LEGACY_STORAGE_KEY = 'physics-prompt-studio-car-selfie-v7';
+const STORAGE_KEY = 'physics-prompt-studio-car-selfie-v9';
+const LEGACY_STORAGE_KEYS = ['physics-prompt-studio-car-selfie-v8', 'physics-prompt-studio-car-selfie-v7'];
 
 const SELECT_FIELDS = Object.freeze([
   'vehicleProfile','vehicleState','seat','standingPose','paintCondition','captureMode','cameraLens','colorProfile','lowLightProcessing','framing',
@@ -33,11 +38,13 @@ const COMMON_FIELDS = Object.freeze([
 ]);
 const INSIDE_FIELDS = Object.freeze(['vehicleState','seat','handPose','cabinMaterial','clusterType','roofType','windowState','clutterLevel','cabinEmitter']);
 const OUTSIDE_FIELDS = Object.freeze(['vehicleState','standingPose','paintCondition']);
+const MODEL_VIEWS = new Set(['narrative', 'compact', 'legacy']);
+const ALL_VIEWS = new Set(['narrative', 'compact', 'legacy', 'engineering', 'acceptance']);
 
 let activeMode = 'inside';
 let activeStep = 1;
-let activeView = 'compact';
-let preferredPromptMode = 'compact';
+let activeView = 'narrative';
+let preferredPromptMode = 'narrative';
 let referenceAttached = false;
 let intentTyping = false;
 let states = {
@@ -106,8 +113,8 @@ function showModeBlocks() {
   });
   $('previewMode').textContent = activeMode === 'inside' ? 'INSIDE' : 'OUTSIDE';
   $('modeSummary').textContent = activeMode === 'inside'
-    ? 'الوضع النشط: داخل السيارة. طبقة البرومبت لا تستقبل المواصفات الهندسية ولا قائمة القبول؛ هذه تبقى داخل التطبيق للتحقق بعد التوليد.'
-    : 'الوضع النشط: خارج السيارة بجانبها. طبقة البرومبت قصيرة، بينما هندسة الوقوف والكاميرا والتحقق تبقى في طبقة داخلية مستقلة.';
+    ? 'الوضع النشط: داخل السيارة. المخرج الافتراضي وصف سردي واحد، بينما القياسات الهندسية وقائمة القبول تبقيان خارج النص المرسل للنموذج.'
+    : 'الوضع النشط: خارج السيارة بجانبها. المحرك يصف الصورة بصياغة سردية طبيعية ويترك القياسات التفصيلية لطبقة التحقق.';
 }
 
 function blockedMessage(status) {
@@ -117,9 +124,12 @@ function blockedMessage(status) {
 function outputFor(state, status) {
   if (activeView === 'engineering') return JSON.stringify(buildCarSelfieEngineeringSpec(state), null, 2);
   if (activeView === 'acceptance') return formatCarSelfieAcceptance(state);
-  if (activeView === 'detailed') return compileCarSelfieDetailed(state);
-  if (status.blocked) return blockedMessage(status);
-  return compileCarSelfieMinimalPrompt(state);
+  if (activeView === 'legacy') return compileCarSelfieTechnicalSpec(state);
+  if (activeView === 'compact') {
+    if (status.blocked) return blockedMessage(status);
+    return compileCarSelfieMinimalPrompt(state);
+  }
+  return compileCarSelfieDetailed(state);
 }
 
 function syncOutputTabs() {
@@ -130,12 +140,17 @@ function syncOutputTabs() {
 
 function updateOutputMeta(state) {
   if (!$('outputMeta')) return;
-  if (activeView === 'compact') {
-    const words = countPromptWords(compileCarSelfieMinimalPrompt(state));
-    $('outputMeta').textContent = `${words} كلمة · يُرسل للنموذج`;
+  if (activeView === 'narrative') {
+    const text = compileCarSelfieDetailed(state);
+    const words = text.startsWith('OUTPUT BLOCKED') ? 0 : countNarrativeWords(text);
+    $('outputMeta').textContent = words ? `${words} كلمة · سردي · يُرسل للنموذج` : 'محجوب بواسطة Conflict Checker';
     $('outputMeta').dataset.kind = 'model';
-  } else if (activeView === 'detailed') {
-    $('outputMeta').textContent = 'نسخة تجريبية طويلة · تُرسل للنموذج فقط عند اختيارك';
+  } else if (activeView === 'compact') {
+    const words = countPromptWords(compileCarSelfieMinimalPrompt(state));
+    $('outputMeta').textContent = `${words} كلمة · مضغوط جدًا · يُرسل للنموذج`;
+    $('outputMeta').dataset.kind = 'model';
+  } else if (activeView === 'legacy') {
+    $('outputMeta').textContent = 'Technical Spec (legacy) · للمقارنة فقط';
     $('outputMeta').dataset.kind = 'model';
   } else if (activeView === 'engineering') {
     $('outputMeta').textContent = 'مواصفات داخلية للتحقق · لا تُرسل للنموذج';
@@ -182,10 +197,10 @@ function updatePreview(state, status) {
   $('pitchReadout').textContent = `${state.pitch}°`;
   $('rollReadout').textContent = `${state.roll}°`;
   $('previewNote').textContent = inside
-    ? 'هذه معاينة هندسية داخلية. الإحداثيات الكاملة تظهر في تبويب «مواصفات هندسية» ولا تُضاف للبرومبت المضغوط.'
+    ? 'هذه معاينة هندسية داخلية، بينما البرومبت السردي يكتفي بوصف الصورة وVisual Anchor واحد.'
     : remote
-      ? 'الهاتف على دعم ثابت. المواصفات الهندسية منفصلة عن النص المرسل للنموذج.'
-      : 'الهاتف عند مسافة ذراع. التحقق الهندسي يتم بعد التوليد بقائمة القبول.';
+      ? 'الهاتف على دعم ثابت، والوصف السردي يذكر النتيجة المرئية فقط.'
+      : 'الهاتف عند مسافة ذراع، والقياسات الدقيقة تبقى في طبقة Engineering.';
 
   const mini = document.querySelector('.mini-status');
   mini.dataset.state = status.blocked ? 'blocked' : status.issues.length ? 'check' : 'valid';
@@ -325,24 +340,25 @@ function setStep(step) {
 }
 
 function setView(view) {
-  if (!['compact','detailed','engineering','acceptance'].includes(view)) return;
+  if (!ALL_VIEWS.has(view)) return;
   activeView = view;
-  if (view === 'compact' || view === 'detailed') preferredPromptMode = view;
+  if (MODEL_VIEWS.has(view)) preferredPromptMode = view;
   if ($('promptMode')) $('promptMode').value = preferredPromptMode;
   render(states[activeMode]);
 }
 
 function loadSavedState() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY) || 'null';
-    const saved = JSON.parse(raw);
+    const current = localStorage.getItem(STORAGE_KEY);
+    const legacy = LEGACY_STORAGE_KEYS.map((key) => localStorage.getItem(key)).find(Boolean);
+    const saved = JSON.parse(current || legacy || 'null');
     if (!saved?.states) return;
     states = {
       inside: normalizeCarState({ ...INSIDE_DEFAULT_STATE, ...saved.states.inside, mode: 'inside' }),
       outside: normalizeCarState({ ...OUTSIDE_DEFAULT_STATE, ...saved.states.outside, mode: 'outside' })
     };
     activeMode = saved.activeMode === 'outside' ? 'outside' : 'inside';
-    preferredPromptMode = saved.preferredPromptMode === 'detailed' ? 'detailed' : 'compact';
+    preferredPromptMode = ['narrative','compact','legacy'].includes(saved.preferredPromptMode) ? saved.preferredPromptMode : 'narrative';
     activeView = preferredPromptMode;
     acceptanceMarks = {
       inside: saved.acceptanceMarks?.inside || {},
@@ -351,6 +367,8 @@ function loadSavedState() {
   } catch {
     states = { inside: normalizeCarState(INSIDE_DEFAULT_STATE), outside: normalizeCarState(OUTSIDE_DEFAULT_STATE) };
     acceptanceMarks = { inside: {}, outside: {} };
+    preferredPromptMode = 'narrative';
+    activeView = 'narrative';
   }
 }
 
@@ -385,7 +403,7 @@ document.querySelector('.wizard').addEventListener('input', (event) => {
 });
 
 $('promptMode').addEventListener('change', (event) => {
-  preferredPromptMode = event.target.value === 'detailed' ? 'detailed' : 'compact';
+  preferredPromptMode = ['narrative','compact','legacy'].includes(event.target.value) ? event.target.value : 'narrative';
   setView(preferredPromptMode);
 });
 

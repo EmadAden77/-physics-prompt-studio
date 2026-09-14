@@ -1,0 +1,154 @@
+export const SAUDI_LOCATIONS = [
+  { group: 'مجالس ومنازل', value: 'modern_saudi_majlis', label: 'مجلس سعودي حديث وأنيق', prompt: 'inside a modern, lived-in Saudi Arabian majlis with realistic seating, circulation space, hospitality details, and no palace-like exaggeration' },
+  { group: 'مجالس ومنازل', value: 'traditional_majlis', label: 'مجلس سعودي تقليدي واقعي', prompt: 'inside a realistic traditional Saudi majlis with restrained heritage details, practical seating, and authentic lived-in proportions' },
+  { group: 'مجالس ومنازل', value: 'villa_living_room', label: 'صالة فيلا سعودية حديثة', prompt: 'inside a contemporary Saudi residential villa living room with believable furniture scale, warm neutral materials, and ordinary domestic details' },
+  { group: 'مجالس ومنازل', value: 'villa_driveway', label: 'مدخل فيلا سكنية', prompt: 'on the private driveway of a Saudi residential villa with realistic gate, boundary wall, paving, vehicle clearance, and ordinary neighborhood context' },
+  { group: 'مجالس ومنازل', value: 'villa_garage', label: 'كراج خاص لفيلا', prompt: 'inside a private residential villa garage in Saudi Arabia, not a commercial parking garage, with practical lighting and believable household storage' },
+  { group: 'مجالس ومنازل', value: 'rooftop_terrace', label: 'سطح / تراس منزل', prompt: 'on a residential rooftop terrace in Saudi Arabia with realistic parapets, utility elements, nearby roofs, and atmospheric depth' },
+  { group: 'مدن وأحياء', value: 'riyadh_residential', label: 'حي سكني في الرياض', prompt: 'on an ordinary residential street in Riyadh with contemporary villas, boundary walls, parked cars, sidewalks, asphalt, and no iconic landmark' },
+  { group: 'مدن وأحياء', value: 'riyadh_business', label: 'منطقة أعمال حديثة في الرياض', prompt: 'in a modern Riyadh business district with plausible office buildings, street furniture, traffic spacing, and non-iconic urban background' },
+  { group: 'مدن وأحياء', value: 'jeddah_residential', label: 'حي سكني في جدة', prompt: 'on a believable residential street in Jeddah with local apartment and villa architecture, parked vehicles, warm coastal atmosphere, and no landmark' },
+  { group: 'مدن وأحياء', value: 'jeddah_corniche', label: 'كورنيش جدة', prompt: 'along a believable Jeddah corniche setting with waterfront promenade, practical lighting, paving, railings, distant city lights, and realistic sea atmosphere' },
+  { group: 'مدن وأحياء', value: 'khobar_corniche', label: 'كورنيش الخبر', prompt: 'along Al Khobar waterfront with a realistic corniche promenade, palm landscaping, railings, parking, and physically plausible Gulf humidity' },
+  { group: 'مدن وأحياء', value: 'dammam_street', label: 'شارع حضري في الدمام', prompt: 'on an ordinary urban street in Dammam with practical storefronts, asphalt, curb geometry, parked cars, and believable Gulf-region atmosphere' },
+  { group: 'مدن وأحياء', value: 'makkah_residential', label: 'حي سكني في مكة', prompt: 'in a non-iconic residential district in Makkah with ordinary local buildings, roads, parked vehicles, and no holy-site depiction' },
+  { group: 'مدن وأحياء', value: 'madinah_residential', label: 'حي سكني في المدينة', prompt: 'in a non-iconic residential district in Madinah with ordinary local architecture, roads, sidewalks, and no holy-site depiction' },
+  { group: 'مدن وأحياء', value: 'taif_hills', label: 'منطقة مرتفعة في الطائف', prompt: 'in a Taif hillside urban area with realistic elevation changes, retaining walls, local roads, cooler mountain atmosphere, and ordinary buildings' },
+  { group: 'مدن وأحياء', value: 'abha_mountain_city', label: 'أبها الجبلية', prompt: 'in an Abha mountain-city setting with realistic slopes, regional vegetation, layered atmospheric depth, and ordinary urban architecture' },
+  { group: 'مدن وأحياء', value: 'tabuk_outskirts', label: 'أطراف تبوك', prompt: 'on the outskirts of Tabuk with low-rise development, broad roads, dry terrain, and realistic northern Saudi atmosphere' },
+  { group: 'ضيافة وأعمال', value: 'saudi_cafe', label: 'مقهى سعودي عادي', prompt: 'inside an ordinary contemporary Saudi cafe with practical ceiling lights, mixed seating, believable service details, and non-commercial candid atmosphere' },
+  { group: 'ضيافة وأعمال', value: 'specialty_coffee', label: 'مقهى قهوة مختصة', prompt: 'inside a contemporary Saudi specialty coffee shop with realistic counter layout, tables, ceiling fixtures, patrons, and practical material reflections' },
+  { group: 'ضيافة وأعمال', value: 'casual_restaurant', label: 'مطعم عائلي / كاجوال', prompt: 'inside a casual Saudi restaurant with believable table spacing, practical lights, restrained decor, and ordinary dinner occupancy' },
+  { group: 'ضيافة وأعمال', value: 'saudi_office', label: 'مكتب سعودي حديث', prompt: 'inside an ordinary modern Saudi office with practical workstations, neutral finishes, realistic ceiling lighting, and lived-in work details' },
+  { group: 'ضيافة وأعمال', value: 'real_estate_office', label: 'مكتب عقاري', prompt: 'inside a realistic Saudi real-estate office with desks, chairs, files, screens, practical lighting, and no showroom-like staging' },
+  { group: 'ضيافة وأعمال', value: 'hotel_lobby', label: 'لوبي فندق حديث', prompt: 'inside a contemporary Saudi hotel lobby with believable scale, guest circulation, practical fixtures, and restrained premium materials' },
+  { group: 'ضيافة وأعمال', value: 'mall_atrium', label: 'مول تجاري', prompt: 'inside a Saudi shopping mall atrium with realistic storefront spacing, escalators or walkways, mixed practical lighting, and naturally distributed visitors' },
+  { group: 'ضيافة وأعمال', value: 'barbershop', label: 'صالون حلاقة رجالي', prompt: 'inside an ordinary Saudi men’s barbershop with mirrors, chairs, counters, realistic ceiling lights, and naturally used work surfaces' },
+  { group: 'ضيافة وأعمال', value: 'gym', label: 'نادي رياضي', prompt: 'inside a modern Saudi gym with correctly scaled exercise equipment, practical overhead lighting, rubber flooring, and believable occupancy' },
+  { group: 'ضيافة وأعمال', value: 'airport_terminal', label: 'صالة مطار', prompt: 'inside a modern Saudi airport terminal with realistic wayfinding, seating, glazing, luggage behavior, and broad practical lighting' },
+  { group: 'شوارع ومواقف', value: 'ordinary_saudi_street', label: 'شارع سعودي عادي', prompt: 'on an ordinary Saudi street with correct asphalt, curbs, sidewalks, utility elements, parked vehicles, and non-iconic buildings' },
+  { group: 'شوارع ومواقف', value: 'night_parking', label: 'موقف سيارات ليلي', prompt: 'in an ordinary Saudi outdoor parking area at night with marked bays, asphalt texture, wheel stops where appropriate, and localized LED pools of light' },
+  { group: 'شوارع ومواقف', value: 'day_parking', label: 'موقف سيارات نهاري', prompt: 'in an ordinary Saudi outdoor parking area in daylight with realistic painted markings, sun shadows, parked vehicles, and heat-haze where appropriate' },
+  { group: 'شوارع ومواقف', value: 'gas_station', label: 'محطة وقود', prompt: 'at a modern Saudi fuel station with canopy lighting, pumps, lane markings, convenience-store context, and correct safety clearances' },
+  { group: 'شوارع ومواقف', value: 'storefront_street', label: 'شارع محلات', prompt: 'on a Saudi commercial street with ordinary storefronts, signage kept secondary, curb parking, pedestrians, and practical shop lighting' },
+  { group: 'شوارع ومواقف', value: 'boulevard_walkway', label: 'ممشى حضري حديث', prompt: 'on a contemporary Saudi urban pedestrian boulevard with practical landscaping, paving, benches, storefront spill, and realistic crowd spacing' },
+  { group: 'طبيعة ورحلات', value: 'desert_roadside', label: 'طريق صحراوي', prompt: 'at a safe stopping area beside a Saudi desert road with correct road shoulder geometry, dry terrain, atmospheric depth, and sparse practical infrastructure' },
+  { group: 'طبيعة ورحلات', value: 'desert_dunes', label: 'كثبان رملية', prompt: 'in Saudi sand dunes with physically consistent wind-shaped ripples, realistic footprints or tire traces if present, and atmospheric depth' },
+  { group: 'طبيعة ورحلات', value: 'rocky_desert', label: 'صحراء صخرية', prompt: 'in a rocky Saudi desert landscape with natural stone variation, dry ground, realistic horizon haze, and no fantasy formations' },
+  { group: 'طبيعة ورحلات', value: 'alula_valley', label: 'وادي صحراوي بطابع العلا', prompt: 'in an AlUla-region desert valley with sandstone formations, dry ground, realistic scale, atmospheric depth, and no invented monumental structures' },
+  { group: 'طبيعة ورحلات', value: 'palm_farm', label: 'مزرعة نخيل', prompt: 'inside a Saudi palm farm with realistic rows, irrigation traces, soil, natural shade breakup, and ordinary agricultural details' },
+  { group: 'طبيعة ورحلات', value: 'mountain_viewpoint', label: 'إطلالة جبلية', prompt: 'at a Saudi mountain viewpoint with safe barriers or natural stopping area, layered terrain, realistic haze, and wind interaction' },
+  { group: 'طبيعة ورحلات', value: 'wadi', label: 'وادي طبيعي', prompt: 'in a natural Saudi wadi with dry or seasonally textured ground, rock layers, sparse vegetation, and realistic topography' },
+  { group: 'طبيعة ورحلات', value: 'red_sea_beach', label: 'شاطئ البحر الأحمر', prompt: 'on a Saudi Red Sea beach with physically plausible shoreline, wet-sand reflectance, sea haze, wind, and ordinary recreational context' },
+  { group: 'طبيعة ورحلات', value: 'gulf_beach', label: 'شاطئ الخليج', prompt: 'on a Saudi Arabian Gulf beach with calm coastal water, humidity haze, realistic sand, shoreline reflections, and ordinary waterfront context' },
+  { group: 'طبيعة ورحلات', value: 'public_park', label: 'حديقة عامة', prompt: 'inside a Saudi public park with practical paths, benches, irrigation-aware landscaping, family-use context, and realistic lighting' }
+];
+
+export const CLOTHING_OPTIONS = [
+  { group: 'ثياب سعودية', value: 'white_thobe', label: 'ثوب أبيض سعودي', prompt: 'a plain well-fitted white Saudi thobe with realistic cotton-poplin weight, natural folds, seam tension, and no artificial gloss' },
+  { group: 'ثياب سعودية', value: 'navy_thobe', label: 'ثوب كحلي داكن', prompt: 'a refined dark navy Saudi thobe with matte woven fabric, visible textile detail in lit areas, and natural compression folds' },
+  { group: 'ثياب سعودية', value: 'charcoal_thobe', label: 'ثوب فحمي', prompt: 'a charcoal Saudi thobe with realistic medium-weight fabric, restrained highlights, and naturally asymmetric folds' },
+  { group: 'ثياب سعودية', value: 'beige_thobe', label: 'ثوب بيج / رملي', prompt: 'a light beige Saudi thobe with realistic woven texture, soft drape, and practical warm-neutral tone' },
+  { group: 'ثياب سعودية', value: 'olive_thobe', label: 'ثوب زيتي هادئ', prompt: 'a muted olive Saudi thobe with matte textile response, natural sleeve creasing, and believable body compression' },
+  { group: 'ثياب سعودية', value: 'winter_thobe', label: 'ثوب شتوي ثقيل', prompt: 'a heavier winter Saudi thobe with denser fabric weight, broader folds, subdued sheen, and realistic gravity-driven drape' },
+  { group: 'شماغ وغترة', value: 'red_shemagh_agal', label: 'شماغ أحمر وأبيض + عقال', prompt: 'a traditional red-and-white Saudi shemagh with a realistic black agal, natural woven thickness, gravity-driven asymmetric folds, and no turban-like wrapping' },
+  { group: 'شماغ وغترة', value: 'white_ghutra_agal', label: 'غترة بيضاء + عقال', prompt: 'a traditional white Saudi ghutra with a realistic black agal, soft woven translucency, subtle asymmetry, and physically correct crown contact' },
+  { group: 'شماغ وغترة', value: 'red_shemagh_no_agal', label: 'شماغ أحمر بدون عقال', prompt: 'a red-and-white Saudi shemagh worn casually without an agal, with realistic woven folds and gravity-driven drape' },
+  { group: 'شماغ وغترة', value: 'white_ghutra_no_agal', label: 'غترة بيضاء بدون عقال', prompt: 'a white Saudi ghutra worn casually without an agal, with natural folds, soft fabric thickness, and realistic shoulder contact' },
+  { group: 'كاجوال', value: 'black_tshirt', label: 'تيشيرت أسود سادة', prompt: 'a plain black crew-neck cotton T-shirt with matte jersey texture, body-conforming tension, and rounded natural folds' },
+  { group: 'كاجوال', value: 'white_tshirt', label: 'تيشيرت أبيض سادة', prompt: 'a plain white crew-neck cotton T-shirt with realistic jersey texture, soft folds, seam tension, and natural translucency control' },
+  { group: 'كاجوال', value: 'navy_tshirt', label: 'تيشيرت كحلي سادة', prompt: 'a plain navy cotton T-shirt with matte fabric response, natural shoulder drape, and realistic torso folds' },
+  { group: 'كاجوال', value: 'grey_tshirt', label: 'تيشيرت رمادي', prompt: 'a plain heather-grey cotton T-shirt with subtle knit variation, soft diffuse response, and believable folds' },
+  { group: 'كاجوال', value: 'navy_polo', label: 'بولو كحلي', prompt: 'a plain navy pique polo shirt with realistic knit texture, collar structure, small body folds, and restrained highlights' },
+  { group: 'كاجوال', value: 'white_polo', label: 'بولو أبيض', prompt: 'a plain white pique polo shirt with realistic knit texture, collar shape, seam tension, and natural folding' },
+  { group: 'كاجوال', value: 'charcoal_polo', label: 'بولو فحمي', prompt: 'a charcoal pique polo shirt with matte textile response, realistic collar behavior, and relaxed torso folds' },
+  { group: 'كاجوال', value: 'hoodie', label: 'هودي بسيط', prompt: 'a plain casual hoodie with medium-weight fleece, realistic hood volume, cuff compression, and gravity-driven folds' },
+  { group: 'كاجوال', value: 'crewneck_sweatshirt', label: 'سويت شيرت بدون قبعة', prompt: 'a plain crew-neck sweatshirt with medium-weight cotton fleece, ribbed cuffs, natural torso volume, and soft folds' },
+  { group: 'كاجوال', value: 'denim_jacket', label: 'جاكيت دنيم', prompt: 'a simple denim jacket with realistic structured cotton weave, seam stiffness, layered folds, and restrained worn texture' },
+  { group: 'كاجوال', value: 'light_jacket', label: 'جاكيت خفيف', prompt: 'a simple lightweight casual jacket with realistic shell fabric, zipper structure, cuff tension, and natural folds' },
+  { group: 'قمصان', value: 'light_blue_shirt', label: 'قميص أزرق فاتح', prompt: 'a light blue cotton-poplin shirt with realistic collar structure, fine woven texture, small crisp folds, and natural sleeve creasing' },
+  { group: 'قمصان', value: 'white_oxford', label: 'قميص أوكسفورد أبيض', prompt: 'a white Oxford shirt with visible basket-weave texture, structured collar, realistic wrinkles, and matte cotton response' },
+  { group: 'قمصان', value: 'linen_white', label: 'قميص كتان أبيض', prompt: 'a white linen shirt with visible slub texture, airy drape, irregular natural creasing, and soft matte response' },
+  { group: 'قمصان', value: 'linen_beige', label: 'قميص كتان بيج', prompt: 'a beige linen shirt with breathable loose weave, natural wrinkles, soft drape, and warm-neutral tone' },
+  { group: 'قمصان', value: 'charcoal_workshirt', label: 'قميص عمل فحمي', prompt: 'a plain charcoal cotton work shirt with durable poplin texture, practical seams, restrained wrinkles, and matte response' },
+  { group: 'رسمي', value: 'navy_suit', label: 'بدلة كحلية', prompt: 'a tailored navy business suit with realistic wool-blend texture, natural lapel roll, shirt layering, and physically correct folds' },
+  { group: 'رسمي', value: 'charcoal_suit', label: 'بدلة فحمية', prompt: 'a tailored charcoal suit with realistic woven wool texture, restrained sheen, proper shoulder structure, and natural creasing' },
+  { group: 'رسمي', value: 'blazer_chinos', label: 'بليزر + تشينو', prompt: 'a smart-casual blazer with chinos, realistic layered fabric behavior, relaxed tailoring, and natural waist and elbow folds' },
+  { group: 'رسمي', value: 'shirt_trousers', label: 'قميص + بنطال رسمي', prompt: 'a clean collared shirt with tailored trousers, realistic fabric weight, belt-line behavior, and natural seated or standing folds' }
+];
+
+export const SELFIE_POSES = [
+  { value: 'standing_relaxed', label: 'واقف باسترخاء', prompt: 'standing naturally with relaxed weight distribution, mild shoulder asymmetry, and no rigid portrait pose' },
+  { value: 'standing_one_hand', label: 'واقف واليد الحرة مرتاحة', prompt: 'standing naturally while the free hand rests casually near the thigh, pocket area, or torso without deliberate posing' },
+  { value: 'walking_slow', label: 'يمشي ببطء', prompt: 'walking slowly while taking the selfie, with subtle gait asymmetry and mild motion consistency appropriate to the shutter' },
+  { value: 'seated_sofa', label: 'جالس على كنبة / مجلس', prompt: 'seated comfortably with realistic pelvis support, cushion compression, mild torso rotation, and anatomically coherent thighs and knees' },
+  { value: 'seated_chair', label: 'جالس على كرسي', prompt: 'seated naturally on a chair with correct hip support, back contact where applicable, feet placement, and relaxed torso posture' },
+  { value: 'lean_wall', label: 'ميل خفيف على جدار', prompt: 'leaning lightly against a wall with visible contact physics, subtle shoulder tilt, and realistic body weight transfer' },
+  { value: 'lean_counter', label: 'ميل خفيف على طاولة / كاونتر', prompt: 'leaning lightly against a counter or table with correct forearm or hip contact and believable body support' },
+  { value: 'driver_seat', label: 'جالس في مقعد السائق', prompt: 'seated naturally in the driver seat of a stationary vehicle, with correct seat compression, steering-wheel relationship, and cabin geometry' },
+  { value: 'passenger_seat', label: 'جالس في مقعد الراكب', prompt: 'seated naturally in the front passenger seat of a stationary vehicle with correct cabin orientation and seat contact' },
+  { value: 'door_open_car', label: 'واقف بجانب باب سيارة مفتوح', prompt: 'standing beside an open vehicle door while personally holding the phone, with correct door clearance, body-car contact spacing, and selfie reach' },
+  { value: 'coffee_hand', label: 'يمسك كوب قهوة باليد الحرة', prompt: 'holding a small coffee cup naturally in the free hand with correct finger contact, wrist angle, and gravity' },
+  { value: 'adjust_clothing', label: 'يعدّل الملابس باليد الحرة', prompt: 'gently adjusting a small section of clothing with the free hand, creating realistic fabric tension and contact folds' },
+  { value: 'hand_on_head', label: 'اليد الحرة على الرأس', prompt: 'placing the free hand naturally on the head with anatomically correct elbow elevation, wrist orientation, and hair or headwear contact' },
+  { value: 'one_hand_pocket', label: 'اليد الحرة في الجيب', prompt: 'placing the free hand casually in a pocket with realistic elbow angle, cloth tension, and pocket deformation' },
+  { value: 'close_relaxed', label: 'وقفة قريبة وعفوية', prompt: 'a close relaxed selfie pose with natural neck, shoulder, and upper-torso asymmetry and no influencer-style posing' }
+];
+
+export const SELFIE_ANGLES = [
+  { value: 'eye_centered', label: 'مستوى العين — أمامي', prompt: 'front camera at approximately eye level, yaw 0°, pitch 0°, with a tiny natural handheld roll' },
+  { value: 'eye_three_quarter_left', label: 'ثلاثة أرباع من اليسار', prompt: 'front camera slightly lateral for a mild three-quarter selfie from the left side, preserving realistic arm reach and perspective asymmetry' },
+  { value: 'eye_three_quarter_right', label: 'ثلاثة أرباع من اليمين', prompt: 'front camera slightly lateral for a mild three-quarter selfie from the right side, preserving realistic arm reach and perspective asymmetry' },
+  { value: 'slightly_high_center', label: 'أعلى من العين قليلًا — أمامي', prompt: 'front camera only slightly above eye level with a gentle downward pitch, not overhead, with physically plausible arm reach' },
+  { value: 'slightly_high_three_quarter', label: 'أعلى قليلًا — ثلاثة أرباع', prompt: 'front camera slightly above eye level and mildly lateral, producing a realistic elevated three-quarter selfie without giant-head distortion' },
+  { value: 'slightly_low_center', label: 'أخفض قليلًا — أمامي', prompt: 'front camera slightly below eye level with a gentle upward pitch and realistic lower-angle smartphone perspective' },
+  { value: 'low_offcenter', label: 'زاوية منخفضة خارج المركز', prompt: 'front camera modestly below eye level and off-center, with plausible wrist position, shoulder displacement, and no extreme distortion' },
+  { value: 'high_offcenter', label: 'زاوية مرتفعة خارج المركز', prompt: 'front camera modestly above eye level and off-center, with slight downward pitch, diagonal background depth, and real arm-length geometry' },
+  { value: 'close_face', label: 'قريب — وجه وكتفان', prompt: 'close arm-length front-camera framing focused on head and shoulders with realistic wide-angle facial perspective and no telephoto compression' },
+  { value: 'chest_up', label: 'من الصدر للأعلى', prompt: 'front-camera chest-up framing at realistic arm distance with broad smartphone depth of field and natural shoulder perspective' },
+  { value: 'waist_up', label: 'حتى الخصر إن أمكن', prompt: 'front-camera framing extending toward the waist only as far as natural arm reach allows; do not move the camera unrealistically far away' },
+  { value: 'seated_high_three_quarter', label: 'جالس — مرتفعة ثلاثة أرباع', prompt: 'slightly elevated three-quarter front-camera angle while seated, revealing some torso, seating contact, and nearby environment without overhead geometry' },
+  { value: 'driver_eye_level', label: 'داخل السيارة — مستوى العين', prompt: 'driver-held front-camera selfie at eye level inside a stationary vehicle with correct left/right cabin geometry and steering-wheel perspective' },
+  { value: 'driver_slight_high', label: 'داخل السيارة — أعلى قليلًا', prompt: 'driver-held front-camera selfie slightly above eye level with gentle downward pitch and physically plausible reach inside the cabin' },
+  { value: 'driver_low', label: 'داخل السيارة — منخفضة قليلًا', prompt: 'driver-held front-camera selfie slightly below eye level with mild upward pitch, preserving dashboard and steering-wheel geometry' },
+  { value: 'doorway_three_quarter', label: 'بجانب السيارة — ثلاثة أرباع', prompt: 'subject-held front-camera three-quarter angle beside a vehicle, keeping the open or closed door geometry and arm reach physically coherent' }
+];
+
+export const LIGHTING_PROFILES = [
+  { group: 'نهاري', value: 'day_direct_sun', label: 'شمس نهارية مباشرة', prompt: 'direct daytime sunlight from the actual sun direction, hard-to-moderate cast shadows, realistic sky fill, physically consistent highlights, and no exposure setting creating new light' },
+  { group: 'نهاري', value: 'day_open_shade', label: 'ظل مفتوح نهاري', prompt: 'open shade lit primarily by skylight and reflected environmental light, with soft directional modeling, lower contrast than direct sun, and no invisible fill light' },
+  { group: 'نهاري', value: 'day_overcast', label: 'سماء غائمة', prompt: 'overcast daylight from a broad sky source, very soft shadows, restrained specular contrast, and physically plausible ambient directionality' },
+  { group: 'نهاري', value: 'day_window', label: 'ضوء نافذة نهاري', prompt: 'daylight entering through a real window or opening, stronger near the opening and naturally falling off into the room, with plausible wall and floor bounce' },
+  { group: 'نهاري', value: 'golden_hour', label: 'الساعة الذهبية', prompt: 'low-angle warm sunlight near golden hour with long coherent shadows, warm direct light, cooler sky fill, and realistic atmospheric depth' },
+  { group: 'نهاري', value: 'blue_sky_noon', label: 'ظهر مشمس قوي', prompt: 'strong high-elevation midday sun with short hard shadows, bright sky fill, realistic heat contrast, and restrained smartphone highlight clipping' },
+  { group: 'نهاري', value: 'car_daylight', label: 'داخل سيارة نهارًا', prompt: 'daylight entering a stationary car through real glazing, directional window light, dashboard and seat bounce, strong exterior/interior dynamic-range difference, and no artificial cabin key light' },
+  { group: 'ليلي خارجي', value: 'night_led_street', label: 'إنارة شارع LED', prompt: 'night scene illuminated only by physically plausible LED street fixtures, localized pools of light, realistic falloff with distance, coherent cast shadows, and dark zones between fixtures' },
+  { group: 'ليلي خارجي', value: 'night_parking_led', label: 'إنارة موقف سيارات LED', prompt: 'outdoor parking at night lit by practical pole or canopy LEDs with localized pools, inverse-distance falloff, asphalt reflections, and realistic shadow noise' },
+  { group: 'ليلي خارجي', value: 'night_storefront', label: 'ضوء واجهات محلات', prompt: 'night scene lit by real storefront interiors, signs, and nearby street fixtures, with colored spill only where geometry permits and naturally darker distant areas' },
+  { group: 'ليلي خارجي', value: 'night_gas_station', label: 'إضاءة محطة وقود', prompt: 'night scene under a real fuel-station canopy with bright overhead practical fixtures, sharp local falloff beyond the canopy, vehicle reflections, and darker surroundings' },
+  { group: 'ليلي خارجي', value: 'night_corniche', label: 'كورنيش ليلي', prompt: 'night waterfront illumination from real promenade poles and nearby buildings, localized reflections on paving or water, humidity haze, and physically plausible distance falloff' },
+  { group: 'ليلي خارجي', value: 'night_desert_vehicle', label: 'صحراء ليلية + إنارة سيارة', prompt: 'night desert scene illuminated only by physically present vehicle lamps or nearby practical sources, steep falloff into darkness, limited background visibility, and no artificial moonlike fill unless specified' },
+  { group: 'ليلي داخلي', value: 'night_majlis_warm', label: 'مجلس — سبوتات دافئة', prompt: 'warm practical ceiling spotlights and fixtures inside the majlis, downward causal light, soft wall bounce, believable facial shadows, and gradual falloff into deeper room areas' },
+  { group: 'ليلي داخلي', value: 'night_cafe_mixed', label: 'مقهى — إضاءة مختلطة', prompt: 'mixed cafe practical lighting from visible or plausible ceiling LEDs and warm lamps, subtle color-temperature variation, coherent shadows, and no cinematic invisible key light' },
+  { group: 'ليلي داخلي', value: 'night_office_led', label: 'مكتب — LED أبيض', prompt: 'ordinary office ceiling LED illumination with broad downward light, realistic screen contribution only at close range, restrained shadow contrast, and no studio fill' },
+  { group: 'ليلي داخلي', value: 'night_home_warm', label: 'منزل — إضاءة دافئة', prompt: 'warm residential practical lighting from ceiling and lamp fixtures, realistic wall bounce, local light falloff, and naturally darker corners' },
+  { group: 'ليلي داخلي', value: 'night_phone_screen', label: 'شاشة الهاتف كمصدر قريب ضعيف', prompt: 'very weak near-field light from the phone screen only, strongest on the closest facial planes, rapid falloff after the upper chest, deep lower-torso shadow, and no exposure/HDR creating physical illumination' },
+  { group: 'ليلي داخلي', value: 'night_car_practicals', label: 'داخل سيارة ليلًا — إنارة محيطية واقعية', prompt: 'stationary car interior at night lit by real exterior street or parking fixtures plus restrained dashboard/screen emission, correct glazing reflections, and steep falloff into unlit cabin areas' },
+  { group: 'ليلي داخلي', value: 'night_car_screen_only', label: 'داخل سيارة — شاشة فقط تقريبًا', prompt: 'very low-light stationary car interior dominated by dashboard or phone-screen emission at close range, rapid falloff across torso and cabin, deep shadows, sensor noise, and no invented fill' }
+];
+
+function clean(value) { return typeof value === 'string' ? value.trim() : ''; }
+export function normalizeSceneContext(scene = {}) {
+  const entries = [
+    ['location','Location',clean(scene.location)],['clothing','Clothing',clean(scene.clothing)],['pose','Selfie pose',clean(scene.pose)],['angle','Selfie camera angle',clean(scene.angle)],['lighting','Physical lighting',clean(scene.lighting)],['lighting_notes','Additional lighting notes',clean(scene.lighting_notes)]
+  ].filter(([, , value]) => value);
+  return Object.fromEntries(entries.map(([key,label,value]) => [key,{label,value}]));
+}
+export function renderSceneContext(sceneContext = {}) {
+  const entries = Object.values(sceneContext);
+  if (!entries.length) return '';
+  return ['Structured scene controls explicitly selected by the user:',...entries.map((entry)=>`- ${entry.label}: ${entry.value}`),'Treat these controls as explicit scene requirements. Do not override them with aesthetic preferences.'].join('\n');
+}
+export function sceneConstraintItems(sceneContext = {}) {
+  return Object.entries(sceneContext).map(([key,entry],index)=>({id:`scene_constraint_${index+1}`,source_kind:'scene_control',source_key:key,source_text:entry.value,mapping:'semantic',target_section:'relevant_context',target_text:entry.value}));
+}

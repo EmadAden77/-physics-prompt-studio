@@ -9,7 +9,6 @@ import { INSIDE_CATALOG } from '../data/carSelfieInsideCatalog.js';
 import { OUTSIDE_CATALOG } from '../data/carSelfieOutsideCatalog.js';
 
 const option = (catalog, field, id) => (catalog[field] || []).find((item) => item.id === id) || null;
-const commonText = (field, id) => commonOption(field, id)?.prompt || '';
 const words = (value = '') => String(value).trim().split(/\s+/u).filter(Boolean);
 export const countNarrativeWords = (value = '') => words(value).length;
 
@@ -27,13 +26,45 @@ const CLUTTER_BUDGET = Object.freeze({
   heavy: 'up to three clearly visible supported items, all physically supported'
 });
 
+const EXPRESSION_TEXT = Object.freeze({
+  neutral: 'a calm neutral expression',
+  'small-smile': 'a slight natural closed-mouth smile',
+  focused: 'a focused natural expression',
+  'mild-surprise': 'a subtle candid look of mild surprise',
+  'tired-natural': 'a naturally tired, relaxed expression'
+});
+
+const GAZE_TEXT = Object.freeze({
+  camera: 'looking naturally toward the camera',
+  road: 'eyes directed naturally toward the road',
+  side: 'with a subtle side glance',
+  car: 'looking naturally toward the car'
+});
+
+function compactPhrase(value = '', maxWords = 10) {
+  const firstClause = String(value).split(/[.;]/u)[0].trim();
+  const list = words(firstClause);
+  return list.length <= maxWords ? firstClause : `${list.slice(0, maxWords).join(' ')}`;
+}
+
+function commonPhrase(field, id, maxWords = 9) {
+  return compactPhrase(commonOption(field, id)?.prompt || String(id || '').replaceAll('-', ' '), maxWords);
+}
+
 function anchorFor(state, mode) {
   if (mode === 'outside') return EXTERIOR_ANCHOR_SENTENCE;
   return state.seat === 'front-passenger-right' ? PASSENGER_ANCHOR_SENTENCE : DRIVER_ANCHOR_SENTENCE;
 }
 
 function clippedNotes(value = '') {
-  return words(value).slice(0, 24).join(' ');
+  return words(value).slice(0, 12).join(' ');
+}
+
+function cleanNarrativeTone(value) {
+  return String(value)
+    .replace(/\bmandatory\b/gi, 'fixed')
+    .replace(/\bmust\b/gi, 'is expected to')
+    .replace(/\bfails?\b/gi, 'breaks the intended realism');
 }
 
 function narrativeParts(state, mode, compression = 0) {
@@ -47,54 +78,57 @@ function narrativeParts(state, mode, compression = 0) {
   const place = commonOption('place', state.place);
   const notes = clippedNotes(state.notes);
 
+  const expression = EXPRESSION_TEXT[state.expression] || commonPhrase('expression', state.expression, 7);
+  const gaze = GAZE_TEXT[state.gazeTarget] || commonPhrase('gazeTarget', state.gazeTarget, 7);
+
   const cameraProcessing = compression >= 1
-    ? `The phone keeps natural smartphone contrast, restrained HDR, realistic low-light noise and mixed-light white balance.`
-    : `The Xiaomi processing keeps natural smartphone contrast, restrained HDR, realistic low-light noise and subtle mixed-light white balance, revealing only light that physically reaches the scene rather than inventing studio illumination.`;
+    ? 'The phone keeps natural contrast, restrained HDR and believable low-light noise.'
+    : 'The phone keeps natural smartphone contrast, restrained HDR, believable low-light noise and mixed-light white balance without synthetic relighting.';
 
   const placeDetails = compression >= 2
-    ? `${place?.prompt || 'an ordinary Saudi setting'}, with believable road surfaces, sparse local vegetation and anonymous background people.`
-    : `${place?.prompt || 'an ordinary Saudi setting'}, with ${place?.surface || 'believable asphalt'}, ${place?.curb || 'practical curb edges'}, ${place?.vegetation || 'sparse local vegetation'}, and ${place?.people || 'anonymous background people kept visually secondary'}.`;
+    ? `${compactPhrase(place?.prompt || 'an ordinary Saudi setting', 9)}, with believable road surfaces and sparse local vegetation`
+    : `${compactPhrase(place?.prompt || 'an ordinary Saudi setting', 11)}, with ${compactPhrase(place?.surface || 'believable asphalt', 8)}, practical curb wear, sparse local vegetation and anonymous distant people`;
 
   const clothingDescription = compression >= 3
-    ? `${clothing?.prompt || 'simple everyday clothing'} in ${fabric?.label || state.fabricType}`
-    : `${clothing?.prompt || 'simple everyday clothing'}, made from ${fabric?.prompt || state.fabricType}, with ${commonText('fabricSheen', state.fabricSheen)} and ${commonText('wrinkleProfile', state.wrinkleProfile)}`;
+    ? `${compactPhrase(clothing?.prompt || 'simple everyday clothing', 7)} in ${fabric?.label || state.fabricType}`
+    : `${compactPhrase(clothing?.prompt || 'simple everyday clothing', 8)}, with ${compactPhrase(fabric?.prompt || state.fabricType, 8)}, natural wrinkles and restrained fabric sheen`;
 
-  const subject = `This is a candid, photorealistic smartphone photograph of one person around ${state.apparentAge}, with ${commonText('expression', state.expression)}, ${commonText('gazeTarget', state.gazeTarget)}, visible pores, fine facial texture and natural asymmetry. Hair keeps its real density and hairline, with individual strands and a few ordinary flyaways rather than a sculpted glossy shape. The person wears ${clothingDescription}.`;
+  const subject = `This is a candid, photorealistic smartphone photograph of one person around ${state.apparentAge}, with ${expression}, ${gaze}, visible pores, fine facial texture and natural asymmetry. Hair keeps its real density and hairline, with separated strands and a few ordinary flyaways. The person wears ${clothingDescription}.`;
 
   const camera = `The photograph is taken with a Xiaomi 15 Ultra using the ${lens?.focalLengthEqMm || state.focalLength}mm-equivalent lens at f/${lens?.aperture || state.aperture}, about ${state.distance}cm from the subject, with yaw ${state.yaw}°, pitch ${state.pitch}° and a natural ${state.roll}° roll. ${cameraProcessing}`;
 
-  const environment = `The setting is ${placeDetails} It is ${commonText('time', state.time)} with ${commonText('weather', state.weather)}. The scene is lit by ${commonText('externalLight', state.externalLight)}, with believable falloff, reflections and shadow direction.`;
+  const environment = `The setting is ${placeDetails}. It is ${commonPhrase('time', state.time, 5)} with ${commonPhrase('weather', state.weather, 7)}. The scene is lit by ${commonPhrase('externalLight', state.externalLight, 10)}, with believable falloff, reflections and shadow direction.`;
 
   let modeStory;
   if (inside) {
     const seat = option(INSIDE_CATALOG, 'seat', state.seat);
     const clutter = CLUTTER_BUDGET[state.clutterLevel] || CLUTTER_BUDGET.light;
-    modeStory = `The subject is ${seat?.prompt || 'seated naturally in the front cabin'} of ${vehicle?.insidePrompt || 'the parked vehicle'}, ${vehicleState?.prompt || 'fully stationary'}. The cabin feels lived-in but controlled: ${clutter}. Upholstery, glass and trim react naturally to the available light, and loose objects remain supported by real surfaces and gravity.`;
+    modeStory = `The subject is ${compactPhrase(seat?.prompt || 'seated naturally in the front cabin', 11)} inside ${compactPhrase(vehicle?.insidePrompt || 'the parked vehicle', 13)}, ${compactPhrase(vehicleState?.prompt || 'fully stationary', 7)}. The cabin feels ordinary and controlled: ${clutter}. Upholstery, glass and trim respond naturally to the available light, while every visible loose object rests on a real surface under gravity.`;
   } else {
     const pose = option(OUTSIDE_CATALOG, 'standingPose', state.standingPose);
-    modeStory = `The subject is outside beside ${vehicle?.outsidePrompt || 'the parked vehicle'}, ${vehicleState?.prompt || 'fully stationary'}, ${pose?.prompt || 'standing naturally beside it'}. Paint and glass carry restrained reflections from the real surroundings, while the tires sit firmly on the ground with ordinary contact shadows.`;
+    modeStory = `The subject is beside ${compactPhrase(vehicle?.outsidePrompt || 'the parked vehicle', 14)}, ${compactPhrase(vehicleState?.prompt || 'fully stationary', 7)}, ${compactPhrase(pose?.prompt || 'standing naturally beside it', 12)}. Paint and glass show restrained reflections from the surroundings, and the tires sit firmly on the ground with ordinary contact shadows.`;
   }
 
-  const finish = `The image feels like an ordinary real photo: slightly off-center, subtly imperfect, with realistic skin, fabric fibers, corneal catchlights, believable hands and no polished advertising finish.${notes ? ` The requested detail is kept naturally in the scene: ${notes}.` : ''}`;
+  const finish = `The image feels like an ordinary real photo: slightly off-center and subtly imperfect, with realistic skin, fabric fibers, corneal catchlights, believable hands and no polished advertising finish.${notes ? ` A small requested detail remains natural in the scene: ${notes}.` : ''}`;
 
   return [subject, camera, environment, modeStory, anchorFor(state, mode), finish];
 }
 
 export function compileNarrative(state = {}, mode = state.mode || 'inside') {
   let compression = 0;
-  let prompt = narrativeParts(state, mode, compression).join(' ');
+  let prompt = cleanNarrativeTone(narrativeParts(state, mode, compression).join(' '));
 
   if (countNarrativeWords(prompt) > 300) {
     compression = 1;
-    prompt = narrativeParts(state, mode, compression).join(' ');
+    prompt = cleanNarrativeTone(narrativeParts(state, mode, compression).join(' '));
   }
   if (countNarrativeWords(prompt) > 300) {
     compression = 2;
-    prompt = narrativeParts(state, mode, compression).join(' ');
+    prompt = cleanNarrativeTone(narrativeParts(state, mode, compression).join(' '));
   }
   if (countNarrativeWords(prompt) > 300) {
     compression = 3;
-    prompt = narrativeParts(state, mode, compression).join(' ');
+    prompt = cleanNarrativeTone(narrativeParts(state, mode, compression).join(' '));
   }
 
   if (countNarrativeWords(prompt) > 300) {

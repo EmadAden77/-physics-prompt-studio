@@ -1,13 +1,11 @@
-# Physics Prompt Studio V7
+# Physics Prompt Studio V8
 
 تطبيق ويب ثابت وحتمي لبناء برومبتات صور واقعية مع Conflict Checker وفيزياء كاميرا/إضاءة/مواد صارمة.
 
 ## الصفحات
 
 - **General Studio:** `index.html` — المشاهد العامة، دون أي منطق سيارة.
-- **Car Selfie Physics Studio:** `car-selfie.html` — مختبر مستقل بوضعين متنافيين:
-  - تصوير سيلفي داخل السيارة.
-  - تصوير ذاتي بالخارج بجانب السيارة.
+- **Car Selfie Physics Studio:** `car-selfie.html` — مختبر مستقل بوضعين متنافيين: داخل السيارة وخارجها بجانب السيارة.
 
 الرابط المنشور:
 
@@ -17,38 +15,32 @@ https://emadaden77.github.io/-physics-prompt-studio/
 
 https://emadaden77.github.io/-physics-prompt-studio/car-selfie.html
 
-## مبادئ مشتركة
+## بنية السيارات V8
 
-- Deterministic: لا `Math.random()` ولا اعتماد على الوقت الحالي في Data/Core.
-- Physical Light Causality: الضوء الفيزيائي يحدد ما يضاء؛ Exposure/HDR/WB لا يخلق ضوءًا.
-- Camera Geometry Authority: العدسة + المسافة + Yaw/Pitch/Roll هي السلطة الهندسية.
-- Strict Validation: الأخطاء الفيزيائية تمنع في Strict وتظهر كتنبيه في Auto.
-- Controlled Imperfection: ضوضاء، edge softness، mixed WB وتفاوتات طبيعية بدون تجميل اصطناعي.
+بدل إرسال برومبت طويل جدًا، V8 يفصل العمل إلى ثلاث طبقات:
 
-## بنية السيارات V7
+1. `core/carSelfieEngineeringSpec.js` — مواصفات هندسية داخلية JSON لا تُرسل للنموذج.
+2. `core/carSelfieMinimalPrompt.js` — البرومبت الافتراضي المضغوط بحد أقصى 250 كلمة.
+3. `core/carSelfieAcceptance.js` — قائمة تحقق بعد التوليد مع تقرير ACCEPT / REJECT / INCOMPLETE.
 
-### Data
+النسخة التفصيلية القديمة باقية في `core/carSelfieCompiler.js` للتجارب فقط.
 
-- `data/carSelfieCommonCatalog.js`
-- `data/carSelfieInsideCatalog.js`
-- `data/carSelfieOutsideCatalog.js`
+## الواجهة
 
-### Core
+Step 6 يعرض أربعة تبويبات:
 
-- `core/carSelfieValidation.js`
-- `core/carSelfieInsideValidation.js`
-- `core/carSelfieOutsideValidation.js`
-- `core/carSelfieCompiler.js`
-- `core/carSelfieInsideCompiler.js`
-- `core/carSelfieOutsideCompiler.js`
+- برومبت مضغوط.
+- برومبت تفصيلي.
+- مواصفات هندسية.
+- قائمة تحقق.
 
-### UI
+وتوجد قائمة تحقق تفاعلية ✓ / ✗ وزر **تقرير قبول الصورة**.
 
-- `car-selfie.html`
-- `car-selfie.css`
-- `car-selfie.js`
+## الحتمية
 
-التفاصيل في `docs/architecture.md`.
+- لا `Math.random()` ولا `Date.now()` داخل Data/Core.
+- نفس normalized state = نفس Minimal Prompt + نفس Engineering Spec + نفس Acceptance list.
+- Visual Anchor للسائق يثبت نافذة السائق يمين الإطار وحافة المقود أسفل-منتصف-يسار والمقصورة غير معكوسة.
 
 ## الاختبار
 
@@ -56,4 +48,6 @@ https://emadaden77.github.io/-physics-prompt-studio/car-selfie.html
 npm test
 ```
 
-يشغّل Syntax Checks، اختبارات الوحدات، الحتمية، فصل الوضعين، فيزياء Xiaomi/الضوء/الانعكاسات/القماش/الشعر/الوجه، وStatic Integrity الذي يمنع تسرب منطق السيارة إلى الصفحة العامة أو تسرب وضع داخل السيارة إلى الخارج والعكس.
+يتحقق من حد 250 كلمة، Visual Anchor، ربط Engineering Spec بالـAcceptance، الحتمية، فصل الوضعين، Xiaomi optics، وقواعد الفيزياء السابقة.
+
+التفاصيل الكاملة: `docs/architecture.md`.

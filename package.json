@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check app.js && node --check car-selfie.js && node --check core/prompt-optimizer.js && node --check core/prompt-generator.js && node --check core/scene-builder.js && node --check core/scene-compatibility.js && node --check core/saudi-location-lock.js && node --check core/realistic-image-generator.js && node --check core/expanded-catalogs.js",
+    "check": "node --check app.js && node --check scene-expansion-ui.js && node --check car-selfie.js && node --check core/prompt-optimizer.js && node --check core/prompt-generator.js && node --check core/scene-builder.js && node --check core/scene-compatibility.js && node --check core/saudi-location-lock.js && node --check core/realistic-image-generator.js && node --check core/expanded-catalogs.js && node --check core/scene-type-expansion.js && node --check core/automatic-scene-description.js",
     "test": "npm run check && node --test tests/*.test.mjs"
   }
 }

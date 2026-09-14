@@ -7,12 +7,16 @@ import {
 } from '../data/carSelfieCommonCatalog.js';
 import { INSIDE_CATALOG } from '../data/carSelfieInsideCatalog.js';
 import { OUTSIDE_CATALOG } from '../data/carSelfieOutsideCatalog.js';
+import {
+  INSIDE_DRIVER_MASTER_PROFILE,
+  usesInsideDriverMasterProfile
+} from '../data/carSelfieInsideMasterProfile.js';
 
 const option = (catalog, field, id) => (catalog[field] || []).find((item) => item.id === id) || null;
 const words = (value = '') => String(value).trim().split(/\s+/u).filter(Boolean);
 export const countNarrativeWords = (value = '') => words(value).length;
 
-export const NEGATIVE_LIST = 'no CGI, no 3D render, no digital art, no illustration, no vector, no plastic skin, no airbrushed skin, no beauty filter, no smooth flawless skin, no brand logos, no readable text, no mirrored cabin, no window on the wrong side, no missing steering wheel hint, no floating objects, no impossibly symmetric face, no perfectly centered composition, no perfectly level camera';
+export const NEGATIVE_LIST = 'no CGI, no 3D render, no digital art, no illustration, no vector, no plastic skin, no airbrushed skin, no beauty filter, no smooth flawless skin, no brand logos, no readable text, no mirrored cabin, no window on the wrong side, no missing steering wheel hint, no floating objects, no impossibly symmetric face, no perfectly centered composition, no perfectly level camera, no DSLR optics, no synthetic relighting, no newer-generation Range Rover interior';
 
 export const DRIVER_ANCHOR_SENTENCE = "LHD VISUAL ANCHOR: The driver-side window with exterior view appears on the RIGHT half of the frame. The steering wheel's top rim is partially visible at the bottom-center-left. The passenger area appears on the LEFT side. The cabin is NOT mirrored.";
 export const PASSENGER_ANCHOR_SENTENCE = 'PASSENGER VISUAL ANCHOR: The passenger-side window with exterior view appears on the LEFT half of the frame. The center console is at the RIGHT of the frame. The cabin is NOT mirrored.';
@@ -69,6 +73,8 @@ function cleanNarrativeTone(value) {
 
 function narrativeParts(state, mode, compression = 0) {
   const inside = mode !== 'outside';
+  const masterDriver = usesInsideDriverMasterProfile({ ...state, mode });
+  const master = INSIDE_DRIVER_MASTER_PROFILE;
   const catalog = inside ? INSIDE_CATALOG : OUTSIDE_CATALOG;
   const vehicle = getVehicle(state.vehicleProfile);
   const lens = getCameraOptic(state.cameraLens);
@@ -83,7 +89,9 @@ function narrativeParts(state, mode, compression = 0) {
 
   const cameraProcessing = compression >= 1
     ? 'The phone keeps natural contrast, restrained HDR and believable noise.'
-    : 'The phone keeps natural smartphone contrast, restrained HDR, believable low-light noise and mixed-light white balance without synthetic relighting.';
+    : masterDriver
+      ? 'Night processing keeps natural contrast, retained pores and shadow noise; exposure and HDR reveal captured light without inventing illumination.'
+      : 'The phone keeps natural smartphone contrast, restrained HDR, believable low-light noise and mixed-light white balance without synthetic relighting.';
 
   const placeDetails = compression >= 2
     ? compactPhrase(place?.prompt || 'an ordinary Saudi setting', 8)
@@ -93,23 +101,38 @@ function narrativeParts(state, mode, compression = 0) {
     ? `${compactPhrase(clothing?.prompt || 'simple everyday clothing', 5)} in ${fabric?.label || state.fabricType}`
     : `${compactPhrase(clothing?.prompt || 'simple everyday clothing', 7)}, ${compactPhrase(fabric?.prompt || state.fabricType, 6)}, natural wrinkles and restrained sheen`;
 
-  const subject = `A candid photorealistic smartphone photo shows one person around ${state.apparentAge}, with ${expression}, ${gaze}. Skin has visible pores, fine texture and natural asymmetry. Hair keeps its real density and hairline, with separated strands and a few ordinary flyaways. The person wears ${clothingDescription}.`;
+  const identitySentence = masterDriver && state.referenceAttached
+    ? 'The attached reference defines identity only: facial structure, asymmetry, skin tone, hairline, hair density and facial-hair pattern stay faithful, while pose, clothing, background and lighting come from this scene.'
+    : '';
 
-  const camera = `Shot on a Xiaomi 15 Ultra with the ${lens?.focalLengthEqMm || state.focalLength}mm-equivalent lens at f/${lens?.aperture || state.aperture}, about ${state.distance}cm away, yaw ${state.yaw}°, pitch ${state.pitch}° and a natural ${state.roll}° roll. ${cameraProcessing}`;
+  const subject = `A candid photorealistic smartphone photo shows one person around ${state.apparentAge}, with ${expression}, ${gaze}. Skin has visible pores, fine texture and natural asymmetry. Hair keeps its real density and hairline, with separated strands and a few ordinary flyaways. The person wears ${clothingDescription}. ${identitySentence}`;
 
-  const environment = `Around the subject is ${placeDetails}. It is ${commonPhrase('time', state.time, 4)} with ${commonPhrase('weather', state.weather, 6)}, lit by ${commonPhrase('externalLight', state.externalLight, 8)}. Falloff, reflections and shadow direction feel physically coherent.`;
+  const captureSentence = masterDriver
+    ? 'It is a genuine self-held front-camera selfie; the phone stays outside the frame and the wide perspective remains physically consistent.'
+    : '';
+  const camera = `Shot on a Xiaomi 15 Ultra with the ${lens?.focalLengthEqMm || state.focalLength}mm-equivalent lens at f/${lens?.aperture || state.aperture}, about ${state.distance}cm away, yaw ${state.yaw}°, pitch ${state.pitch}° and a natural ${state.roll}° roll. ${captureSentence} ${cameraProcessing}`;
+
+  const lightSentence = masterDriver
+    ? 'Roadside light reaches only surfaces physically exposed to it, with visible falloff across the face, torso and deeper cabin.'
+    : 'Falloff, reflections and shadow direction feel physically coherent.';
+  const environment = `Around the subject is ${placeDetails}. It is ${commonPhrase('time', state.time, 4)} with ${commonPhrase('weather', state.weather, 6)}, lit by ${commonPhrase('externalLight', state.externalLight, 8)}. ${lightSentence}`;
 
   let modeStory;
   if (inside) {
     const seat = option(INSIDE_CATALOG, 'seat', state.seat);
     const clutter = CLUTTER_BUDGET[state.clutterLevel] || CLUTTER_BUDGET.light;
-    modeStory = `The subject is ${compactPhrase(seat?.prompt || 'seated naturally in the front cabin', 9)} inside ${compactPhrase(vehicle?.insidePrompt || 'the parked vehicle', 10)}, ${compactPhrase(vehicleState?.prompt || 'fully stationary', 5)}. The cabin looks ordinary and controlled: ${clutter}. Every visible loose item rests naturally on a real surface under gravity.`;
+    const periodCue = masterDriver && state.vehicleProfile === master.vehicleLock.vehicleProfile
+      ? 'The Ebony/Ivory cabin is period-correct for 2017, with Ivory perforated leather, dark polished wood, realistic seat compression and no newer-generation dashboard or steering design.'
+      : '';
+    modeStory = `The subject is ${compactPhrase(seat?.prompt || 'seated naturally in the front cabin', 9)} inside ${compactPhrase(vehicle?.insidePrompt || 'the parked vehicle', 10)}, ${compactPhrase(vehicleState?.prompt || 'fully stationary', 5)}. ${periodCue} The cabin looks ordinary and controlled: ${clutter}. Every visible loose item rests naturally on a real surface under gravity.`;
   } else {
     const pose = option(OUTSIDE_CATALOG, 'standingPose', state.standingPose);
     modeStory = `The subject is beside ${compactPhrase(vehicle?.outsidePrompt || 'the parked vehicle', 10)}, ${compactPhrase(vehicleState?.prompt || 'fully stationary', 5)}, ${compactPhrase(pose?.prompt || 'standing naturally beside it', 9)}. Paint and glass carry restrained environmental reflections, while the tires sit firmly on the ground with ordinary contact shadows.`;
   }
 
-  const finish = `The frame is slightly off-center and naturally imperfect, with fabric fibers, corneal catchlights, believable hands and no advertising polish.${notes ? ` A small requested detail remains natural: ${notes}.` : ''}`;
+  const finish = masterDriver
+    ? `The result feels like an ordinary unedited Xiaomi front-camera night photo, with subtle shadow noise, mild edge softness, natural skin and material texture, slightly off-center handheld framing and no commercial polish.${notes ? ` A small requested detail remains natural: ${notes}.` : ''}`
+    : `The frame is slightly off-center and naturally imperfect, with fabric fibers, corneal catchlights, believable hands and no advertising polish.${notes ? ` A small requested detail remains natural: ${notes}.` : ''}`;
 
   return [subject, camera, environment, modeStory, anchorFor(state, mode), finish];
 }

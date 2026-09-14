@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>Physics Prompt Studio — Prompt Optimizer</title>
+  <title>Physics Prompt Studio — Auto Prompt Generator</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -12,63 +12,93 @@
     <header class="hero">
       <div>
         <p class="eyebrow">Physics Prompt Studio</p>
-        <h1>Prompt Optimizer</h1>
-        <p class="lede">حوّل الطلب إلى Execution Brief منظم، وأضف مشهدًا بصريًا مضبوطًا عبر المكان والملابس ووضعية السيلفي وزاوية الكاميرا والإضاءة الفيزيائية.</p>
+        <h1>Auto Prompt Generator</h1>
+        <p class="lede">اختر المشهد فقط. التطبيق يبني Prompt إنجليزي كامل تلقائيًا مع هندسة الكاميرا والإضاءة الفيزيائية والواقعية والقيود النهائية.</p>
       </div>
-      <a class="button secondary" href="car-selfie.html">قسم السيارات القديم</a>
+      <div class="hero-badges"><span class="pill">LOCAL ENGINE</span><span class="pill">NO MODEL CALL</span></div>
     </header>
 
-    <section class="scene-builder card" aria-label="بناء المشهد">
-      <div class="section-head">
-        <div>
-          <p class="kicker">SCENE BUILDER</p>
-          <h2>تشكيل المشهد</h2>
-        </div>
-        <span class="pill">اختيارات صريحة تحفظ داخل الـPacket</span>
-      </div>
+    <nav class="mode-switch card" aria-label="وضع التطبيق">
+      <button class="mode active" data-mode="auto" type="button"><strong>توليد تلقائي</strong><span>ابنِ Prompt من الاختيارات</span></button>
+      <button class="mode" data-mode="optimize" type="button"><strong>تحسين Prompt</strong><span>نظّم Prompt موجود</span></button>
+    </nav>
 
-      <div class="scene-grid">
-        <label class="field"><span>المكان داخل السعودية</span><select id="sceneLocation"><option value="">بدون تحديد</option></select></label>
-        <label class="field"><span>الملابس</span><select id="sceneClothing"><option value="">بدون تحديد</option></select></label>
-        <label class="field"><span>وضعية السيلفي</span><select id="scenePose"><option value="">بدون تحديد</option></select></label>
-        <label class="field"><span>زاوية تصوير السيلفي</span><select id="sceneAngle"><option value="">بدون تحديد</option></select></label>
-        <label class="field lighting-field"><span>الإضاءة الفيزيائية النهارية / الليلية</span><select id="sceneLighting"><option value="">بدون تحديد</option></select></label>
-        <label class="field lighting-notes"><span>ملاحظات إضافية للإضاءة</span><input id="lightingNotes" type="text" placeholder="مثال: المصدر الأساسي عمود LED على يسار الكادر، والخلفية أغمق تدريجيًا"></label>
-      </div>
-      <p class="hint scene-hint">الإضاءة هنا سببية: مصدر الضوء يحدد ما يضيء والظلال والانعكاسات. Exposure / ISO / HDR لا تُعامل كمصدر ضوء.</p>
+    <section id="autoPanel">
+      <section class="card builder-card">
+        <div class="section-head">
+          <div><p class="kicker">01 — AUTO BUILDER</p><h2>كوّن المشهد</h2></div>
+          <div class="head-actions"><button id="randomButton" class="ghost" type="button">🎲 مشهد عشوائي</button><button id="resetButton" class="ghost" type="button">إعادة ضبط</button></div>
+        </div>
+
+        <div class="builder-grid">
+          <label class="field important"><span>نوع المشهد</span><select id="sceneType"></select></label>
+          <label class="field"><span>المكان داخل السعودية</span><select id="sceneLocation"><option value="">تلقائي — مكان سعودي مناسب</option></select></label>
+          <label class="field"><span>الملابس</span><select id="sceneClothing"><option value="">تلقائي — ملابس مناسبة</option></select></label>
+          <label class="field"><span>وضعية الجسم / السيلفي</span><select id="scenePose"><option value="">تلقائي — وضعية طبيعية</option></select></label>
+          <label class="field"><span>زاوية التصوير</span><select id="sceneAngle"><option value="">تلقائي — زاوية طبيعية</option></select></label>
+          <label class="field important"><span>الإضاءة الفيزيائية</span><select id="sceneLighting"><option value="">تلقائي — حسب المكان والوقت</option></select></label>
+          <label class="field"><span>الكاميرا</span><select id="cameraProfile"></select></label>
+          <label class="field"><span>نسبة الصورة</span><select id="aspectRatio"></select></label>
+          <label class="field"><span>التعبير</span><select id="expression"></select></label>
+          <label class="field"><span>نشاط الخلفية</span><select id="backgroundActivity"></select></label>
+          <label class="field"><span>مستوى الواقعية</span><select id="realismLevel"></select></label>
+          <label class="field"><span>التأطير</span><select id="framing"></select></label>
+        </div>
+
+        <details class="advanced">
+          <summary>إعدادات متقدمة</summary>
+          <div class="advanced-grid">
+            <label class="field span-2"><span>فكرة أو وصف إضافي للمشهد</span><textarea id="sceneDescription" rows="3" placeholder="مثال: مدعو على العشاء، الصورة عفوية وهادئة"></textarea></label>
+            <label class="field"><span>مسافة الكاميرا</span><input id="cameraDistance" type="text" placeholder="مثال: 45 cm"></label>
+            <label class="field"><span>ملاحظات الإضاءة</span><input id="lightingNotes" type="text" placeholder="مثال: LED من أعلى اليسار"></label>
+            <label class="field span-2"><span>قيود خاصة</span><textarea id="customConstraints" rows="3" placeholder="أي شروط إضافية تريد تثبيتها داخل الـPrompt"></textarea></label>
+            <label class="toggle span-2"><input id="identityReference" type="checkbox" checked><span><strong>Identity Lock عند إرفاق صورة مرجعية</strong><small>يحافظ على الهوية ولا ينسخ الخلفية أو الوضعية أو الملابس من المرجع.</small></span></label>
+          </div>
+        </details>
+
+        <div class="actions primary-actions"><button id="generateButton" class="primary" type="button">توليد Prompt الآن</button><span class="live-note">⚡ يتحدث تلقائيًا عند تغيير أي اختيار</span></div>
+      </section>
     </section>
 
-    <section class="workspace-grid" aria-label="مساحة العمل">
-      <article class="card input-card">
-        <div class="section-head"><div><p class="kicker">01</p><h2>الطلب الأصلي</h2></div><span class="pill">يُحفظ حرفيًا</span></div>
-        <label for="surface">Target surface</label>
-        <select id="surface"><option value="unknown">غير محدد</option><option value="chatgpt">ChatGPT</option><option value="codex">Codex</option><option value="openai_api">OpenAI API</option><option value="other">Other</option></select>
-        <label for="sourcePrompt">Prompt</label>
-        <textarea id="sourcePrompt" rows="18" spellcheck="false" placeholder="الصق البرومبت أو الطلب هنا..."></textarea>
-        <div class="actions"><button id="compileButton" class="primary" type="button">تحليل وتحسين</button><button id="clearButton" class="secondary" type="button">مسح</button></div>
-        <p class="hint">المحرك لا ينفذ الطلب. وظيفته تجميعه وتحسين بنيته فقط.</p>
+    <section id="optimizerPanel" hidden>
+      <section class="card optimizer-card">
+        <div class="section-head"><div><p class="kicker">OPTIMIZER</p><h2>تحسين Prompt موجود</h2></div><span class="pill">يحفظ النص الأصلي</span></div>
+        <div class="optimizer-grid">
+          <label class="field"><span>Target surface</span><select id="surface"><option value="unknown">غير محدد</option><option value="chatgpt">ChatGPT</option><option value="codex">Codex</option><option value="openai_api">OpenAI API</option><option value="other">Other</option></select></label>
+          <label class="field span-2"><span>Prompt الأصلي</span><textarea id="sourcePrompt" rows="12" spellcheck="false" placeholder="الصق البرومبت الموجود هنا..."></textarea></label>
+        </div>
+        <div class="actions"><button id="optimizeButton" class="primary" type="button">تحسين Prompt</button><span class="hint">يمكن دمج اختيارات Scene Builder الحالية مع الـPrompt أثناء التحسين.</span></div>
+      </section>
+    </section>
+
+    <section class="output-grid">
+      <article class="card result-card">
+        <div class="section-head"><div><p class="kicker">02 — OUTPUT</p><h2>الـPrompt النهائي</h2></div><span id="statusBadge" class="status idle">IDLE</span></div>
+        <div class="metrics">
+          <div class="metric"><span id="metricOneLabel">الوضع</span><strong id="metricOneValue">AUTO</strong></div>
+          <div class="metric"><span id="metricTwoLabel">الأقسام</span><strong id="metricTwoValue">0</strong></div>
+          <div class="metric"><span id="metricThreeLabel">التحقق</span><strong id="metricThreeValue">—</strong></div>
+        </div>
+        <textarea id="promptOutput" class="prompt-output" rows="25" readonly></textarea>
+        <div class="actions result-actions"><button id="copyButton" class="primary" type="button" disabled>نسخ Prompt</button><button id="txtButton" class="secondary" type="button" disabled>تنزيل TXT</button><button id="jsonButton" class="secondary" type="button" disabled>تنزيل JSON</button></div>
       </article>
 
-      <article class="card result-card">
-        <div class="section-head"><div><p class="kicker">02</p><h2>النتيجة</h2></div><span id="statusBadge" class="status idle">IDLE</span></div>
-        <div class="metrics" aria-live="polite"><div class="metric"><span>القيود</span><strong id="constraintCount">0</strong></div><div class="metric"><span>التحذيرات</span><strong id="warningCount">0</strong></div><div class="metric"><span>السطح</span><strong id="surfaceValue">—</strong></div></div>
-        <div class="tabs" role="tablist" aria-label="مخرجات التحليل"><button class="tab active" data-tab="compiled" type="button">Compiled Prompt</button><button class="tab" data-tab="ledger" type="button">Ledger</button><button class="tab" data-tab="packet" type="button">JSON Packet</button></div>
-        <section class="tab-panel active" data-panel="compiled"><textarea id="compiledOutput" rows="18" readonly placeholder="سيظهر الـCompiled Prompt هنا..."></textarea></section>
-        <section class="tab-panel" data-panel="ledger"><pre id="ledgerOutput" class="code-panel">لا توجد نتيجة بعد.</pre></section>
-        <section class="tab-panel" data-panel="packet"><pre id="packetOutput" class="code-panel">لا توجد نتيجة بعد.</pre></section>
-        <div class="actions result-actions"><button id="copyButton" class="primary" type="button" disabled>نسخ Compiled Prompt</button><button id="downloadButton" class="secondary" type="button" disabled>تنزيل JSON</button></div>
+      <article class="card inspector-card">
+        <div class="tabs" role="tablist"><button class="tab active" data-tab="details" type="button">Details</button><button class="tab" data-tab="packet" type="button">JSON</button></div>
+        <section class="tab-panel active" data-panel="details"><pre id="detailsOutput" class="code-panel">سيظهر تحليل الإعدادات هنا.</pre></section>
+        <section class="tab-panel" data-panel="packet"><pre id="packetOutput" class="code-panel">سيظهر الـJSON هنا.</pre></section>
       </article>
     </section>
 
     <section class="card rules-card">
-      <div class="section-head"><div><p class="kicker">03</p><h2>القواعد الأساسية</h2></div></div>
+      <div class="section-head"><div><p class="kicker">ENGINE</p><h2>ما الذي يثبته المحرك تلقائيًا؟</h2></div></div>
       <div class="rules-grid">
-        <div><strong>Original Prompt</strong><span>يُحفظ كما أُدخل بدون إعادة كتابة، حتى عند استخدام Scene Builder.</span></div>
-        <div><strong>Scene Controls</strong><span>المكان والملابس والوضعية والزاوية والإضاءة تُسجل كمصدر مستقل وصريح.</span></div>
-        <div><strong>Physical Lighting</strong><span>الضوء الفعلي منفصل عن Exposure / ISO / HDR والمعالجة الحسابية.</span></div>
-        <div><strong>7 Canonical Sections</strong><span>Outcome → Context → Constraints → Evidence → Output → Routing → Verification.</span></div>
-        <div><strong>Constraint Map</strong><span>كل قيد من النص أو Scene Builder يرتبط مرة واحدة بمكانه في النسخة المجمعة.</span></div>
-        <div><strong>Validation</strong><span>لا تصبح النتيجة READY إلا إذا اجتازت التحقق البنيوي.</span></div>
+        <div><strong>Capture Type Lock</strong><span>السيلفي يبقى سيلفي، وتصوير الشخص الثالث يبقى شخصًا ثالثًا.</span></div>
+        <div><strong>Camera Geometry</strong><span>موضع ومسافة ومنظور الكاميرا يجب أن تكون ممكنة فيزيائيًا.</span></div>
+        <div><strong>Physical Lighting</strong><span>المصدر الحقيقي وحده يخلق الضوء والظل والانعكاس. ISO وHDR لا يخلقان ضوءًا.</span></div>
+        <div><strong>Identity Lock</strong><span>المرجع يثبت الهوية فقط عند تفعيله، بدون سرقة الخلفية أو الملابس.</span></div>
+        <div><strong>Material Physics</strong><span>الجلد والقماش والخشب والمعدن والزجاج لا يستجيبون للضوء بالطريقة نفسها.</span></div>
+        <div><strong>Final Verification</strong><span>الـPrompt نفسه يطلب فحص الهندسة والتشريح والاتصال والإضاءة قبل النتيجة.</span></div>
       </div>
     </section>
   </main>

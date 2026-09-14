@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check app.js && node --check data/catalog.js && node --check data/presets.js && node --check core/state.js && node --check core/geometry.js && node --check core/validation.js && node --check core/compiler.js",
+    "check": "node --check app.js && node --check car-selfie.js && node --check data/catalog.js && node --check data/presets.js && node --check data/carSelfieCatalog.js && node --check core/state.js && node --check core/geometry.js && node --check core/validation.js && node --check core/compiler.js && node --check core/carSelfieValidation.js && node --check core/carSelfieCompiler.js",
     "test": "npm run check && node --test tests/*.test.mjs && node tests/static-integrity.mjs"
   }
 }

@@ -1,85 +1,57 @@
-# Physics Prompt Studio
+# Physics Prompt Studio V5
 
-> Architecture baseline: deterministic physics validation / V4.
+تطبيق ويب ثابت وحتمي لبناء برومبتات صور واقعية مع فحص للتعارضات الفيزيائية. منذ V5 يوجد فصل معماري كامل بين المشاهد العامة ومختبر سيلفي السيارة.
 
-تطبيق ويب ثابت لبناء برومبتات صور واقعية بطريقة حتمية وموديولية، مع فصل واضح بين البيانات، الحالة، الهندسة، التحقق، والتجميع.
+## الصفحات
 
-## المبادئ
+- **المشاهد العامة:** `index.html` — بورتريه، شوارع، مجالس، منازل، مقاهٍ، لقطات عفوية وغيرها. لا يحتوي على أي منطق سيارة.
+- **Car Selfie Physics Lab:** `car-selfie.html` — نطاق مستقل للسيلفي داخل المقصورة، LHD، الانعكاسات، الحركة، اليدين، الخامات والإضاءة المحلية.
 
-- **Deterministic:** نفس الحالة المنظمة تنتج نفس النص حرفيًا. لا يوجد `Math.random()` أو اعتماد على التاريخ/الوقت داخل Core/Data.
-- **Single Source of Truth:** كل الخيارات، الحدود، الوحدات، وmetadata الفيزيائية موجودة في `data/catalog.js`.
-- **Numeric camera authority:** Yaw / Pitch / Roll + focal length + optical distance هي المرجع الهندسي. تم حذف زاوية كاميرا نصية موازية كانت تستطيع التناقض مع الأرقام.
-- **Physical validation:** مصدر الضوء يحمل أوقاتًا وبيئات واتجاهات وfalloff مسموحة، ونوع الالتقاط يحمل نطاقات مسافة وبعد بؤري ودوران.
-- **Strict gate:** الأخطاء البنيوية `fatal` تمنع الإخراج دائمًا. التعارضات الفيزيائية `error` تمنع الإخراج إذا كان أي موديول واقعية مضبوطًا على `strict`. وضع `auto` يبقي Conflict Checker تنبيهيًا ولا يغير اختيار المستخدم.
-- **Generic Saudi locations:** لا أسماء مدن أو معالم أو منشآت محددة.
+الرابط المنشور:
 
-## النموذج الهندسي
+https://emadaden77.github.io/-physics-prompt-studio/
 
-يستخدم التطبيق البعد البؤري المكافئ لـ35mm ونسبة الصورة لبناء إطار مكافئ يحافظ على قطر full-frame (تقريبًا 43.27mm). ثم يحسب تغطية المشهد التقريبية:
+مختبر السيارة مباشرة:
 
-`coverage = distance × equivalent-frame-dimension / focal-length`
+https://emadaden77.github.io/-physics-prompt-studio/car-selfie.html
 
-هذه التغطية تُقارن بنطاقات كل framing، ويُفحص العرض التقريبي أيضًا في سيلفي المجموعات. الهدف هو كشف التناقضات الواضحة، لا ادعاء محاكاة عدسة/حساس هاتف محدد دون بياناته.
+## مبادئ مشتركة
 
-## البنية
+- **Deterministic:** لا `Math.random()` ولا اعتماد على الوقت الحالي داخل Core/Data.
+- **Physical Light Causality:** مصدر الضوء الفيزيائي وحده يحدد ما يضاء، والـExposure/HDR/WB لا يخلق ضوءًا.
+- **Camera Geometry Authority:** البعد البؤري والمسافة وYaw/Pitch/Roll هي المرجع الهندسي.
+- **Strict Validation:** الأخطاء البنيوية تمنع دائمًا، والأخطاء الفيزيائية تمنع في الوضع الصارم.
+- **Controlled Imperfection:** ضوضاء حساس، edge softness، WB غير مثالي وتفاوتات طبيعية بدون تجميل اصطناعي.
 
-- `index.html` — الواجهة فقط، بلا مصادر خطوط أو سكربتات خارجية.
-- `styles.css` — تصميم متجاوب محلي بالكامل.
-- `app.js` — ربط DOM، الحفظ المحلي، البحث، الـPresets، والتبديل بين صيغ الإخراج.
-- `data/catalog.js` — المصدر الوحيد لكل الخيارات، الوحدات، الحدود، القيود والافتراضات المصنفة.
-- `data/presets.js` — Presets ثابتة اجتازت اختبارات الفيزياء.
-- `core/state.js` — تطبيع الحالة والتحقق من شكل المدخلات العامة.
-- `core/geometry.js` — حسابات مجال الرؤية والتغطية.
-- `core/validation.js` — Conflict Checker وبوابة Strict.
-- `core/compiler.js` — مخرجات Detailed / Concise / JSON / Negative فقط.
-- `tests/*.test.mjs` — اختبارات وحدات للهندسة والتحقق والمترجم.
-- `tests/static-integrity.mjs` — فحص المسارات، IDs، التعارضات، الكود غير المكتمل، ومصادر اللاتحديد.
+## بنية الملفات
 
-## مستويات Conflict Checker
+### General Studio
 
-- `fatal`: مدخل غير صالح أو غير معروف، قيمة رقمية خارج النطاق، مرجع مطلوب وغير متوفر، أو خرق ثابت لسياسة المواقع العامة. يمنع الإخراج دائمًا.
-- `error`: تعارض فيزيائي مثل ضوء نهار مع الليل، مسافة/عدسة غير مناسبة لنوع الالتقاط، framing لا يطابق مجال الرؤية، أو سيارة في موقع غير قابل للتوقف. يمنع الإخراج عند Strict.
-- `warning`: حالة قابلة للتنفيذ لكنها تستحق انتباه المستخدم. لا يتم تعديل أي قيمة تلقائيًا.
+- `index.html`
+- `styles.css`
+- `app.js`
+- `data/catalog.js`
+- `data/presets.js`
+- `core/state.js`
+- `core/geometry.js`
+- `core/validation.js`
+- `core/compiler.js`
 
-## الوحدات والنطاقات
+### Car Selfie Physics Lab
 
-القيم الرقمية الحالية:
+- `car-selfie.html`
+- `car-selfie.css`
+- `car-selfie.js`
+- `data/carSelfieCatalog.js`
+- `core/carSelfieValidation.js`
+- `core/carSelfieCompiler.js`
 
-- العمر الظاهر: `1–100 years`
-- البعد البؤري: `13–120 mm equivalent`
-- المسافة البصرية للهدف الأساسي: `20–1000 cm`
-- Yaw: `-90..90 deg`
-- Pitch: `-45..45 deg`
-- Roll: `-20..20 deg`
+التفاصيل المعمارية في `docs/architecture.md`.
 
-بالإضافة إلى النطاق العام، يطبق كل Capture Type نطاقاته الواقعية الخاصة.
-
-## السيارة الاختيارية
-
-يوجد مشهد اختياري ثابت لـ `2017 Range Rover Sport L494` أبيض، متوقف وثابت. الموقع يجب أن يكون مصنفًا `parkable`، والوضعية يجب أن تكون جلوسًا، والمقصورة تبقى period-correct ولا تتحول إلى جيل أحدث.
-
-## الاختبارات
+## الاختبار
 
 ```bash
 npm test
 ```
 
-يشغل:
-
-1. Syntax checks لكل ملفات JavaScript الأساسية.
-2. Unit tests للهندسة والحتمية والـStrict gate والـPresets والسيارة والإضاءة.
-3. Static integrity للتأكد من عدم وجود conflict markers أو imports مكسورة أو مصادر عشوائية في Core/Data.
-
-## التشغيل المحلي
-
-أي Static HTTP server يكفي، مثل:
-
-```bash
-python3 -m http.server 8765
-```
-
-ثم افتح `http://127.0.0.1:8765/`.
-
-## GitHub Pages
-
-https://emadaden77.github.io/-physics-prompt-studio/
+يشغّل Syntax Checks، اختبارات الوحدات، اختبارات الحتمية، اختبارات فيزياء السيارة، واختبار Static Integrity الذي يمنع تسرب منطق السيارة إلى النطاق العام.

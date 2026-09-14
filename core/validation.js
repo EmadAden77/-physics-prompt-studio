@@ -1,229 +1,34 @@
-import {
-  CATALOG,
-  FIELD_SPECS,
-  FRAMINGS,
-  LIGHT_SOURCES,
-  REALISM_MODULES,
-  MODULE_LEVELS
-} from '../data/catalog.js';
-import { fieldCoverageCm, minimumGroupWidthCm } from './geometry.js';
-import { assertStateObject, normalizeState, optionById, STATE_FIELDS, MODULE_IDS } from './state.js';
+import { CATALOG, FIELD_SPECS, REALISM_MODULES } from '../data/catalog.js';
+import { normalizeState } from './state.js';
+import { sceneCoverageCm, withinRange } from './geometry.js';
 
-const framingMap = new Map(FRAMINGS.map((item) => [item.id, item]));
-const lightMap = new Map(LIGHT_SOURCES.map((item) => [item.id, item]));
-const moduleLevelIds = new Set(MODULE_LEVELS.map(({ id }) => id));
-const knownFields = new Set(STATE_FIELDS);
-const namedCityPattern = /(الرياض|جدة|مكة|مكّة|المدينة|الدمام|الخبر|الطائف|أبها|ينبع|riyadh|jeddah|makkah|mecca|madinah|medina|dammam|khobar|taif|abha|yanbu)/i;
-
-function issue(code, severity, field, message) {
-  return Object.freeze({ code, severity, field, message });
+const cityTokens = ['riyadh','jeddah','mecca','makkah','medina','madinah','dammam','khobar','الرياض','جدة','مكة','المدينة','الدمام','الخبر'];
+const optionById = (field, id) => (CATALOG[field] || []).find((item) => item.id === id);
+function push(issues, severity, code, message, field) { issues.push(Object.freeze({ severity, code, message, field })); }
+export function isStrict(state) { return REALISM_MODULES.some((module) => state.modules?.[module.id] === 'strict'); }
+function validateKnownOptions(state, issues) { for (const [field, options] of Object.entries(CATALOG)) if (!options.some((option) => option.id === state[field])) push(issues, 'fatal', 'UNKNOWN_OPTION', `قيمة غير معروفة في ${field}.`, field); }
+function validateNumbers(state, issues) { for (const [field, spec] of Object.entries(FIELD_SPECS)) { const value=state[field]; if(!Number.isFinite(value)) push(issues,'fatal','INVALID_NUMBER',`${field} يجب أن يكون رقمًا صالحًا.`,field); else if(value<spec.min||value>spec.max) push(issues,'fatal','OUT_OF_RANGE',`${field} خارج النطاق ${spec.min}–${spec.max} ${spec.unit}.`,field); } }
+function validateReference(state, issues) { if(state.referenceRole!=='none'&&!state.referenceAttached) push(issues,'warning','REFERENCE_NOT_ATTACHED','تم اختيار دور للمرجع لكن لا توجد صورة مرجعية مرفقة محليًا.','referenceRole'); }
+function validateCustomFields(state, issues) {
+  const pairs=[['location','customLocation','CUSTOM_LOCATION_EMPTY'],['pose','customPose','CUSTOM_POSE_EMPTY'],['hair','customHair','CUSTOM_HAIR_EMPTY'],['beard','customBeard','CUSTOM_BEARD_EMPTY'],['glasses','customGlasses','CUSTOM_GLASSES_EMPTY'],['clothing','customClothing','CUSTOM_CLOTHING_EMPTY'],['lightSource','customLightSource','CUSTOM_LIGHT_EMPTY']];
+  for(const [selector,textField,code] of pairs) if(state[selector]==='custom'&&!state[textField].trim()) push(issues,'fatal',code,`الخيار المخصص في ${selector} يحتاج وصفًا.`,textField);
+  if(state.location==='custom'){const lower=state.customLocation.toLowerCase();if(cityTokens.some(token=>lower.includes(token)))push(issues,'fatal','NAMED_LOCATION_FORBIDDEN','الموقع المخصص يجب أن يبقى سعوديًا عامًا بلا اسم مدينة أو معلم محدد.','customLocation');}
 }
-
-function isStrict(state) {
-  return REALISM_MODULES.some(({ id }) => state.modules[id] === 'strict');
+function validateCapture(state, issues) {
+  const capture=optionById('captureType',state.captureType); if(!capture)return;
+  if(!withinRange(state.focalLength,capture.focalRangeMm))push(issues,'error','CAPTURE_FOCAL_CONFLICT',`البعد البؤري غير متناسق مع نوع الالتقاط؛ النطاق المتوقع ${capture.focalRangeMm[0]}–${capture.focalRangeMm[1]}mm.`,'focalLength');
+  if(!withinRange(state.distance,capture.distanceRangeCm))push(issues,'error','CAPTURE_DISTANCE_CONFLICT',`المسافة غير متناسقة مع نوع الالتقاط؛ النطاق المتوقع ${capture.distanceRangeCm[0]}–${capture.distanceRangeCm[1]}cm.`,'distance');
+  if(Math.abs(state.yaw)>capture.maxAbsYawDeg)push(issues,'error','CAPTURE_YAW_CONFLICT','Yaw يتجاوز النطاق المنطقي لنوع الالتقاط.','yaw');
+  if(Math.abs(state.pitch)>capture.maxAbsPitchDeg)push(issues,'error','CAPTURE_PITCH_CONFLICT','Pitch يتجاوز النطاق المنطقي لنوع الالتقاط.','pitch');
+  if(Math.abs(state.roll)>capture.maxAbsRollDeg)push(issues,'error','CAPTURE_ROLL_CONFLICT','Roll يتجاوز النطاق المنطقي لنوع الالتقاط.','roll');
 }
-
-function validateEnums(state, issues) {
-  for (const [field, options] of Object.entries(CATALOG)) {
-    const value = state[field];
-    if (!options.some((option) => option.id === value)) {
-      issues.push(issue('UNKNOWN_OPTION', 'fatal', field, `قيمة غير مدعومة في ${field}: ${value || '(فارغ)'}.`));
-    }
-  }
-}
-
-function validateNumbers(state, issues) {
-  for (const [field, spec] of Object.entries(FIELD_SPECS)) {
-    const value = state[field];
-    if (!Number.isFinite(value)) {
-      issues.push(issue('INVALID_NUMBER', 'fatal', field, `${field} يجب أن يكون رقمًا بوحدة ${spec.unit}.`));
-      continue;
-    }
-    if (value < spec.min || value > spec.max) {
-      issues.push(issue('NUMBER_OUT_OF_RANGE', 'fatal', field, `${field} خارج النطاق المسموح: ${spec.min}–${spec.max} ${spec.unit}.`));
-    }
-  }
-}
-
-function validateCustomFields(state, issues, strict) {
-  const required = [
-    ['location', 'customLocation', 'الموقع'],
-    ['pose', 'customPose', 'الوضعية'],
-    ['hair', 'customHair', 'الشعر'],
-    ['beard', 'customBeard', 'اللحية'],
-    ['glasses', 'customGlasses', 'النظارة'],
-    ['clothing', 'customClothing', 'الملابس'],
-    ['lightSource', 'customLightSource', 'مصدر الضوء']
-  ];
-  for (const [selector, textField, label] of required) {
-    if (state[selector] === 'custom' && !state[textField]) {
-      issues.push(issue('EMPTY_CUSTOM_VALUE', 'fatal', textField, `اخترت ${label} مخصصًا لكن الوصف فارغ.`));
-    }
-  }
-
-  if (strict && state.location === 'custom') {
-    issues.push(issue('STRICT_UNVERIFIED_LOCATION', 'error', 'location', 'الوضع الصارم لا يستطيع إثبات خصائص موقع مخصص غير مصنف؛ اختر موقعًا من الكتالوج.'));
-  }
-  if (strict && state.lightSource === 'custom') {
-    issues.push(issue('STRICT_UNVERIFIED_LIGHT', 'error', 'lightSource', 'الوضع الصارم لا يستطيع إثبات فيزياء مصدر ضوء مخصص؛ اختر مصدرًا مصنفًا.'));
-  }
-  if (strict && state.pose === 'custom') {
-    issues.push(issue('STRICT_UNVERIFIED_POSE', 'error', 'pose', 'الوضع الصارم لا يستطيع إثبات التلامس ووضعية الجسم في وصف مخصص؛ اختر وضعية مصنفة.'));
-  }
-}
-
-function validateReference(state, issues) {
-  if (state.referenceRole !== 'none' && !state.referenceAttached) {
-    issues.push(issue('REFERENCE_ROLE_WITHOUT_FILE', 'fatal', 'referenceRole', 'تم اختيار دور للصورة المرجعية لكن لم تُرفق صورة.'));
-  }
-  if (state.referenceAttached && state.referenceRole === 'none') {
-    issues.push(issue('UNUSED_REFERENCE_FILE', 'warning', 'referenceRole', 'أرفقت صورة مرجعية لكن دورها مضبوط على "بدون استخدام".'));
-  }
-  const referenceAppearance = [
-    ['hair', state.hair],
-    ['beard', state.beard],
-    ['glasses', state.glasses]
-  ];
-  for (const [field, value] of referenceAppearance) {
-    if (value === 'reference' && (!state.referenceAttached || state.referenceRole === 'none')) {
-      issues.push(issue('REFERENCE_APPEARANCE_WITHOUT_ACTIVE_REFERENCE', 'fatal', field, `${field} مضبوط على المرجع لكن لا يوجد مرجع فعّال.`));
-    }
-  }
-}
-
-function validateGenericSaudiPolicy(state, issues) {
-  const freeText = [state.customLocation, state.idea, state.notes].filter(Boolean).join(' ');
-  if (namedCityPattern.test(freeText)) {
-    issues.push(issue('NAMED_CITY_NOT_ALLOWED', 'fatal', 'location', 'سياسة التطبيق تمنع أسماء المدن والمعالم المحددة؛ استخدم وصفًا سعوديًا عامًا فقط.'));
-  }
-}
-
-function validateCamera(state, issues) {
-  const capture = optionById('captureType', state.captureType);
-  const framing = framingMap.get(state.framing);
-  const ratio = optionById('ratio', state.ratio);
-  if (!capture || !framing || !ratio || !Number.isFinite(state.focalLength) || !Number.isFinite(state.distance)) return;
-
-  const [minFocal, maxFocal] = capture.focalRangeMm;
-  const [minDistance, maxDistance] = capture.distanceRangeCm;
-  if (state.focalLength < minFocal || state.focalLength > maxFocal) {
-    issues.push(issue('CAPTURE_FOCAL_MISMATCH', 'error', 'focalLength', `${capture.label}: البعد البؤري الواقعي المحدد هو ${minFocal}–${maxFocal} mm equivalent.`));
-  }
-  if (state.distance < minDistance || state.distance > maxDistance) {
-    issues.push(issue('CAPTURE_DISTANCE_MISMATCH', 'error', 'distance', `${capture.label}: مسافة الالتقاط الواقعية المحددة هي ${minDistance}–${maxDistance} cm.`));
-  }
-  if (Math.abs(state.yaw) > capture.maxAbsYawDeg) issues.push(issue('CAPTURE_YAW_MISMATCH', 'error', 'yaw', `Yaw يتجاوز ±${capture.maxAbsYawDeg}° لهذا النوع من الالتقاط.`));
-  if (Math.abs(state.pitch) > capture.maxAbsPitchDeg) issues.push(issue('CAPTURE_PITCH_MISMATCH', 'error', 'pitch', `Pitch يتجاوز ±${capture.maxAbsPitchDeg}° لهذا النوع من الالتقاط.`));
-  if (Math.abs(state.roll) > capture.maxAbsRollDeg) issues.push(issue('CAPTURE_ROLL_MISMATCH', 'error', 'roll', `Roll يتجاوز ±${capture.maxAbsRollDeg}° لهذا النوع من الالتقاط.`));
-
-  if (state.focalLength > 0 && state.distance > 0) {
-    const coverage = fieldCoverageCm({ ratioId: state.ratio, focalLengthEqMm: state.focalLength, distanceCm: state.distance });
-    const [minHeight, maxHeight] = framing.verticalCoverageCm;
-    if (coverage.heightCm < minHeight || coverage.heightCm > maxHeight) {
-      issues.push(issue(
-        'FRAMING_OPTICS_MISMATCH',
-        'error',
-        'framing',
-        `الهندسة الحالية تعطي تغطية رأسية تقريبية ${coverage.heightCm.toFixed(0)} cm، بينما كادر "${framing.label}" يحتاج تقريبًا ${minHeight}–${maxHeight} cm.`
-      ));
-    }
-
-    const people = Number(state.people);
-    if (state.captureType === 'front-selfie' && Number.isInteger(people)) {
-      const requiredWidth = minimumGroupWidthCm(people);
-      if (coverage.widthCm < requiredWidth) {
-        issues.push(issue('SELFIE_GROUP_WIDTH_MISMATCH', 'error', 'people', `عرض مجال الرؤية التقريبي ${coverage.widthCm.toFixed(0)} cm لا يكفي لـ ${people} شخص/أشخاص؛ المطلوب تقريبًا ${requiredWidth} cm أو أكثر.`));
-      }
-    }
-  }
-
-  if (state.captureType === 'front-selfie' && ['three-quarter-body','full-body','environmental-portrait'].includes(state.framing)) {
-    issues.push(issue('FRONT_SELFIE_FRAMING_IMPOSSIBLE', 'error', 'framing', 'هذا الكادر أوسع من مدى سيلفي أمامي محمول باليد ضمن المسافات المسموحة.'));
-  }
-}
-
 function validateLighting(state, issues) {
-  const source = lightMap.get(state.lightSource);
-  const location = optionById('location', state.location);
-  if (!source || !location) return;
-
-  if (!source.times.includes(state.time)) {
-    issues.push(issue('LIGHT_TIME_CONFLICT', 'error', 'lightSource', `مصدر الضوء "${source.label}" غير متوافق مع وقت "${optionById('time', state.time)?.label || state.time}".`));
-  }
-  if (!source.environments.includes(location.environment)) {
-    issues.push(issue('LIGHT_ENVIRONMENT_CONFLICT', 'error', 'lightSource', `مصدر الضوء "${source.label}" غير متوافق مع بيئة الموقع (${location.environment}).`));
-  }
-  if (!source.directions.includes(state.lightDirection)) {
-    issues.push(issue('LIGHT_DIRECTION_CONFLICT', 'error', 'lightDirection', `اتجاه الضوء المختار غير مدعوم فيزيائيًا لمصدر "${source.label}" ضمن نموذج التطبيق.`));
-  }
-  if (!source.falloffs.includes(state.lightFalloff)) {
-    issues.push(issue('LIGHT_FALLOFF_CONFLICT', 'error', 'lightFalloff', `نمط هبوط الضوء المختار لا يطابق مصدر "${source.label}".`));
-  }
-  if (source.maxDistanceCm && state.distance > source.maxDistanceCm) {
-    issues.push(issue('WEAK_SOURCE_DISTANCE_CONFLICT', 'error', 'distance', `مصدر "${source.label}" قريب وضعيف؛ المسافة ${state.distance} cm تتجاوز حد النموذج ${source.maxDistanceCm} cm.`));
-  }
+  const source=optionById('lightSource',state.lightSource); const location=optionById('location',state.location); if(!source||state.lightSource==='custom')return;
+  if(source.allowedTimes&&!source.allowedTimes.includes(state.time))push(issues,'error','LIGHT_TIME_CONFLICT','مصدر الضوء المختار لا يتوافق مع الوقت.','lightSource');
+  if(source.allowedEnvironments&&location?.environment!=='unknown'&&!source.allowedEnvironments.includes(location?.environment))push(issues,'error','LIGHT_ENVIRONMENT_CONFLICT','مصدر الضوء لا يتوافق مع بيئة الموقع.','lightSource');
+  if(source.directions&&!source.directions.includes(state.lightDirection))push(issues,'error','LIGHT_DIRECTION_CONFLICT','اتجاه الضوء لا يتوافق مع المصدر الفيزيائي.','lightDirection');
+  if(source.falloffs&&!source.falloffs.includes(state.lightFalloff))push(issues,'error','LIGHT_FALLOFF_CONFLICT','نمط سقوط الضوء لا يتوافق مع المصدر الفيزيائي.','lightFalloff');
 }
-
-function validateVehicle(state, issues, strict) {
-  if (state.vehicleScene === 'none') return;
-  const location = optionById('location', state.location);
-  const pose = optionById('pose', state.pose);
-  if (location && location.parkable !== true) {
-    issues.push(issue('VEHICLE_LOCATION_CONFLICT', 'error', 'location', 'مشهد السيارة يتطلب موقعًا يمكن الوقوف فيه فعليًا؛ الموقع الحالي غير مصنف كمكان صالح للتوقف.'));
-  }
-  if (pose && pose.posture !== 'seated') {
-    issues.push(issue('VEHICLE_POSTURE_CONFLICT', 'error', 'pose', 'مشهد داخل السيارة يتطلب وضعية جلوس داخل المقصورة.'));
-  }
-  if (strict && state.location === 'custom') {
-    issues.push(issue('STRICT_VEHICLE_CUSTOM_LOCATION', 'error', 'location', 'الوضع الصارم لا يثبت صلاحية الوقوف في موقع مخصص.'));
-  }
-  if (['three-quarter-body','full-body','environmental-portrait'].includes(state.framing)) {
-    issues.push(issue('VEHICLE_INTERIOR_FRAMING_CONFLICT', 'error', 'framing', 'الكادر المختار لا يتوافق مع مساحة مقصورة السيارة من موضع تصوير داخلي طبيعي.'));
-  }
-}
-
-function validateModules(input, state, issues) {
-  if (input.modules !== undefined && (!input.modules || typeof input.modules !== 'object' || Array.isArray(input.modules))) {
-    issues.push(issue('INVALID_MODULE_OBJECT', 'fatal', 'modules', 'modules يجب أن يكون كائنًا.'));
-    return;
-  }
-  const rawModules = input.modules || {};
-  for (const key of Object.keys(rawModules)) {
-    if (!MODULE_IDS.includes(key)) issues.push(issue('UNKNOWN_MODULE', 'fatal', 'modules', `موديول غير معروف: ${key}.`));
-  }
-  for (const id of MODULE_IDS) {
-    if (!moduleLevelIds.has(state.modules[id])) issues.push(issue('UNKNOWN_MODULE_LEVEL', 'fatal', `modules.${id}`, `مستوى غير معروف للموديول ${id}: ${state.modules[id]}.`));
-  }
-}
-
-export function validateState(input) {
-  assertStateObject(input);
-  const state = normalizeState(input);
-  const issues = [];
-  const strict = isStrict(state);
-
-  for (const key of Object.keys(input)) {
-    if (!knownFields.has(key)) issues.push(issue('UNKNOWN_STATE_FIELD', 'fatal', key, `حقل حالة غير معروف: ${key}.`));
-  }
-
-  validateModules(input, state, issues);
-  validateEnums(state, issues);
-  validateNumbers(state, issues);
-  validateCustomFields(state, issues, strict);
-  validateReference(state, issues);
-  validateGenericSaudiPolicy(state, issues);
-  validateCamera(state, issues);
-  validateLighting(state, issues);
-  validateVehicle(state, issues, strict);
-
-  return Object.freeze(issues);
-}
-
-export function validationStatus(input) {
-  assertStateObject(input);
-  const state = normalizeState(input);
-  const issues = validateState(input);
-  const strict = isStrict(state);
-  const blocking = issues.filter((item) => item.severity === 'fatal' || (strict && item.severity === 'error'));
-  return Object.freeze({ state, issues, strict, blocked: blocking.length > 0, blocking: Object.freeze(blocking) });
-}
+function validateFraming(state, issues) { const framing=optionById('framing',state.framing);if(!framing)return;const coverage=sceneCoverageCm({distanceCm:state.distance,focalLengthMm:state.focalLength,ratio:state.ratio});if(Number.isFinite(coverage.heightCm)&&!withinRange(coverage.heightCm,framing.verticalCoverageCm,12))push(issues,'warning','FRAMING_GEOMETRY_MISMATCH',`الهندسة الحالية تعطي تغطية رأسية تقريبية ${coverage.heightCm.toFixed(0)}cm، وهي بعيدة عن الكادر المختار.`,'framing'); }
+export function validateState(input={}){const state=normalizeState(input);const issues=[];validateKnownOptions(state,issues);validateNumbers(state,issues);validateReference(state,issues);validateCustomFields(state,issues);validateCapture(state,issues);validateLighting(state,issues);validateFraming(state,issues);if(Number(state.people)>1&&state.captureType==='front-selfie'&&state.distance<40)push(issues,'warning','GROUP_SELFIE_SPACE','سيلفي المجموعة على هذه المسافة قد يضغط الوجوه عند الحواف.','distance');return Object.freeze(issues);}
+export function validationStatus(input={}){const state=normalizeState(input);const issues=validateState(state);const strict=isStrict(state);const blocked=issues.some(issue=>issue.severity==='fatal'||(strict&&issue.severity==='error'));return Object.freeze({issues,strict,blocked,counts:Object.freeze({fatal:issues.filter(i=>i.severity==='fatal').length,error:issues.filter(i=>i.severity==='error').length,warning:issues.filter(i=>i.severity==='warning').length})});}

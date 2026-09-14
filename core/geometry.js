@@ -1,34 +1,5 @@
-import { ASPECT_RATIOS } from '../data/catalog.js';
-
-const FULL_FRAME_DIAGONAL_MM = Math.hypot(36, 24);
-const ratioMap = new Map(ASPECT_RATIOS.map((ratio) => [ratio.id, ratio]));
-
-function assertPositiveFinite(value, name) {
-  if (!Number.isFinite(value) || value <= 0) throw new RangeError(`${name} must be a positive finite number`);
-}
-
-export function equivalentFrameDimensionsMm(ratioId) {
-  const ratio = ratioMap.get(ratioId);
-  if (!ratio) throw new RangeError(`unknown aspect ratio: ${ratioId}`);
-  const scale = FULL_FRAME_DIAGONAL_MM / Math.hypot(ratio.width, ratio.height);
-  return Object.freeze({
-    widthMm: ratio.width * scale,
-    heightMm: ratio.height * scale,
-    diagonalMm: FULL_FRAME_DIAGONAL_MM
-  });
-}
-
-export function fieldCoverageCm({ ratioId, focalLengthEqMm, distanceCm }) {
-  assertPositiveFinite(focalLengthEqMm, 'focalLengthEqMm');
-  assertPositiveFinite(distanceCm, 'distanceCm');
-  const frame = equivalentFrameDimensionsMm(ratioId);
-  return Object.freeze({
-    widthCm: distanceCm * frame.widthMm / focalLengthEqMm,
-    heightCm: distanceCm * frame.heightMm / focalLengthEqMm
-  });
-}
-
-export function minimumGroupWidthCm(people) {
-  if (!Number.isInteger(people) || people < 1 || people > 5) throw new RangeError('people must be an integer from 1 to 5');
-  return 35 + (people - 1) * 40;
-}
+const FF_DIAGONAL_MM=43.266615305567875;
+export function parseRatio(ratio='9:16'){const [w,h]=String(ratio).split(':').map(Number);if(!Number.isFinite(w)||!Number.isFinite(h)||w<=0||h<=0)return{width:9,height:16};return{width:w,height:h};}
+export function equivalentFrameDimensions(ratio){const {width,height}=parseRatio(ratio),scale=FF_DIAGONAL_MM/Math.hypot(width,height);return{widthMm:width*scale,heightMm:height*scale};}
+export function sceneCoverageCm({distanceCm,focalLengthMm,ratio}){const distance=Number(distanceCm),focal=Number(focalLengthMm);if(!(distance>0)||!(focal>0))return{widthCm:NaN,heightCm:NaN};const frame=equivalentFrameDimensions(ratio);return{widthCm:distance*frame.widthMm/focal,heightCm:distance*frame.heightMm/focal};}
+export function withinRange(value,[min,max],tolerance=0){return value>=min-tolerance&&value<=max+tolerance;}

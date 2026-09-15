@@ -13,9 +13,13 @@
       <div>
         <p class="eyebrow">Physics Prompt Studio</p>
         <h1>Auto Prompt Generator</h1>
-        <p class="lede">اختر المشهد فقط. التطبيق يبني Prompt إنجليزي كامل تلقائيًا مع هندسة الكاميرا والإضاءة الفيزيائية والواقعية والقيود النهائية.</p>
+        <p class="lede">اختر المشهد. التطبيق يبني Prompt إنجليزي حتميًا مع هندسة الكاميرا والإضاءة الفيزيائية والواقعية والقيود النهائية.</p>
       </div>
-      <div class="hero-badges"><span class="pill">LOCAL ENGINE</span><span class="pill">NO MODEL CALL</span></div>
+      <div class="hero-badges">
+        <span class="pill">LOCAL ENGINE</span>
+        <span class="pill">DETERMINISTIC</span>
+        <a class="pill" href="car-selfie.html">CAR STUDIO</a>
+      </div>
     </header>
 
     <nav class="mode-switch card" aria-label="وضع التطبيق">
@@ -27,134 +31,17 @@
       <section class="card builder-card">
         <div class="section-head">
           <div><p class="kicker">01 — AUTO BUILDER</p><h2>كوّن المشهد</h2></div>
-          <div class="head-actions"><button id="randomButton" class="ghost" type="button">🎲 مشهد عشوائي</button><button id="resetButton" class="ghost" type="button">إعادة ضبط</button></div>
+          <div class="head-actions">
+            <button id="randomButton" class="ghost" type="button">🎲 مشهد حتمي بالـSeed</button>
+            <button id="resetButton" class="ghost" type="button">إعادة ضبط</button>
+          </div>
         </div>
 
         <div class="builder-grid">
           <label class="field important"><span>نوع المشهد</span><select id="sceneType"></select></label>
           <label class="field"><span>المكان داخل السعودية</span><select id="sceneLocation"><option value="">تلقائي — مكان سعودي مناسب</option></select></label>
-          <label class="field"><span>الملابس</span><select id="sceneClothing"><option value="">تلقائي — ملابس مناسبة</option><optgroup id="formalLooksGroup" label="أطقم كاملة (قميص + بنطال)">
-            <option value="look-01">قميص أبيض + بنطال كحلي</option>
-            <option value="look-02">قميص أبيض + بنطال فحمي</option>
-            <option value="look-03">قميص أبيض + بنطال أسود</option>
-            <option value="look-04">قميص أبيض + بنطال رمادي فاتح</option>
-            <option value="look-05">قميص أبيض + بنطال رمادي متوسط</option>
-            <option value="look-06">قميص أبيض + بنطال كريمي</option>
-            <option value="look-07">قميص أبيض + بنطال بيج</option>
-            <option value="look-08">قميص أبيض + بنطال بني تبغي</option>
-            <option value="look-09">قميص أبيض + بنطال كاكي</option>
-            <option value="look-10">قميص أبيض + بنطال زيتي</option>
-            <option value="look-11">قميص أزرق فاتح + بنطال كحلي</option>
-            <option value="look-12">قميص أزرق فاتح + بنطال فحمي</option>
-            <option value="look-13">قميص أزرق فاتح + بنطال أسود</option>
-            <option value="look-14">قميص أزرق فاتح + بنطال رمادي فاتح</option>
-            <option value="look-15">قميص أزرق فاتح + بنطال رمادي متوسط</option>
-            <option value="look-16">قميص أزرق فاتح + بنطال كريمي</option>
-            <option value="look-17">قميص أزرق فاتح + بنطال بيج</option>
-            <option value="look-18">قميص أزرق فاتح + بنطال بني تبغي</option>
-            <option value="look-19">قميص أزرق فاتح + بنطال كاكي</option>
-            <option value="look-20">قميص أزرق فاتح + بنطال زيتي</option>
-            <option value="look-21">قميص أزرق فاتح + بنطال كحلي مخطط</option>
-            <option value="look-22">قميص كحلي مخطط + بنطال فحمي</option>
-            <option value="look-23">قميص كحلي مخطط + بنطال رمادي فاتح</option>
-            <option value="look-24">قميص كحلي مخطط + بنطال بني تبغي</option>
-            <option value="look-25">قميص كحلي مخطط + بنطال كحلي</option>
-            <option value="look-26">قميص كحلي + بنطال رمادي فاتح</option>
-            <option value="look-27">قميص كحلي + بنطال رمادي متوسط</option>
-            <option value="look-28">قميص كحلي + بنطال كريمي</option>
-            <option value="look-29">قميص كحلي + بنطال بيج</option>
-            <option value="look-30">قميص كحلي + بنطال فحمي</option>
-            <option value="look-31">قميص كحلي + بنطال أسود</option>
-            <option value="look-32">قميص كحلي + بنطال بني تبغي</option>
-            <option value="look-33">قميص كحلي + بنطال كاكي</option>
-            <option value="look-34">قميص كحلي + بنطال زيتي</option>
-            <option value="look-35">قميص كحلي بياقة دائرية + بنطال رمادي فاتح</option>
-            <option value="look-36">قميص كحلي بياقة دائرية + بنطال فحمي</option>
-            <option value="look-37">قميص فحمي + بنطال كحلي</option>
-            <option value="look-38">قميص فحمي + بنطال أسود</option>
-            <option value="look-39">قميص فحمي + بنطال رمادي فاتح</option>
-            <option value="look-40">قميص فحمي + بنطال رمادي متوسط</option>
-            <option value="look-41">قميص فحمي + بنطال كريمي</option>
-            <option value="look-42">قميص فحمي + بنطال بيج</option>
-            <option value="look-43">قميص فحمي + بنطال بني تبغي</option>
-            <option value="look-44">قميص رمادي متوسط + بنطال كحلي</option>
-            <option value="look-45">قميص رمادي متوسط + بنطال فحمي</option>
-            <option value="look-46">قميص رمادي متوسط + بنطال أسود</option>
-            <option value="look-47">قميص رمادي متوسط + بنطال بني تبغي</option>
-            <option value="look-48">قميص رمادي فاتح + بنطال كحلي</option>
-            <option value="look-49">قميص رمادي فاتح + بنطال فحمي</option>
-            <option value="look-50">قميص أسود + بنطال أسود</option>
-            <option value="look-51">قميص أسود + بنطال فحمي</option>
-            <option value="look-52">قميص أسود + بنطال رمادي متوسط</option>
-            <option value="look-53">قميص أسود + بنطال رمادي فاتح</option>
-            <option value="look-54">قميص أسود + بنطال كحلي</option>
-            <option value="look-55">قميص أسود + بنطال كريمي</option>
-            <option value="look-56">قميص أسود + بنطال بيج</option>
-            <option value="look-57">قميص أسود + بنطال كاكي</option>
-            <option value="look-58">قميص أسود + بنطال زيتي</option>
-            <option value="look-59">قميص بيج + بنطال بني تبغي</option>
-            <option value="look-60">قميص بيج + بنطال كحلي</option>
-            <option value="look-61">قميص بيج + بنطال فحمي</option>
-            <option value="look-62">قميص بيج + بنطال كريمي</option>
-            <option value="look-63">قميص بيج + بنطال كاكي</option>
-            <option value="look-64">قميص بيج + بنطال زيتي</option>
-            <option value="look-65">قميص بيج + بنطال رمادي فاتح</option>
-            <option value="look-66">قميص بيج + بنطال رمادي متوسط</option>
-            <option value="look-67">قميص بيج + بنطال بني غامق</option>
-            <option value="look-68">قميص كريمي + بنطال بني تبغي</option>
-            <option value="look-69">قميص كريمي + بنطال كحلي</option>
-            <option value="look-70">قميص كريمي + بنطال فحمي</option>
-            <option value="look-71">قميص كريمي + بنطال بيج</option>
-            <option value="look-72">قميص كريمي + بنطال بني غامق</option>
-            <option value="look-73">قميص كريمي + بنطال كاكي</option>
-            <option value="look-74">قميص بني تبغي + بنطال كريمي</option>
-            <option value="look-75">قميص بني تبغي + بنطال بيج</option>
-            <option value="look-76">قميص بني تبغي + بنطال كحلي</option>
-            <option value="look-77">قميص بني تبغي + بنطال فحمي</option>
-            <option value="look-78">قميص بني غامق + بنطال بيج</option>
-            <option value="look-79">قميص بني غامق + بنطال كريمي</option>
-            <option value="look-80">قميص زيتي + بنطال بني تبغي</option>
-            <option value="look-81">قميص زيتي + بنطال كحلي</option>
-            <option value="look-82">قميص زيتي + بنطال كريمي</option>
-            <option value="look-83">قميص زيتي + بنطال بيج</option>
-            <option value="look-84">قميص زيتي + بنطال كاكي</option>
-            <option value="look-85">قميص زيتي + بنطال فحمي</option>
-            <option value="look-86">قميص أخضر مريمي + بنطال كحلي</option>
-            <option value="look-87">قميص أخضر مريمي + بنطال فحمي</option>
-            <option value="look-88">قميص أخضر مريمي + بنطال كريمي</option>
-            <option value="look-89">قميص أخضر مريمي + بنطال بني تبغي</option>
-            <option value="look-90">قميص عنابي + بنطال كحلي</option>
-            <option value="look-91">قميص عنابي + بنطال فحمي</option>
-            <option value="look-92">قميص عنابي + بنطال أسود</option>
-            <option value="look-93">قميص عنابي + بنطال رمادي متوسط</option>
-            <option value="look-94">قميص عنابي + بنطال بني تبغي</option>
-            <option value="look-95">قميص وردي فاتح + بنطال رمادي متوسط</option>
-            <option value="look-96">قميص وردي فاتح + بنطال فحمي</option>
-            <option value="look-97">قميص وردي فاتح + بنطال بيج</option>
-            <option value="look-98">قميص وردي فاتح + بنطال كحلي</option>
-            <option value="look-99">قميص وردي فاتح + بنطال كاكي</option>
-            <option value="look-100">قميص بياقة صينية أبيض + بنطال كحلي</option>
-            <option value="look-101">قميص بياقة صينية بيج + بنطال كحلي</option>
-            <option value="look-102">قميص بياقة صينية عنابي + بنطال كحلي</option>
-            <option value="look-103">قميص بياقة دائرية رمادي + بنطال أسود</option>
-            <option value="look-104">قميص كتان أبيض + بنطال بيج</option>
-            <option value="look-105">قميص كتان أبيض + بنطال كحلي</option>
-            <option value="look-106">قميص كتان أزرق فاتح + بنطال بيج</option>
-            <option value="look-107">قميص كتان أزرق فاتح + بنطال كحلي</option>
-            <option value="look-108">قميص كتان بيج + بنطال كحلي</option>
-            <option value="look-109">قميص كتان بيج + بنطال بني تبغي</option>
-            <option value="look-110">قميص كتان كريمي + بنطال كحلي</option>
-            <option value="look-111">قميص كتان كحلي + بنطال بيج</option>
-            <option value="look-112">قميص كتان كحلي + بنطال كريمي</option>
-            <option value="look-113">قميص كتان رملي + بنطال كحلي</option>
-            <option value="look-114">قميص كتان رملي + بنطال زيتي</option>
-            <option value="look-115">قميص كتان رملي + بنطال بيج</option>
-            <option value="look-116">قميص كتان رملي + بنطال بني تبغي</option>
-            <option value="look-117">قميص فحمي + بنطال بني غامق</option>
-            <option value="look-118">قميص كحلي + بنطال بني غامق</option>
-            <option value="look-119">قميص أزرق فاتح + بنطال بني غامق</option>
-            <option value="look-120">قميص بيج + بنطال بني فاتح</option>
-          </optgroup></select></label>
+          <label class="field"><span>الملابس</span><select id="sceneClothing"><option value="">تلقائي — ملابس مناسبة</option></select></label>
+          <label class="field"><span>تسريحة الشعر</span><select id="hairStyle"><option value="">تلقائي — اتجاه طبيعي مع ثبات الطول والكثافة</option></select></label>
           <label class="field"><span>وضعية الجسم / السيلفي</span><select id="scenePose"><option value="">تلقائي — وضعية طبيعية</option></select></label>
           <label class="field"><span>زاوية التصوير</span><select id="sceneAngle"><option value="">تلقائي — زاوية طبيعية</option></select></label>
           <label class="field important"><span>الإضاءة الفيزيائية</span><select id="sceneLighting"><option value="">تلقائي — حسب المكان والوقت</option></select></label>
@@ -172,6 +59,7 @@
             <label class="field span-2"><span>فكرة أو وصف إضافي للمشهد</span><textarea id="sceneDescription" rows="3" placeholder="مثال: مدعو على العشاء، الصورة عفوية وهادئة"></textarea></label>
             <label class="field"><span>مسافة الكاميرا</span><input id="cameraDistance" type="text" placeholder="مثال: 45 cm"></label>
             <label class="field"><span>ملاحظات الإضاءة</span><input id="lightingNotes" type="text" placeholder="مثال: LED من أعلى اليسار"></label>
+            <label class="field"><span>Seed للمشهد العشوائي الحتمي</span><input id="randomSeed" type="number" step="1" value="42"></label>
             <label class="field span-2"><span>قيود خاصة</span><textarea id="customConstraints" rows="3" placeholder="أي شروط إضافية تريد تثبيتها داخل الـPrompt"></textarea></label>
             <label class="toggle span-2"><input id="identityReference" type="checkbox" checked><span><strong>Identity Lock عند إرفاق صورة مرجعية</strong><small>يحافظ على الهوية ولا ينسخ الخلفية أو الوضعية أو الملابس من المرجع.</small></span></label>
           </div>
@@ -217,7 +105,7 @@
         <div><strong>Capture Type Lock</strong><span>السيلفي يبقى سيلفي، وتصوير الشخص الثالث يبقى شخصًا ثالثًا.</span></div>
         <div><strong>Camera Geometry</strong><span>موضع ومسافة ومنظور الكاميرا يجب أن تكون ممكنة فيزيائيًا.</span></div>
         <div><strong>Physical Lighting</strong><span>المصدر الحقيقي وحده يخلق الضوء والظل والانعكاس. ISO وHDR لا يخلقان ضوءًا.</span></div>
-        <div><strong>Identity Lock</strong><span>المرجع يثبت الهوية فقط عند تفعيله، بدون سرقة الخلفية أو الملابس.</span></div>
+        <div><strong>Identity + Hair Lock</strong><span>المرجع يثبت الهوية وطول الشعر وكثافته وخط الشعر؛ التسريحة تغيّر الاتجاه فقط.</span></div>
         <div><strong>Material Physics</strong><span>الجلد والقماش والخشب والمعدن والزجاج لا يستجيبون للضوء بالطريقة نفسها.</span></div>
         <div><strong>Final Verification</strong><span>الـPrompt نفسه يطلب فحص الهندسة والتشريح والاتصال والإضاءة قبل النتيجة.</span></div>
       </div>

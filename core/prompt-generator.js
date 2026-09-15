@@ -1,6 +1,7 @@
 import { buildRealismPacket, renderRealismGuidance } from './realistic-image-generator.js';
 import { SAUDI_CULTURAL_DRESS_LOCK } from './scene-builder.js';
 import { baseSceneTypeFor, sceneMeta } from './scene-type-expansion.js';
+import { resolveContextAwareConstraints } from './scene-compatibility.js';
 
 export const SCENE_TYPES = [
   { value:'front_selfie', label:'سيلفي عادي', capture:'subject-held front-camera smartphone selfie', prompt:'a casual subject-held front-camera smartphone selfie with physically feasible arm-reach geometry', framing:'chest-up to mid-torso framing' },
@@ -37,7 +38,7 @@ export const EXPRESSIONS = [
 export const BACKGROUND_ACTIVITY = [
   { value:'quiet', label:'هادئ', prompt:'quiet background with no background people; preserve only context-appropriate environmental detail and vehicles when physically appropriate' },
   { value:'normal', label:'طبيعي', prompt:'ordinary background activity with 1-2 independently behaving background people where people are contextually appropriate, plus ordinary vehicles or objects when relevant' },
-  { value:'lively', label:'حيوي', prompt:'lively but believable background activity with 3-5 independently behaving background people where people are contextually appropriate, natural spacing, varied behavior and no duplicated people' }
+  { value:'lively', label:'حيوي', prompt:'lively but believable background activity with 5 to 7 independently behaving background people where people are contextually appropriate, natural spacing, varied behavior and no duplicated people' }
 ];
 export const REALISM_LEVELS = [
   { value:'balanced', label:'واقعية متوازنة', prompt:'high photorealism with realistic anatomy, materials, lighting, environment and restrained smartphone processing' },
@@ -72,9 +73,25 @@ function geometryRules(scene,camera,framing,angle,distance){
   const d = clean(distance) || (scene.capture.includes('selfie') ? 'natural arm-reach distance, approximately 40–60 cm unless the selected angle requires a minor physically plausible adjustment' : 'a natural third-person smartphone shooting distance appropriate to the framing');
   return `${camera.prompt}. ${scene.framing}. ${framing.prompt}. ${angle || 'Use a natural eye-level or slightly off-axis camera angle with mild handheld imperfection.'} Camera distance: ${d}. Preserve realistic wide-angle perspective and human scale; no impossible camera placement, no DSLR compression and no fake optical bokeh.`;
 }
-function lightingRules(lighting,notes){
+function backgroundRules(background,contextual,saudi){
+  if (contextual.privateContext || background.value === 'quiet') return 'no background people; no other people appear in this frame. Preserve only context-appropriate environmental detail and ordinary objects.';
+  if (background.value === 'normal') return 'ordinary background activity with 1-2 independently behaving background people where people are contextually appropriate, kept secondary to the subject.';
+  if (saudi) return 'lively but believable background activity with 5 to 7 background people: men in white thobes, women in plain black abayas with black niqabs covering everything except the eyes, and one person holding a shopping bag. Their actions are varied and independent: walking, standing, and one person at a counter where a counter physically exists. Keep natural spacing and no duplicated identities.';
+  return 'lively but believable background activity with 5 to 7 independently behaving background people, with varied natural actions such as walking and standing and one person interacting with a context-appropriate counter or fixture where present.';
+}
+function backgroundElements(background,contextual,saudi){
+  if (contextual.privateContext || background.value === 'quiet') return ['context-appropriate furniture, fixtures or environmental objects in believable scale', 'no other people appear in this frame'];
+  if (background.value === 'normal') return ['context-appropriate environmental objects and circulation space', '1-2 independently behaving background people kept secondary to the subject'];
+  return saudi
+    ? ['context-appropriate environmental objects and circulation space', '5 to 7 distinct background people with natural spacing: men in white thobes and women in plain black abayas with black niqabs', 'varied independent actions including walking, standing, and one person holding a shopping bag; use a counter interaction only where a counter physically exists']
+    : ['context-appropriate environmental objects and circulation space', '5 to 7 distinct independently behaving background people with natural spacing and varied walking, standing, or fixture interaction'];
+}
+function lightingRules(lighting,notes,realismLevel){
   const selected = clean(lighting) || 'Use lighting appropriate to the chosen time and location, produced only by physically plausible visible or inferable sources.';
-  return `${selected}${clean(notes) ? ` Additional lighting direction: ${clean(notes)}.` : ''} Physical illumination alone determines which surfaces receive light, shadow direction and softness, highlights, reflections, material brightness and local contrast. Exposure, ISO, HDR, tone mapping and noise reduction may only reveal or process captured signal; they must never create illumination that no physical source provides. Respect realistic falloff for nearby weak lights, occlusion, bounce light, practical fixture direction and realistic background falloff.`;
+  const exclusivePhoneLight = /no other light sources visible in frame/i.test(selected);
+  const note = clean(notes) && !exclusivePhoneLight ? ` Additional lighting direction: ${clean(notes)}.` : '';
+  const raw = realismLevel === 'raw' ? ' Deliberately underexposed in midtones and shadows. Accept visible noise in shadow regions. Do not lift shadows with HDR. Slight motion blur from handheld capture is acceptable. White balance may be slightly off-neutral.' : '';
+  return `${selected}${note} Physical illumination alone determines which surfaces receive light, shadow direction and softness, highlights, reflections, material brightness and local contrast. Exposure, ISO, HDR, tone mapping and noise reduction may only reveal or process captured signal; they must never create illumination that no physical source provides. Respect realistic falloff for nearby weak lights, occlusion, bounce light, practical fixture direction and realistic background falloff.${raw}`;
 }
 function metadata(camera){
   if(camera.value==='xiaomi15_front') return 'CAPTURE METADATA (for scene fidelity): Shot on Xiaomi 15 Ultra front camera, approximately 23mm equivalent, f/1.63-class smartphone capture behavior, ISO 800, 1/60s, handheld. File reference: IMG_20250915_143022.HEIC.';
@@ -116,25 +133,36 @@ export function generateImagePrompt(input={}){
   const camera=pick(CAMERA_PROFILES,input.camera,DEFAULTS.camera);
   const ratio=pick(ASPECT_RATIOS,input.aspectRatio,DEFAULTS.aspectRatio);
   const expression=pick(EXPRESSIONS,input.expression,DEFAULTS.expression);
-  const background=pick(BACKGROUND_ACTIVITY,input.backgroundActivity,DEFAULTS.background);
   const realism=pick(REALISM_LEVELS,input.realismLevel,DEFAULTS.realism);
   const framing=pick(FRAMING_OPTIONS,input.framing,DEFAULTS.framing);
   const location=clean(input.location)||'a generic, ordinary Saudi Arabian setting appropriate to the scene, without inventing a specific city or landmark';
   const clothing=clean(input.clothing)||'realistic context-appropriate clothing with believable textile weight, seams, folds and material response';
-  const hair=clean(input.hairStyle), pose=clean(input.pose)||scene.prompt, angle=clean(input.angle), lighting=clean(input.lighting);
+  const hair=clean(input.hairStyle), pose=clean(input.pose)||scene.prompt, angle=clean(input.angle);
+  const contextual=resolveContextAwareConstraints({
+    sceneType:scene.value,
+    requestedSceneType:requested,
+    location,
+    backgroundActivity:clean(input.backgroundActivity)||DEFAULTS.background.value,
+    lighting:clean(input.lighting)
+  });
+  const background=pick(BACKGROUND_ACTIVITY,contextual.backgroundActivity,DEFAULTS.background);
+  const lighting=contextual.lighting;
   const description=clean(input.description)||clean(extra?.prompt), custom=clean(input.customConstraints), identity=input.identityReference!==false, saudi=isSaudi(location);
-  const packet=buildRealismPacket({sceneType:scene.value,captureType:scene.capture,location,clothing,hairStyle:hair,expression:expression.prompt,angle,lighting,description,aspectRatio:ratio.prompt,pose,backgroundActivity:background.value});
+  const packet=buildRealismPacket({
+    sceneType:scene.value,captureType:scene.capture,location,clothing,hairStyle:hair,expression:expression.prompt,angle,lighting,description,
+    aspectRatio:ratio.prompt,pose,backgroundActivity:background.value,backgroundElements:backgroundElements(background,contextual,saudi)
+  });
   const guidance=renderRealismGuidance(packet);
   const sceneCulture=saudi?` ${SAUDI_CULTURAL_DRESS_LOCK}`:'';
   const sections=[
     section('GOAL',`Generate ONE highly photorealistic ${ratio.prompt} image. Capture type: ${scene.capture}. ${description?`User scene intent: ${description}.`:'Keep the moment natural, personal and unstaged.'} The result must look like a genuine smartphone photograph rather than advertising, polished commercial photography, CGI or AI-stylized imagery.`),
     section('ACTION-DRIVEN AUTHENTICITY',guidance.action), section('CAPTURE TYPE LOCK — CRITICAL',captureRules(scene)),
     section('IDENTITY / SUBJECT',`${identityRules(identity,hair)} Expression: ${expression.prompt}. ${packet.subject.face}`),
-    section('SCENE',`Location: ${location}. Background behavior: ${background.prompt}. Maintain believable architecture, furniture, roads, vehicles, landscape, circulation space, object scale and environmental depth appropriate to the selected location.${sceneCulture}`),
+    section('SCENE',`Location: ${location}. Background behavior: ${backgroundRules(background,contextual,saudi)} Maintain believable architecture, furniture, roads, vehicles, landscape, circulation space, object scale and environmental depth appropriate to the selected location.${sceneCulture}`),
     section('OBSERVABLE BACKGROUND ELEMENTS',guidance.background),
     section('CLOTHING',`${clothing}. Preserve gravity-driven drape, realistic material thickness, seam tension, compression at body/contact points, and non-mirrored natural asymmetry.`),
     section('CONTEXTUAL ACCESSORIES',guidance.accessories), section('POSE & BODY MECHANICS',`${pose}. Body mechanics must respect balance, support, joint limits, body weight, seat or ground contact, and natural asymmetric posture.`),
-    section('CAMERA GEOMETRY',geometryRules(scene,camera,framing,angle,input.cameraDistance)), section('PHYSICAL LIGHTING',lightingRules(lighting,input.lightingNotes)),
+    section('CAMERA GEOMETRY',geometryRules(scene,camera,framing,angle,input.cameraDistance)), section('PHYSICAL LIGHTING',lightingRules(lighting,input.lightingNotes,realism.value)),
     section('MIRROR RULES',guidance.mirror), section('PRODUCT INTEGRATION',guidance.product),
     section('PHYSICAL / MATERIAL REALISM',`${realism.prompt}. Enforce correct human anatomy; realistic neck, shoulder, arm, hand and finger structure; natural weight distribution; correct support and contact deformation; coherent gravity; realistic cloth drape and seam tension; material-specific reflectance; grounded feet or body support; physically consistent reflections; plausible atmospheric depth; and scene-specific scale.`),
     section('SMARTPHONE IMAGE BEHAVIOR','The result must read as an ordinary real smartphone photograph, not a polished commercial portrait, CGI render or cinematic frame. Use broad smartphone focus, restrained computational sharpening, realistic local contrast, modest dynamic range, plausible white balance, subtle edge softness, mild sensor/noise-reduction texture in darker areas, and natural clipping of strong practical lights when appropriate.'),
@@ -145,8 +173,17 @@ export function generateImagePrompt(input={}){
     section('USER CONSTRAINTS',custom||'No additional user constraints were provided.'), section('NEGATIVE CONSTRAINTS',negatives(scene,saudi)), section('FINAL VERIFICATION',verification(scene,ratio,guidance))
   ];
   const prompt=sections.join('\n\n'), realismCheck=validateRealism(prompt), validation=validateGeneratedPrompt(prompt,{sceneType:scene,realismPacket:packet,saudiContext:saudi});
+  validation.warnings.push(...contextual.warnings);
   if(realism.value==='strict'&&!realismCheck.valid){ validation.errors.push(...realismCheck.errors.map((e)=>`[REALISM] ${e.message}`)); validation.valid=false; }
-  return {schema_version:'2.2.0',mode:'auto_generate',prompt,sections,realism_packet:packet,config:{requested_scene_type:requested,scene_type:scene.value,capture_type:scene.capture,camera:camera.value,aspect_ratio:ratio.value,expression:expression.value,background_activity:background.value,realism_level:realism.value,framing:framing.value,identity_reference:identity,location,clothing,hair_style:hair,pose,angle,lighting,lighting_notes:clean(input.lightingNotes),description,custom_constraints:custom,saudi_context:saudi},validation,realism_validation:realismCheck};
+  return {
+    schema_version:'2.3.0',mode:'auto_generate',prompt,sections,realism_packet:packet,
+    config:{
+      requested_scene_type:requested,scene_type:scene.value,capture_type:scene.capture,camera:camera.value,aspect_ratio:ratio.value,expression:expression.value,
+      background_activity:background.value,background_activity_allowed:[...contextual.backgroundActivityAllowed],realism_level:realism.value,framing:framing.value,
+      identity_reference:identity,location,clothing,hair_style:hair,pose,angle,lighting,lighting_notes:clean(input.lightingNotes),description,custom_constraints:custom,
+      saudi_context:saudi,context_warnings:[...contextual.warnings]
+    },validation,realism_validation:realismCheck
+  };
 }
 
 function bodies(prompt){ const map=new Map(); const re=/^\[([^\]]+)\]\n([\s\S]*?)(?=\n\n\[[^\]]+\]\n|$)/gm; let m; while((m=re.exec(prompt))){ map.set(m[1],map.has(m[1])?null:m[2]); } return map; }

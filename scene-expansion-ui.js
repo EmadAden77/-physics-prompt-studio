@@ -1,4 +1,4 @@
-import { EXTRA_SCENE_TYPES, sceneMeta, narrowOptions } from './core/scene-type-expansion.js';
+import { EXTRA_SCENE_TYPES, sceneMeta } from './core/scene-type-expansion.js';
 import { buildAutomaticSceneDescription } from './core/automatic-scene-description.js';
 
 const $ = (id) => document.getElementById(id);
@@ -15,20 +15,24 @@ const controls = {
 };
 
 function appendExpandedSceneTypes() {
+  const existing = new Set([...controls.sceneType.options].map((option) => option.value));
   const groups = new Map();
   for (const item of EXTRA_SCENE_TYPES) {
+    if (existing.has(item.value)) continue;
     const group = item.group || 'مشاهد إضافية';
     if (!groups.has(group)) groups.set(group, []);
     groups.get(group).push(item);
+    existing.add(item.value);
   }
   for (const [group, items] of groups) {
     const optgroup = document.createElement('optgroup');
     optgroup.label = group;
     for (const item of items) {
       const option = document.createElement('option');
-      option.value = item.baseType;
+      option.value = item.value;
       option.textContent = item.label;
       option.dataset.smartSceneType = item.value;
+      option.dataset.baseSceneType = item.baseType;
       option.dataset.prompt = item.prompt;
       optgroup.append(option);
     }
@@ -51,10 +55,21 @@ function optionRecords(select) {
     }));
 }
 
+function optionHaystack(item) {
+  return `${item.value || ''} ${item.label || ''} ${item.group || ''} ${item.prompt || ''}`.toLowerCase();
+}
+
+function strictNarrowOptions(key, kind, records) {
+  const meta = sceneMeta(key);
+  const words = meta?.[kind];
+  if (!meta || !Array.isArray(words) || !words.length) return records;
+  return records.filter((item) => words.some((word) => optionHaystack(item).includes(String(word).toLowerCase())));
+}
+
 function applyNarrowing(select, kind) {
   const key = selectedSceneKey();
   const records = optionRecords(select);
-  const allowed = narrowOptions(key, kind, records);
+  const allowed = strictNarrowOptions(key, kind, records);
   const allowedValues = new Set(allowed.map((item) => item.value));
 
   for (const option of select.options) {
@@ -69,7 +84,7 @@ function applyNarrowing(select, kind) {
     group.hidden = [...group.querySelectorAll('option')].every((option) => option.hidden);
   }
 
-  if (select.selectedOptions[0]?.hidden) select.value = '';
+  if (select.selectedOptions[0]?.hidden || (select.value && !allowedValues.has(select.value))) select.value = '';
 }
 
 function applySpecializedFilters() {
@@ -109,7 +124,6 @@ function createUserDescriptionField() {
 }
 
 const userDescription = createUserDescriptionField();
-let automaticText = '';
 
 function composeAutomaticText() {
   const smartSceneType = selectedSceneKey();
@@ -128,7 +142,7 @@ function composeAutomaticText() {
 }
 
 function syncDescription({ dispatch = true } = {}) {
-  automaticText = composeAutomaticText();
+  const automaticText = composeAutomaticText();
   const userText = userDescription?.value.trim() || '';
   controls.hiddenDescription.value = [userText, automaticText].filter(Boolean).join('\n\n');
   if (dispatch) controls.hiddenDescription.dispatchEvent(new Event('input', { bubbles: true }));

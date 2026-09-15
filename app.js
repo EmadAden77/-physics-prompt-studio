@@ -1,5 +1,5 @@
 import { compilePrompt, createLedger } from './core/prompt-optimizer.js';
-import { SAUDI_LOCATIONS, CLOTHING_OPTIONS, FORMAL_LOOKS, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from './core/scene-builder.js';
+import { SAUDI_LOCATIONS, CLOTHING_OPTIONS, FORMAL_LOOKS, HAIR_STYLES, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from './core/scene-builder.js';
 import {
   EXTRA_CLOTHING_OPTIONS,
   extraLocationsForScene,
@@ -17,14 +17,30 @@ import {
   FRAMING_OPTIONS
 } from './core/prompt-generator.js';
 import { compatibilitySnapshot, recommendedDefaults } from './core/scene-compatibility.js';
+import { baseSceneTypeFor } from './core/scene-type-expansion.js';
 import { enforceSaudiNoLandmarks, mergeSaudiNoLandmarksConstraint } from './core/saudi-location-lock.js';
 
 const $ = (id) => document.getElementById(id);
 const controls = {
-  sceneType: $('sceneType'), location: $('sceneLocation'), clothing: $('sceneClothing'), pose: $('scenePose'), angle: $('sceneAngle'),
-  lighting: $('sceneLighting'), lightingNotes: $('lightingNotes'), camera: $('cameraProfile'), aspectRatio: $('aspectRatio'),
-  expression: $('expression'), backgroundActivity: $('backgroundActivity'), realismLevel: $('realismLevel'), framing: $('framing'),
-  cameraDistance: $('cameraDistance'), description: $('sceneDescription'), customConstraints: $('customConstraints'), identityReference: $('identityReference')
+  sceneType: $('sceneType'),
+  location: $('sceneLocation'),
+  clothing: $('sceneClothing'),
+  hairStyle: $('hairStyle'),
+  pose: $('scenePose'),
+  angle: $('sceneAngle'),
+  lighting: $('sceneLighting'),
+  lightingNotes: $('lightingNotes'),
+  camera: $('cameraProfile'),
+  aspectRatio: $('aspectRatio'),
+  expression: $('expression'),
+  backgroundActivity: $('backgroundActivity'),
+  realismLevel: $('realismLevel'),
+  framing: $('framing'),
+  cameraDistance: $('cameraDistance'),
+  description: $('sceneDescription'),
+  customConstraints: $('customConstraints'),
+  identityReference: $('identityReference'),
+  randomSeed: $('randomSeed')
 };
 const sourcePrompt = $('sourcePrompt');
 const surface = $('surface');
@@ -49,6 +65,7 @@ const resetButton = $('resetButton');
 const CATALOGS = {
   location: SAUDI_LOCATIONS,
   clothing: [...CLOTHING_OPTIONS, ...EXTRA_CLOTHING_OPTIONS, ...FORMAL_LOOKS],
+  hairStyle: HAIR_STYLES,
   pose: SELFIE_POSES,
   angle: SELFIE_ANGLES,
   lighting: LIGHTING_PROFILES,
@@ -68,10 +85,19 @@ function makeOption(item) {
   return option;
 }
 
+function uniqueByValue(options) {
+  const seen = new Set();
+  return options.filter((item) => {
+    if (!item?.value || seen.has(item.value)) return false;
+    seen.add(item.value);
+    return true;
+  });
+}
+
 function populateGrouped(select, options) {
   const existingValues = new Set([...select.options].map((option) => option.value).filter(Boolean));
   const groups = new Map();
-  for (const item of options) {
+  for (const item of uniqueByValue(options)) {
     const group = item.group || 'خيارات';
     if (!groups.has(group)) groups.set(group, []);
     groups.get(group).push(item);
@@ -90,47 +116,47 @@ function populateGrouped(select, options) {
 }
 
 function populateFlat(select, options) {
-  for (const item of options) select.append(makeOption(item));
-}
-
-function hydrateFormalLookOptions() {
-  const formalGroup = $('formalLooksGroup');
-  if (!formalGroup) return;
-  const byValue = new Map(FORMAL_LOOKS.map((look) => [look.value, look]));
-  for (const option of formalGroup.querySelectorAll('option')) {
-    const look = byValue.get(option.value);
-    if (look) option.dataset.prompt = look.prompt;
+  const existing = new Set([...select.options].map((option) => option.value).filter(Boolean));
+  for (const item of uniqueByValue(options)) {
+    if (existing.has(item.value)) continue;
+    select.append(makeOption(item));
+    existing.add(item.value);
   }
 }
 
 function rebuildOptionalSelect(select, options, placeholder, grouped = false) {
   const previous = select.value;
+  const unique = uniqueByValue(options);
   select.replaceChildren();
   const auto = document.createElement('option');
   auto.value = '';
   auto.textContent = placeholder;
   select.append(auto);
-  if (grouped) populateGrouped(select, options);
-  else populateFlat(select, options);
-  if (previous && options.some((item) => item.value === previous)) select.value = previous;
-  else select.value = '';
+  if (grouped) populateGrouped(select, unique);
+  else populateFlat(select, unique);
+  select.value = previous && unique.some((item) => item.value === previous) ? previous : '';
 }
 
 function rebuildRequiredSelect(select, options, preferredValue) {
   const previous = select.value;
+  const unique = uniqueByValue(options);
   select.replaceChildren();
-  populateFlat(select, options);
-  const preserved = previous && options.some((item) => item.value === previous) ? previous : null;
-  const preferred = options.some((item) => item.value === preferredValue) ? preferredValue : null;
-  select.value = preserved || preferred || options[0]?.value || '';
+  populateFlat(select, unique);
+  const preserved = previous && unique.some((item) => item.value === previous) ? previous : null;
+  const preferred = unique.some((item) => item.value === preferredValue) ? preferredValue : null;
+  select.value = preserved || preferred || unique[0]?.value || '';
+}
+
+function selectedBaseSceneType() {
+  return baseSceneTypeFor(controls.sceneType.value || 'front_selfie');
 }
 
 function applySceneCompatibility() {
-  const sceneType = controls.sceneType.value || 'front_selfie';
-  const compatible = compatibilitySnapshot(sceneType, CATALOGS);
-  const defaults = recommendedDefaults(sceneType);
-  const expandedLocations = extraLocationsForScene(sceneType);
-  const locationOptions = [...compatible.location, ...expandedLocations];
+  const baseSceneType = selectedBaseSceneType();
+  const compatible = compatibilitySnapshot(baseSceneType, CATALOGS);
+  const defaults = recommendedDefaults(baseSceneType);
+  const expandedLocations = extraLocationsForScene(baseSceneType);
+  const locationOptions = uniqueByValue([...compatible.location, ...expandedLocations]);
 
   rebuildOptionalSelect(controls.location, locationOptions, 'تلقائي — مكان سعودي واقعي جدًا بدون معالم', true);
   rebuildOptionalSelect(controls.pose, compatible.pose, 'تلقائي — وضعية متناسقة مع نوع المشهد');
@@ -140,9 +166,9 @@ function applySceneCompatibility() {
   rebuildRequiredSelect(controls.framing, compatible.framing, defaults.framing);
 }
 
-hydrateFormalLookOptions();
 populateFlat(controls.sceneType, SCENE_TYPES);
 populateGrouped(controls.clothing, CATALOGS.clothing);
+populateGrouped(controls.hairStyle, CATALOGS.hairStyle);
 populateFlat(controls.aspectRatio, ASPECT_RATIOS);
 populateFlat(controls.expression, EXPRESSIONS);
 populateFlat(controls.backgroundActivity, BACKGROUND_ACTIVITY);
@@ -156,7 +182,7 @@ controls.realismLevel.value = 'strict';
 applySceneCompatibility();
 
 function selectedPrompt(select) {
-  return select.selectedOptions[0]?.dataset.prompt || '';
+  return select?.selectedOptions?.[0]?.dataset.prompt || '';
 }
 
 function autoInput() {
@@ -170,6 +196,7 @@ function autoInput() {
     framing: controls.framing.value,
     location: enforceSaudiNoLandmarks(enrichLocationPrompt(selectedPrompt(controls.location))),
     clothing: enrichClothingPrompt(selectedPrompt(controls.clothing)),
+    hairStyle: selectedPrompt(controls.hairStyle),
     pose: selectedPrompt(controls.pose),
     angle: selectedPrompt(controls.angle),
     lighting: selectedPrompt(controls.lighting),
@@ -182,9 +209,11 @@ function autoInput() {
 }
 
 function sceneForOptimizer() {
+  const clothingPrompt = enrichClothingPrompt(selectedPrompt(controls.clothing));
+  const hairPrompt = selectedPrompt(controls.hairStyle);
   return {
     location: enforceSaudiNoLandmarks(enrichLocationPrompt(selectedPrompt(controls.location))),
-    clothing: enrichClothingPrompt(selectedPrompt(controls.clothing)),
+    clothing: [clothingPrompt, hairPrompt ? `Hair styling: ${hairPrompt}` : ''].filter(Boolean).join(' '),
     pose: selectedPrompt(controls.pose),
     angle: selectedPrompt(controls.angle),
     lighting: selectedPrompt(controls.lighting),
@@ -207,10 +236,11 @@ function setMetrics(a, b, c) {
 function renderAuto(result) {
   latestResult = { type: 'auto', data: result };
   output.value = result.prompt;
-  detailsOutput.textContent = JSON.stringify({ config: result.config, realism_packet: result.realism_packet, validation: result.validation }, null, 2);
+  detailsOutput.textContent = JSON.stringify({ config: result.config, realism_packet: result.realism_packet, validation: result.validation, realism_validation: result.realism_validation }, null, 2);
   packetOutput.textContent = JSON.stringify(result, null, 2);
-  setStatus(result.validation.valid ? 'ready' : 'invalid');
-  setMetrics(['الوضع', 'AUTO'], ['الأقسام', String(result.sections.length)], ['التحقق', result.validation.valid ? 'PASS' : 'FAIL']);
+  const valid = result.validation.valid && result.realism_validation.valid;
+  setStatus(valid ? 'ready' : 'invalid');
+  setMetrics(['الوضع', 'AUTO'], ['الأقسام', String(result.sections.length)], ['التحقق', valid ? 'PASS' : 'FAIL']);
   enableExports(Boolean(result.prompt));
 }
 
@@ -268,14 +298,54 @@ function setMode(mode) {
   }
 }
 
-function randomOption(select) {
-  const options = [...select.options].filter((option) => option.value);
-  if (!options.length) return;
-  select.value = options[Math.floor(Math.random() * options.length)].value;
+function normalizeSeed(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? Math.trunc(numeric) >>> 0 : 42;
 }
 
-function randomize() {
-  [controls.location, controls.clothing, controls.pose, controls.angle, controls.lighting, controls.expression, controls.backgroundActivity, controls.framing].forEach(randomOption);
+function deterministicHash(seed, key) {
+  let hash = (normalizeSeed(seed) ^ 0x811c9dc5) >>> 0;
+  for (const char of String(key)) {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash >>> 0;
+}
+
+function selectableOptions(select) {
+  return [...select.options].filter((option) => {
+    if (!option.value || option.hidden) return false;
+    const group = option.parentElement?.tagName === 'OPTGROUP' ? option.parentElement : null;
+    return !group?.hidden;
+  });
+}
+
+function deterministicOption(select, seed, key) {
+  const options = selectableOptions(select);
+  if (!options.length) {
+    select.value = '';
+    return;
+  }
+  select.value = options[deterministicHash(seed, key) % options.length].value;
+}
+
+async function randomize() {
+  const seed = normalizeSeed(controls.randomSeed.value);
+  deterministicOption(controls.sceneType, seed, 'sceneType');
+  controls.sceneType.dispatchEvent(new Event('change', { bubbles: true }));
+  await Promise.resolve();
+
+  [
+    ['location', controls.location],
+    ['clothing', controls.clothing],
+    ['hairStyle', controls.hairStyle],
+    ['pose', controls.pose],
+    ['angle', controls.angle],
+    ['lighting', controls.lighting],
+    ['expression', controls.expression],
+    ['backgroundActivity', controls.backgroundActivity],
+    ['framing', controls.framing]
+  ].forEach(([key, select]) => deterministicOption(select, seed, key));
   generateNow();
 }
 
@@ -284,6 +354,7 @@ function resetAll() {
   applySceneCompatibility();
   controls.location.value = '';
   controls.clothing.value = '';
+  controls.hairStyle.value = '';
   controls.pose.value = '';
   controls.angle.value = '';
   controls.lighting.value = '';
@@ -298,6 +369,7 @@ function resetAll() {
   controls.description.value = '';
   controls.customConstraints.value = '';
   controls.identityReference.checked = true;
+  controls.randomSeed.value = '42';
   sourcePrompt.value = '';
   surface.value = 'unknown';
   if (currentMode === 'auto') generateNow();
@@ -341,7 +413,7 @@ document.querySelectorAll('.tab').forEach((button) => button.addEventListener('c
   document.querySelectorAll('.tab-panel').forEach((panel) => panel.classList.toggle('active', panel.dataset.panel === button.dataset.tab));
 }));
 Object.values(controls).forEach((control) => {
-  if (!control || control === controls.sceneType) return;
+  if (!control || control === controls.sceneType || control === controls.randomSeed) return;
   control.addEventListener('change', scheduleGenerate);
   control.addEventListener('input', scheduleGenerate);
 });

@@ -128,6 +128,53 @@ function verification(sceneType, aspectRatio, realismGuidance) {
   return `Before finalizing, verify: capture type unmistakably matches “${sceneType.capture}”; the camera position is physically possible; anatomy and contacts are coherent; selected location, clothing, pose, angle and lighting are visible and mutually compatible; lighting can be traced to plausible physical sources; materials respond differently according to their properties; background scale and activity make sense; composition is ${aspectRatio.prompt}; and the realism checklist is satisfied: ${realismGuidance.consistency.replace(/^Before finalizing, verify:\s*/i, '')} If a secondary aesthetic choice conflicts with physical causality or capture geometry, preserve physical plausibility.`;
 }
 
+export function validateRealism(prompt) {
+  const errors = [];
+  const warnings = [];
+  const lower = String(prompt || '').toLowerCase();
+  const bannedScope = lower.replace(/\[negative constraints\][\s\S]*?(?=\n\n\[|$)/g, '');
+
+  const banned = [
+    'perfect skin', 'flawless skin', 'smooth skin', 'airbrushed skin',
+    'beauty filter', 'porcelain skin', 'waxy skin',
+    'perfectly symmetric face', 'perfect symmetry',
+    '8k hyperdetailed', 'ultra hd', 'masterpiece',
+    'studio lighting',
+    'perfectly centered composition',
+    'dslr bokeh', 'telephoto compression'
+  ];
+
+  const required = [
+    { token: 'chromatic aberration', level: 'error' },
+    { token: 'visible skin pores', level: 'error' },
+    { token: 'corneal reflections', level: 'error' },
+    { token: 'stray hairs', level: 'error' },
+    { token: 'sensor noise', level: 'warning' },
+    { token: 'contact shadow', level: 'warning' },
+    { token: 'vignetting', level: 'warning' }
+  ];
+
+  for (const word of banned) {
+    if (bannedScope.includes(word)) {
+      errors.push({ code: 'BANNED_TERM', message: `Banned term found: "${word}"`, severity: 'error' });
+    }
+  }
+
+  for (const { token, level } of required) {
+    if (!lower.includes(token)) {
+      const entry = { code: 'MISSING_REALISM', message: `Missing realism token: "${token}"`, severity: level };
+      if (level === 'error') errors.push(entry);
+      else warnings.push(entry);
+    }
+  }
+
+  return Object.freeze({
+    valid: errors.length === 0,
+    errors: Object.freeze(errors),
+    warnings: Object.freeze(warnings)
+  });
+}
+
 export function generateImagePrompt(input = {}) {
   const sceneType = getOption(SCENE_TYPES, input.sceneType, DEFAULTS.sceneType);
   const camera = getOption(CAMERA_PROFILES, input.camera, DEFAULTS.camera);
@@ -187,6 +234,14 @@ export function generateImagePrompt(input = {}) {
   ].filter(Boolean);
 
   const prompt = sections.join('\n\n');
+  const realismValidation = validateRealism(prompt);
+  const validation = validateGeneratedPrompt(prompt, { sceneType, identityEnabled, realismPacket });
+
+  if (realism.value === 'strict' && !realismValidation.valid) {
+    validation.errors.push(...realismValidation.errors.map((e) => `[REALISM] ${e.message}`));
+    validation.valid = validation.errors.length === 0;
+  }
+
   return {
     schema_version: '2.1.0',
     mode: 'auto_generate',
@@ -212,7 +267,8 @@ export function generateImagePrompt(input = {}) {
       description,
       custom_constraints: customConstraints
     },
-    validation: validateGeneratedPrompt(prompt, { sceneType, identityEnabled, realismPacket })
+    validation,
+    realism_validation: realismValidation
   };
 }
 

@@ -149,3 +149,19 @@ test('generated prompt exposes realism_validation in output object', () => {
   assert.ok(Array.isArray(result.realism_validation.errors));
   assert.ok(Array.isArray(result.realism_validation.warnings));
 });
+
+test('formal looks contains 120 unique complete outfits', async () => {
+  const { FORMAL_LOOKS } = await import('../core/scene-builder.js');
+  assert.equal(FORMAL_LOOKS.length, 120);
+  const labels = FORMAL_LOOKS.map(l => l.label);
+  assert.equal(new Set(labels).size, 120);
+  for (const look of FORMAL_LOOKS) {
+    assert.ok(look.label.includes(' + بنطال'), `not a complete outfit: ${look.label}`);
+  }
+});
+
+test('no duplicate color pairs', async () => {
+  const { FORMAL_LOOKS } = await import('../core/scene-builder.js');
+  const pairs = FORMAL_LOOKS.map(l => l.label);
+  assert.equal(new Set(pairs).size, pairs.length);
+});

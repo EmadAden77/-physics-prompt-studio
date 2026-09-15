@@ -42,11 +42,11 @@ test('end-to-end prompt generation is deterministic and structurally valid', () 
 });
 
 test('core catalog counts match the documented production baseline', () => {
-  assert.equal(SAUDI_LOCATIONS.length, 43, 'SAUDI_LOCATIONS count changed');
+  assert.equal(SAUDI_LOCATIONS.length, 46, 'SAUDI_LOCATIONS count changed');
   assert.equal(CLOTHING_OPTIONS.length, 30, 'CLOTHING_OPTIONS count changed');
-  assert.equal(SELFIE_POSES.length, 15, 'SELFIE_POSES count changed');
+  assert.equal(SELFIE_POSES.length, 16, 'SELFIE_POSES count changed');
   assert.equal(SELFIE_ANGLES.length, 16, 'SELFIE_ANGLES count changed');
-  assert.equal(LIGHTING_PROFILES.length, 20, 'LIGHTING_PROFILES count changed');
+  assert.equal(LIGHTING_PROFILES.length, 23, 'LIGHTING_PROFILES count changed');
 });
 
 test('sensor processing remains deterministic for identical image, settings and seed', () => {

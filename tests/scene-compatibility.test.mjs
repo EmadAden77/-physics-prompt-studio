@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { compatibleOptions, compatibilitySnapshot, recommendedDefaults } from '../core/scene-compatibility.js';
+import { compatibleOptions, compatibilitySnapshot, recommendedDefaults, resolveCompatibleValue } from '../core/scene-compatibility.js';
 import { SAUDI_LOCATIONS, CLOTHING_OPTIONS, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
 import { CAMERA_PROFILES, FRAMING_OPTIONS } from '../core/prompt-generator.js';
 
@@ -65,6 +65,42 @@ test('office selfie excludes unrelated locations and car lighting', () => {
   assert.equal(values(snapshot.lighting).includes('night_car_practicals'), false);
 });
 
+test('supermarket scene only exposes supermarket-compatible locations', () => {
+  const snapshot = compatibilitySnapshot('supermarket_selfie', catalogs);
+  assert.ok(snapshot.location.length >= 3);
+  assert.ok(snapshot.location.every((location) => /supermarket|grocery|convenience|store/i.test(location.value)));
+  assert.ok(!snapshot.location.some((location) => /boulevard|street|corniche/i.test(location.value)));
+  assert.deepEqual(values(snapshot.location), ['supermarket_aisle', 'convenience_store', 'grocery_store']);
+});
+
+test('supermarket scene only exposes supermarket-compatible lighting', () => {
+  const snapshot = compatibilitySnapshot('supermarket_selfie', catalogs);
+  assert.ok(snapshot.lighting.length >= 3);
+  assert.ok(snapshot.lighting.every((lighting) => /supermarket|retail|fluorescent|store/i.test(lighting.value)));
+  assert.ok(!snapshot.lighting.some((lighting) => /office|majlis|cafe/i.test(lighting.value)));
+  assert.deepEqual(values(snapshot.lighting), ['supermarket_fluorescent', 'retail_ceiling_led', 'mixed_retail']);
+});
+
+test('supermarket scene exposes only compatible poses and framing', () => {
+  const snapshot = compatibilitySnapshot('supermarket_selfie', catalogs);
+  assert.deepEqual(values(snapshot.pose), ['standing_relaxed', 'walking_slow', 'holding_basket']);
+  assert.deepEqual(values(snapshot.framing), ['chest_up', 'waist_up', 'three_quarter']);
+  assert.equal(values(snapshot.pose).includes('lean_counter'), false);
+  assert.equal(values(snapshot.framing).includes('full_body'), false);
+});
+
+test('changing sceneType resets incompatible selections', () => {
+  const snapshot = compatibilitySnapshot('supermarket_selfie', catalogs);
+  const defaults = recommendedDefaults('supermarket_selfie');
+
+  assert.equal(snapshot.location.some((item) => item.value === 'boulevard_walkway'), false, 'boulevard should not be compatible with supermarket');
+  assert.equal(resolveCompatibleValue('boulevard_walkway', snapshot.location, defaults.location), 'supermarket_aisle');
+  assert.equal(resolveCompatibleValue('night_office_led', snapshot.lighting, defaults.lighting), 'supermarket_fluorescent');
+  assert.equal(resolveCompatibleValue('lean_counter', snapshot.pose, defaults.pose), 'walking_slow');
+  assert.equal(resolveCompatibleValue('driver_eye_level', snapshot.angle, defaults.angle), 'eye_centered');
+  assert.equal(resolveCompatibleValue('full_body', snapshot.framing, defaults.framing), 'chest_up');
+});
+
 test('clothing remains available when it is physically compatible with the scene', () => {
   const options = compatibleOptions('inside_car_selfie', 'clothing', CLOTHING_OPTIONS);
   assert.equal(options.length, CLOTHING_OPTIONS.length);
@@ -74,4 +110,12 @@ test('recommended defaults switch camera and framing by capture type', () => {
   assert.deepEqual(recommendedDefaults('inside_car_selfie'), { camera: 'xiaomi15_front', framing: 'chest_up' });
   assert.deepEqual(recommendedDefaults('mirror_selfie'), { camera: 'smartphone_rear', framing: 'waist_up' });
   assert.deepEqual(recommendedDefaults('full_body_third_person'), { camera: 'smartphone_rear', framing: 'full_body' });
+  assert.deepEqual(recommendedDefaults('supermarket_selfie'), {
+    location: 'supermarket_aisle',
+    pose: 'walking_slow',
+    angle: 'eye_centered',
+    lighting: 'supermarket_fluorescent',
+    camera: 'xiaomi15_front',
+    framing: 'chest_up'
+  });
 });

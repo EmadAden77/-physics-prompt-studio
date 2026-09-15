@@ -68,6 +68,8 @@ const DEFAULTS = {
   framing: FRAMING_OPTIONS[1]
 };
 
+const HAIR_STYLE_LOCK = 'Hair length, density, hairline shape, and hair thickness remain EXACTLY as in the reference image. Only the visible direction, part line, clumping, and strand orientation may change. Do not shorten, lengthen, thin, thicken, or recede the hairline. If a reference image is attached, the visible hair mass must match the reference exactly.';
+
 function clean(value) { return typeof value === 'string' ? value.trim() : ''; }
 function getOption(options, value, fallback) { return options.find((item) => item.value === value) || fallback; }
 function section(title, body) { const text = clean(body); return text ? `[${title}]\n${text}` : ''; }
@@ -230,7 +232,7 @@ export function generateImagePrompt(input = {}) {
     section('AUTHENTIC IMPERFECTIONS', realismGuidance.imperfections),
     section('CONTROLLED PHYSICAL IMPERFECTIONS', imperfections()),
     customConstraints ? section('USER CONSTRAINTS', customConstraints) : '',
-    section('SAUDI CULTURAL DRESS', SAUDI_CULTURAL_DRESS_LOCK),
+    `${section('HAIR_STYLE_LOCK', HAIR_STYLE_LOCK)}\n\n${section('SAUDI CULTURAL DRESS', SAUDI_CULTURAL_DRESS_LOCK)}`,
     section('NEGATIVE CONSTRAINTS', negatives(sceneType)),
     section('FINAL VERIFICATION', verification(sceneType, aspectRatio, realismGuidance))
   ].filter(Boolean);
@@ -277,7 +279,7 @@ export function generateImagePrompt(input = {}) {
 export function validateGeneratedPrompt(prompt, context = {}) {
   const errors = [];
   const warnings = [];
-  const required = ['[GOAL]', '[ACTION-DRIVEN AUTHENTICITY]', '[CAPTURE TYPE LOCK — CRITICAL]', '[OBSERVABLE BACKGROUND ELEMENTS]', '[CAMERA GEOMETRY]', '[PHYSICAL LIGHTING]', '[MIRROR RULES]', '[LENS_PHYSICS]', '[BIOLOGICAL_MICRO_REALISM]', '[CAMERA_METADATA_HINT]', '[AUTHENTIC IMPERFECTIONS]', '[SAUDI CULTURAL DRESS]', '[NEGATIVE CONSTRAINTS]', '[FINAL VERIFICATION]'];
+  const required = ['[GOAL]', '[ACTION-DRIVEN AUTHENTICITY]', '[CAPTURE TYPE LOCK — CRITICAL]', '[OBSERVABLE BACKGROUND ELEMENTS]', '[CAMERA GEOMETRY]', '[PHYSICAL LIGHTING]', '[MIRROR RULES]', '[LENS_PHYSICS]', '[BIOLOGICAL_MICRO_REALISM]', '[CAMERA_METADATA_HINT]', '[AUTHENTIC IMPERFECTIONS]', '[HAIR_STYLE_LOCK]', '[SAUDI CULTURAL DRESS]', '[NEGATIVE CONSTRAINTS]', '[FINAL VERIFICATION]'];
   for (const marker of required) if (!prompt.includes(marker)) errors.push(`Missing required section: ${marker}`);
   if (!/Physical illumination/i.test(prompt)) errors.push('Physical illumination rule is missing.');
   if (!/Exposure, ISO, HDR/i.test(prompt)) errors.push('Exposure/ISO/HDR separation rule is missing.');

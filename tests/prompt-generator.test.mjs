@@ -184,3 +184,26 @@ test('women in Saudi scenes must be covered', () => {
   assert.match(result.prompt, /no uncovered female faces/i);
   assert.match(result.prompt, /no exposed women's hair/i);
 });
+
+test('hair catalog contains 30 styling options across 7 groups', async () => {
+  const { HAIR_STYLES } = await import('../core/scene-builder.js');
+  assert.equal(HAIR_STYLES.length, 30);
+  const groups = new Set(HAIR_STYLES.map(h => h.group));
+  assert.ok(groups.size >= 7);
+  for (const style of HAIR_STYLES) {
+    assert.ok(style.label.length > 5);
+    assert.ok(style.prompt.length > 40);
+  }
+});
+
+test('hair style lock appears in every generated prompt', () => {
+  const result = generateImagePrompt({ sceneType: 'front_selfie' });
+  assert.match(result.prompt, /\[HAIR_STYLE_LOCK\]/);
+  assert.match(result.prompt, /density.*EXACTLY/i);
+});
+
+test('hair style lock states length and density are unchanged', () => {
+  const result = generateImagePrompt({ sceneType: 'front_selfie' });
+  assert.match(result.prompt, /length.*density.*hairline/i);
+  assert.match(result.prompt, /Do not shorten/i);
+});

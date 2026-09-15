@@ -67,5 +67,6 @@ test('browser app wires expanded catalogs into generation and optimizer scene co
   assert.match(app, /EXTRA_CLOTHING_OPTIONS/);
   assert.match(app, /extraLocationsForScene\(baseSceneType\)/);
   assert.match(app, /enrichLocationPrompt\(selectedPrompt\(controls\.location\)\)/);
-  assert.match(app, /enrichClothingPrompt\(selectedPrompt\(controls\.clothing\)\)/);
+  assert.match(app, /CLOTHING_PROMPT_BY_VALUE/);
+  assert.match(app, /enrichClothingPrompt\(selectedClothingPrompt\(\)\)/);
 });

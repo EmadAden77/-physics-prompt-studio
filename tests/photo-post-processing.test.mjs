@@ -63,26 +63,23 @@ test('addSensorNoise with iso=3200 produces more noise than iso=200', () => {
 });
 
 test('applyVignette makes corners darker than the center', () => {
-  const source = image( nine = 9, 9, () => [240, 240, 240, 255]);
+  const size = 9;
+  const source = image(size, size, () => [240, 240, 240, 255]);
   const result = applyVignette(source, { strength: 0.20 });
-  const center = ((4 * nine) + 4) * 4;
+  const center = ((4 * size) + 4) * 4;
   const corner = 0;
   assert.ok(result.data[corner] < result.data[center]);
   assert.equal(result.data[center], 240);
 });
 
-test('addChromaticAberration separates R and B values near high-contrast frame edges', () => {
+test('addChromaticAberration separates R and B values near a high-contrast frame edge', () => {
   const source = image(9, 1, (x) => {
-    const value = x < 4 ? 20 : 230;
+    const value = x === 0 ? 20 : 230;
     return [value, value, value, 255];
   });
   const result = addChromaticAberration(source, { px: 2 });
   const leftEdge = 0;
-  const rightEdge = (8 * 4);
-  assert.ok(
-    result.data[leftEdge] !== result.data[leftEdge + 2] ||
-    result.data[rightEdge] !== result.data[rightEdge + 2]
-  );
+  assert.notEqual(result.data[leftEdge], result.data[leftEdge + 2]);
 });
 
 test('JPEG artifact and HDR halo passes remain deterministic', () => {

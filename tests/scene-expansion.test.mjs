@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { EXTRA_SCENE_TYPES, baseSceneTypeFor, narrowOptions, sceneMeta } from '../core/scene-type-expansion.js';
+import { compatibilitySnapshot } from '../core/scene-compatibility.js';
 import { buildAutomaticSceneDescription } from '../core/automatic-scene-description.js';
-import { SAUDI_LOCATIONS, SELFIE_POSES, LIGHTING_PROFILES } from '../core/scene-builder.js';
+import { SAUDI_LOCATIONS, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
 
 test('expanded scene catalog is broad and unique', () => {
   assert.ok(EXTRA_SCENE_TYPES.length >= 75);
@@ -31,22 +32,29 @@ test('specialized option narrowing prefers context-matched choices', () => {
   assert.deepEqual(filtered.map((item) => item.value), ['night_phone_screen']);
 });
 
-test('supermarket metadata narrows to real supermarket catalogs', () => {
+test('supermarket metadata narrows its compatibility profile to real supermarket catalogs', () => {
   const meta = sceneMeta('supermarket_selfie');
   assert.ok(meta.location.includes('convenience'));
   assert.ok(meta.lighting.includes('retail'));
   assert.ok(meta.pose.includes('holding'));
 
+  const profile = compatibilitySnapshot('supermarket_selfie', {
+    location: SAUDI_LOCATIONS,
+    pose: SELFIE_POSES,
+    angle: SELFIE_ANGLES,
+    lighting: LIGHTING_PROFILES
+  });
+
   assert.deepEqual(
-    narrowOptions('supermarket_selfie', 'location', SAUDI_LOCATIONS).map((item) => item.value),
+    narrowOptions('supermarket_selfie', 'location', profile.location).map((item) => item.value),
     ['supermarket_aisle', 'convenience_store', 'grocery_store']
   );
   assert.deepEqual(
-    narrowOptions('supermarket_selfie', 'lighting', LIGHTING_PROFILES).map((item) => item.value),
+    narrowOptions('supermarket_selfie', 'lighting', profile.lighting).map((item) => item.value),
     ['supermarket_fluorescent', 'retail_ceiling_led', 'mixed_retail']
   );
   assert.deepEqual(
-    narrowOptions('supermarket_selfie', 'pose', SELFIE_POSES).map((item) => item.value),
+    narrowOptions('supermarket_selfie', 'pose', profile.pose).map((item) => item.value),
     ['standing_relaxed', 'walking_slow', 'holding_basket']
   );
 });

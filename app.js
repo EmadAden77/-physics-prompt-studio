@@ -173,7 +173,7 @@ function applySceneCompatibility() {
     lighting: controls.lighting.value,
     framing: controls.framing.value
   };
-  const expandedLocations = extraLocationsForScene(baseSceneType);
+  const expandedLocations = compatibilityType === 'supermarket_selfie' ? [] : extraLocationsForScene(baseSceneType);
   const locationCandidates = uniqueByValue([...compatible.location, ...expandedLocations]);
   const options = {
     location: specializedOptions(sceneType, 'location', locationCandidates),

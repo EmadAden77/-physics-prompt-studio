@@ -1,5 +1,5 @@
 import { compilePrompt, createLedger } from './core/prompt-optimizer.js';
-import { SAUDI_LOCATIONS, CLOTHING_OPTIONS, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from './core/scene-builder.js';
+import { SAUDI_LOCATIONS, CLOTHING_OPTIONS, FORMAL_LOOKS, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from './core/scene-builder.js';
 import {
   EXTRA_CLOTHING_OPTIONS,
   extraLocationsForScene,
@@ -48,7 +48,7 @@ const resetButton = $('resetButton');
 
 const CATALOGS = {
   location: SAUDI_LOCATIONS,
-  clothing: [...CLOTHING_OPTIONS, ...EXTRA_CLOTHING_OPTIONS],
+  clothing: [...CLOTHING_OPTIONS, ...EXTRA_CLOTHING_OPTIONS, ...FORMAL_LOOKS],
   pose: SELFIE_POSES,
   angle: SELFIE_ANGLES,
   lighting: LIGHTING_PROFILES,
@@ -69,6 +69,7 @@ function makeOption(item) {
 }
 
 function populateGrouped(select, options) {
+  const existingValues = new Set([...select.options].map((option) => option.value).filter(Boolean));
   const groups = new Map();
   for (const item of options) {
     const group = item.group || 'خيارات';
@@ -76,15 +77,30 @@ function populateGrouped(select, options) {
     groups.get(group).push(item);
   }
   for (const [label, items] of groups) {
+    const pendingItems = items.filter((item) => !existingValues.has(item.value));
+    if (!pendingItems.length) continue;
     const optgroup = document.createElement('optgroup');
     optgroup.label = label;
-    for (const item of items) optgroup.append(makeOption(item));
+    for (const item of pendingItems) {
+      optgroup.append(makeOption(item));
+      existingValues.add(item.value);
+    }
     select.append(optgroup);
   }
 }
 
 function populateFlat(select, options) {
   for (const item of options) select.append(makeOption(item));
+}
+
+function hydrateFormalLookOptions() {
+  const formalGroup = $('formalLooksGroup');
+  if (!formalGroup) return;
+  const byValue = new Map(FORMAL_LOOKS.map((look) => [look.value, look]));
+  for (const option of formalGroup.querySelectorAll('option')) {
+    const look = byValue.get(option.value);
+    if (look) option.dataset.prompt = look.prompt;
+  }
 }
 
 function rebuildOptionalSelect(select, options, placeholder, grouped = false) {
@@ -124,6 +140,7 @@ function applySceneCompatibility() {
   rebuildRequiredSelect(controls.framing, compatible.framing, defaults.framing);
 }
 
+hydrateFormalLookOptions();
 populateFlat(controls.sceneType, SCENE_TYPES);
 populateGrouped(controls.clothing, CATALOGS.clothing);
 populateFlat(controls.aspectRatio, ASPECT_RATIOS);

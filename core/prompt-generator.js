@@ -1,5 +1,6 @@
 import { buildRealismPacket, renderRealismGuidance } from './realistic-image-generator.js';
 import { SAUDI_CULTURAL_DRESS_LOCK } from './scene-builder.js';
+import { baseSceneTypeFor, sceneMeta } from './scene-type-expansion.js';
 
 export const SCENE_TYPES = [
   { value: 'front_selfie', label: 'سيلفي عادي', capture: 'subject-held front-camera smartphone selfie', prompt: 'a casual subject-held front-camera smartphone selfie with physically feasible arm-reach geometry', framing: 'chest-up to mid-torso framing' },
@@ -39,9 +40,9 @@ export const EXPRESSIONS = [
 ];
 
 export const BACKGROUND_ACTIVITY = [
-  { value: 'quiet', label: 'هادئ', prompt: 'quiet background with only sparse, context-appropriate activity' },
-  { value: 'normal', label: 'طبيعي', prompt: 'ordinary background activity with a few independently behaving people or vehicles where appropriate' },
-  { value: 'lively', label: 'حيوي', prompt: 'lively but believable background activity with natural spacing, varied behavior and no duplicated people' }
+  { value: 'quiet', label: 'هادئ', prompt: 'quiet background with no background people; preserve only context-appropriate environmental detail and vehicles when physically appropriate' },
+  { value: 'normal', label: 'طبيعي', prompt: 'ordinary background activity with 1-2 independently behaving background people where people are contextually appropriate, plus ordinary vehicles or objects when relevant' },
+  { value: 'lively', label: 'حيوي', prompt: 'lively but believable background activity with 3-5 independently behaving background people where people are contextually appropriate, natural spacing, varied behavior and no duplicated people' }
 ];
 
 export const REALISM_LEVELS = [
@@ -68,11 +69,39 @@ const DEFAULTS = {
   framing: FRAMING_OPTIONS[1]
 };
 
-const HAIR_STYLE_LOCK = 'Hair length, density, hairline shape, and hair thickness remain EXACTLY as in the reference image. Only the visible direction, part line, clumping, and strand orientation may change. Do not shorten, lengthen, thin, thicken, or recede the hairline. If a reference image is attached, the visible hair mass must match the reference exactly.';
+const CANONICAL_SECTIONS = [
+  'GOAL',
+  'ACTION-DRIVEN AUTHENTICITY',
+  'CAPTURE TYPE LOCK — CRITICAL',
+  'IDENTITY / SUBJECT',
+  'SCENE',
+  'OBSERVABLE BACKGROUND ELEMENTS',
+  'CLOTHING',
+  'CONTEXTUAL ACCESSORIES',
+  'POSE & BODY MECHANICS',
+  'CAMERA GEOMETRY',
+  'PHYSICAL LIGHTING',
+  'MIRROR RULES',
+  'PRODUCT INTEGRATION',
+  'PHYSICAL / MATERIAL REALISM',
+  'SMARTPHONE IMAGE BEHAVIOR',
+  'LENS_PHYSICS',
+  'BIOLOGICAL_MICRO_REALISM',
+  'CAMERA_METADATA_HINT',
+  'AUTHENTIC IMPERFECTIONS',
+  'CONTROLLED PHYSICAL IMPERFECTIONS',
+  'USER CONSTRAINTS',
+  'NEGATIVE CONSTRAINTS',
+  'FINAL VERIFICATION'
+];
+
+const HAIR_STYLE_LOCK = 'Hair length, density, hairline shape, and hair thickness remain EXACTLY as in the reference image when a reference image is attached. Only the visible direction, part line, clumping, and strand orientation may change. Do not shorten, lengthen, thin, thicken, or recede the hairline. If no reference image is attached, keep the chosen baseline hair length and density stable and do not invent extra length or density solely to satisfy a hairstyle.';
+const SAUDI_CONTEXT = /\b(saudi|saudi arabia|riyadh|jeddah|khobar|dammam|makkah|madinah|medina|taif|abha|tabuk|alula|qassim|hail|najran|jazan|arabian gulf|red sea)\b/i;
 
 function clean(value) { return typeof value === 'string' ? value.trim() : ''; }
 function getOption(options, value, fallback) { return options.find((item) => item.value === value) || fallback; }
-function section(title, body) { const text = clean(body); return text ? `[${title}]\n${text}` : ''; }
+function section(title, body) { const text = clean(body); return `[${title}]\n${text}`; }
+function isSaudiContext(location) { return SAUDI_CONTEXT.test(clean(location)); }
 
 function captureRules(sceneType) {
   const selfie = /selfie/i.test(sceneType.capture);
@@ -82,9 +111,12 @@ function captureRules(sceneType) {
   return 'Capture type is locked to a third-person smartphone photograph. The subject is not holding the camera. Preserve a physically plausible photographer viewpoint, distance and perspective; do not introduce a selfie arm or mirror logic.';
 }
 
-function identityRules(enabled) {
-  if (!enabled) return 'No reference identity is required. Keep the subject anatomically natural and internally consistent across the image.';
-  return 'If a reference image is attached, use it strictly as the sole identity anchor. Preserve recognizable facial identity, skull and face proportions, natural asymmetry, skin tone, apparent age, hairline, visible hair density and texture, beard density and gaps, and moustache pattern. Do not copy the reference background, pose, clothing, lighting or framing unless separately requested. No beautification, face slimming, jaw sharpening, eye enlargement, de-aging, skin smoothing, symmetry correction, thicker hair or denser beard.';
+function identityRules(enabled, hairStyle) {
+  const base = enabled
+    ? 'If a reference image is attached, use it strictly as the sole identity anchor. Preserve recognizable facial identity, skull and face proportions, natural asymmetry, skin tone, apparent age, hairline, visible hair density and texture, beard density and gaps, and moustache pattern. Do not copy the reference background, pose, clothing, lighting or framing unless separately requested. No beautification, face slimming, jaw sharpening, eye enlargement, de-aging, skin smoothing, symmetry correction, thicker hair or denser beard.'
+    : 'No reference identity is required. Keep the subject anatomically natural and internally consistent across the image.';
+  const style = hairStyle ? `Selected hair styling direction: ${hairStyle}.` : 'Hair styling direction: keep the visible hair naturally arranged unless a specific style is selected.';
+  return `${base} ${style} ${HAIR_STYLE_LOCK}`;
 }
 
 function geometryRules(sceneType, camera, framing, angle, distance) {
@@ -103,47 +135,65 @@ function physicalRealism(realism) {
 }
 
 function smartphoneBehavior() {
-  return 'The result must read as an ordinary real smartphone photograph, not a studio portrait, CGI render or cinematic frame. Use broad smartphone focus, restrained computational sharpening, realistic local contrast, modest dynamic range, plausible white balance, subtle edge softness, mild sensor/noise-reduction texture in darker areas, and natural clipping of strong practical lights when appropriate.';
+  return 'The result must read as an ordinary real smartphone photograph, not a polished commercial portrait, CGI render or cinematic frame. Use broad smartphone focus, restrained computational sharpening, realistic local contrast, modest dynamic range, plausible white balance, subtle edge softness, mild sensor/noise-reduction texture in darker areas, and natural clipping of strong practical lights when appropriate.';
 }
 
 function lensPhysics() {
-  return 'LENS PHYSICS (mandatory): Preserve mild lateral chromatic aberration on high-contrast edges, visible as faint color fringing near frame corners. Preserve mild vignetting consistent with wide aperture, corners 15-20% darker than center. Preserve 2-3% barrel distortion typical of 23mm-equivalent smartphone wide-angle lens. Preserve natural lens flare and ghosting only when a bright source is in or near the frame. Do not add artificial or decorative lens effects.';
+  return 'LENS PHYSICS (mandatory): Preserve mild lateral chromatic aberration on high-contrast edges, visible as faint color fringing near frame corners. Preserve mild vignetting consistent with a wide smartphone lens, corners 15-20% darker than center. Preserve 2-3% barrel distortion typical of a 23mm-equivalent smartphone wide-angle lens. Preserve natural lens flare and ghosting only when a bright source is in or near the frame. Do not add artificial or decorative lens effects.';
 }
 
 function biologicalMicroRealism() {
   return 'BIOLOGICAL MICRO-REALISM (mandatory, apply only where resolvable): Preserve visible skin pores with non-uniform spatial distribution. Preserve fine vellus facial hair where the visible cheek, temple or jaw region is close enough and lit enough to register such detail. Preserve 5-12 stray hairs near the silhouette or hairline of the visible hair mass. Preserve source-consistent corneal reflections showing the actual scene. Preserve slight natural asymmetry in eyebrows, eyelids and jawline. Preserve individual fabric fibers visible at realistic viewing distance. Do not beautify, smooth, symmetrize or sterilize. If a region is cropped, occluded, too dark, too soft, too distant or out of focus, do not invent micro-detail merely to satisfy this section.';
 }
 
-function cameraMetadataHint() {
-  return 'CAPTURE METADATA (for scene fidelity): Shot on Xiaomi 15 Ultra, 23mm equivalent, f/1.63, ISO 800, 1/60s, handheld. File reference: IMG_20250915_143022.HEIC.';
+function cameraMetadataHint(camera) {
+  if (camera.value === 'xiaomi15_front') return 'CAPTURE METADATA (for scene fidelity): Shot on Xiaomi 15 Ultra front camera, approximately 23mm equivalent, f/1.63-class smartphone capture behavior, ISO 800, 1/60s, handheld. File reference: IMG_20250915_143022.HEIC.';
+  if (camera.value === 'iphone15pm_front') return 'CAPTURE METADATA (for scene fidelity): Shot on iPhone 15 Pro Max front camera with a natural wide selfie field of view, plausible automatic ISO and shutter behavior, handheld. Do not fabricate unsupported exact EXIF values.';
+  if (camera.value === 'smartphone_rear') return 'CAPTURE METADATA (for scene fidelity): Shot on a modern smartphone rear camera with a natural wide field of view, plausible automatic ISO and shutter behavior, handheld. Do not fabricate unsupported exact EXIF values.';
+  return 'CAPTURE METADATA (for scene fidelity): Shot on a modern smartphone front camera with a natural wide selfie field of view, plausible automatic ISO and shutter behavior, handheld. Do not fabricate unsupported exact EXIF values.';
 }
 
-function imperfections() {
-  return 'Allow controlled physical imperfections: tiny handheld roll, slight off-center framing, small asymmetries in clothing and posture, minor exposure variation, realistic fabric creasing, non-uniform background spacing, subtle low-light softness or shadow noise, and ordinary environmental wear. Imperfections must support realism, not look intentionally distressed.';
+function controlledCaptureImperfections() {
+  return 'Allow capture-level imperfections only: tiny handheld roll, slight off-center crop, minor exposure or white-balance variation, subtle edge softness, restrained shadow sensor noise, and modest highlight clipping when caused by real practical lights. Do not duplicate biological, clothing, or environmental imperfections already specified elsewhere.';
 }
 
-function negatives(sceneType) {
-  const captureNegative = sceneType.capture.includes('third-person') ? 'no selfie arm, no implied subject-held camera' : sceneType.capture.includes('mirror') ? 'no direct front-camera viewpoint outside the mirror, no duplicate phone or hands' : 'no third-person viewpoint, no floating external camera, no mirror unless explicitly selected';
-  return `Avoid: beauty filters, waxy or porcelain skin, face reconstruction, artificial symmetry, malformed hands, extra fingers, duplicated limbs, floating objects, impossible body support, incorrect contact shadows, melted textiles, repeated background people, cloned props, impossible reflections, invisible studio key lights, fake rim lights, excessive HDR, aggressive orange-teal grading, fake DSLR bokeh, over-sharpening, oversaturated skin, sterile showroom staging, generic static posing, advertisement-style product placement, no artificial lens flare, no beauty filter, no plastic skin, no perfectly symmetric face, no missing corneal reflections, no uniform fabric without weave or fibers, no uncovered female faces in Saudi scenes, no Western female clothing in Saudi scenes, no exposed women's hair in Saudi scenes, and ${captureNegative}.`;
+function negatives(sceneType, saudiContext) {
+  const captureNegative = sceneType.capture.includes('third-person')
+    ? 'no selfie arm, no implied subject-held camera'
+    : sceneType.capture.includes('mirror')
+      ? 'no direct front-camera viewpoint outside the mirror, no duplicate phone or hands'
+      : 'no third-person viewpoint, no floating external camera, no mirror unless explicitly selected';
+  const saudiNegatives = saudiContext
+    ? ', no uncovered female faces in Saudi scenes, no Western female clothing in Saudi scenes, no exposed women\'s hair in Saudi scenes'
+    : '';
+  return `Avoid: beauty filters, waxy or porcelain skin, face reconstruction, artificial symmetry, malformed hands, extra fingers, duplicated limbs, floating objects, impossible body support, incorrect contact shadows, melted textiles, repeated background people, cloned props, impossible reflections, invisible artificial key lights, fake rim lights, excessive HDR, aggressive orange-teal grading, fake DSLR bokeh, over-sharpening, oversaturated skin, sterile showroom staging, generic static posing, advertisement-style product placement, no artificial lens flare, no beauty filter, no plastic skin, no perfectly symmetric face, no missing corneal reflections, no uniform fabric without weave or fibers${saudiNegatives}, and ${captureNegative}.`;
 }
 
 function verification(sceneType, aspectRatio, realismGuidance) {
-  return `Before finalizing, verify: capture type unmistakably matches “${sceneType.capture}”; the camera position is physically possible; anatomy and contacts are coherent; selected location, clothing, pose, angle and lighting are visible and mutually compatible; lighting can be traced to plausible physical sources; materials respond differently according to their properties; background scale and activity make sense; composition is ${aspectRatio.prompt}; and the realism checklist is satisfied: ${realismGuidance.consistency.replace(/^Before finalizing, verify:\s*/i, '')} If a secondary aesthetic choice conflicts with physical causality or capture geometry, preserve physical plausibility.`;
+  return `Before finalizing, verify: capture type unmistakably matches “${sceneType.capture}”; the camera position is physically possible; anatomy and contacts are coherent; selected location, clothing, hair direction, pose, angle and lighting are visible and mutually compatible; lighting can be traced to plausible physical sources; materials respond differently according to their properties; background scale and requested activity level make sense; composition is ${aspectRatio.prompt}; and the realism checklist is satisfied: ${realismGuidance.consistency.replace(/^Before finalizing, verify:\s*/i, '')} If a secondary aesthetic choice conflicts with physical causality or capture geometry, preserve physical plausibility.`;
+}
+
+function stripNegatedBannedUses(text, term) {
+  let index = 0;
+  while ((index = text.indexOf(term, index)) !== -1) {
+    const prefix = text.slice(Math.max(0, index - 40), index);
+    if (!/(?:\bno\b|\bnot\b|\bwithout\b|\bavoid\b|\bdo not\b|\bnever\b)[^.!?\n]{0,28}$/i.test(prefix)) return true;
+    index += term.length;
+  }
+  return false;
 }
 
 export function validateRealism(prompt) {
   const errors = [];
   const warnings = [];
   const lower = String(prompt || '').toLowerCase();
-  const bannedScope = lower.replace(/\[negative constraints\][\s\S]*?(?=\n\n\[|$)/g, '');
 
   const banned = [
     'perfect skin', 'flawless skin', 'smooth skin', 'airbrushed skin',
     'beauty filter', 'porcelain skin', 'waxy skin',
     'perfectly symmetric face', 'perfect symmetry',
     '8k hyperdetailed', 'ultra hd', 'masterpiece',
-    'studio lighting',
-    'perfectly centered composition',
+    'studio lighting', 'perfectly centered composition',
     'dslr bokeh', 'telephoto compression'
   ];
 
@@ -158,8 +208,8 @@ export function validateRealism(prompt) {
   ];
 
   for (const word of banned) {
-    if (bannedScope.includes(word)) {
-      errors.push({ code: 'BANNED_TERM', message: `Banned term found: "${word}"`, severity: 'error' });
+    if (stripNegatedBannedUses(lower, word)) {
+      errors.push({ code: 'BANNED_TERM', message: `Banned term found as a positive instruction: "${word}"`, severity: 'error' });
     }
   }
 
@@ -179,7 +229,10 @@ export function validateRealism(prompt) {
 }
 
 export function generateImagePrompt(input = {}) {
-  const sceneType = getOption(SCENE_TYPES, input.sceneType, DEFAULTS.sceneType);
+  const requestedSceneType = clean(input.sceneType) || DEFAULTS.sceneType.value;
+  const baseSceneType = baseSceneTypeFor(requestedSceneType);
+  const sceneType = getOption(SCENE_TYPES, baseSceneType, DEFAULTS.sceneType);
+  const extraScene = sceneMeta(requestedSceneType);
   const camera = getOption(CAMERA_PROFILES, input.camera, DEFAULTS.camera);
   const aspectRatio = getOption(ASPECT_RATIOS, input.aspectRatio, DEFAULTS.aspectRatio);
   const expression = getOption(EXPRESSIONS, input.expression, DEFAULTS.expression);
@@ -189,33 +242,40 @@ export function generateImagePrompt(input = {}) {
 
   const location = clean(input.location) || 'a generic, ordinary Saudi Arabian setting appropriate to the scene, without inventing a specific city or landmark';
   const clothing = clean(input.clothing) || 'realistic context-appropriate clothing with believable textile weight, seams, folds and material response';
+  const hairStyle = clean(input.hairStyle);
   const pose = clean(input.pose) || sceneType.prompt;
   const angle = clean(input.angle);
   const lighting = clean(input.lighting);
-  const description = clean(input.description);
+  const description = clean(input.description) || clean(extraScene?.prompt);
   const customConstraints = clean(input.customConstraints);
   const identityEnabled = input.identityReference !== false;
+  const saudiContext = isSaudiContext(location);
 
   const realismPacket = buildRealismPacket({
     sceneType: sceneType.value,
     captureType: sceneType.capture,
     location,
     clothing,
+    hairStyle,
     expression: expression.prompt,
     angle,
     lighting,
     description,
     aspectRatio: aspectRatio.prompt,
-    pose
+    pose,
+    backgroundActivity: background.value
   });
   const realismGuidance = renderRealismGuidance(realismPacket);
 
+  const sceneCulturalRule = saudiContext ? ` ${SAUDI_CULTURAL_DRESS_LOCK}` : '';
+  const userConstraintsText = customConstraints || 'No additional user constraints were provided.';
+
   const sections = [
-    section('GOAL', `Generate ONE highly photorealistic ${aspectRatio.prompt} image. Capture type: ${sceneType.capture}. ${description ? `User scene intent: ${description}.` : 'Keep the moment natural, personal and unstaged.'} The result must look like a genuine smartphone photograph rather than advertising, studio photography, CGI or AI-stylized imagery.`),
+    section('GOAL', `Generate ONE highly photorealistic ${aspectRatio.prompt} image. Capture type: ${sceneType.capture}. ${description ? `User scene intent: ${description}.` : 'Keep the moment natural, personal and unstaged.'} The result must look like a genuine smartphone photograph rather than advertising, polished commercial photography, CGI or AI-stylized imagery.`),
     section('ACTION-DRIVEN AUTHENTICITY', realismGuidance.action),
     section('CAPTURE TYPE LOCK — CRITICAL', captureRules(sceneType)),
-    section('IDENTITY / SUBJECT', `${identityRules(identityEnabled)} Expression: ${expression.prompt}. ${realismPacket.subject.face}`),
-    section('SCENE', `Location: ${location}. Background behavior: ${background.prompt}. Maintain believable architecture, furniture, roads, vehicles, landscape, circulation space, object scale and environmental depth appropriate to the selected location.`),
+    section('IDENTITY / SUBJECT', `${identityRules(identityEnabled, hairStyle)} Expression: ${expression.prompt}. ${realismPacket.subject.face}`),
+    section('SCENE', `Location: ${location}. Background behavior: ${background.prompt}. Maintain believable architecture, furniture, roads, vehicles, landscape, circulation space, object scale and environmental depth appropriate to the selected location.${sceneCulturalRule}`),
     section('OBSERVABLE BACKGROUND ELEMENTS', realismGuidance.background),
     section('CLOTHING', `${clothing}. Preserve gravity-driven drape, realistic material thickness, seam tension, compression at body/contact points, and non-mirrored natural asymmetry.`),
     section('CONTEXTUAL ACCESSORIES', realismGuidance.accessories),
@@ -228,18 +288,17 @@ export function generateImagePrompt(input = {}) {
     section('SMARTPHONE IMAGE BEHAVIOR', smartphoneBehavior()),
     section('LENS_PHYSICS', lensPhysics()),
     section('BIOLOGICAL_MICRO_REALISM', biologicalMicroRealism()),
-    section('CAMERA_METADATA_HINT', cameraMetadataHint()),
+    section('CAMERA_METADATA_HINT', cameraMetadataHint(camera)),
     section('AUTHENTIC IMPERFECTIONS', realismGuidance.imperfections),
-    section('CONTROLLED PHYSICAL IMPERFECTIONS', imperfections()),
-    customConstraints ? section('USER CONSTRAINTS', customConstraints) : '',
-    `${section('HAIR_STYLE_LOCK', HAIR_STYLE_LOCK)}\n\n${section('SAUDI CULTURAL DRESS', SAUDI_CULTURAL_DRESS_LOCK)}`,
-    section('NEGATIVE CONSTRAINTS', negatives(sceneType)),
+    section('CONTROLLED PHYSICAL IMPERFECTIONS', controlledCaptureImperfections()),
+    section('USER CONSTRAINTS', userConstraintsText),
+    section('NEGATIVE CONSTRAINTS', negatives(sceneType, saudiContext)),
     section('FINAL VERIFICATION', verification(sceneType, aspectRatio, realismGuidance))
-  ].filter(Boolean);
+  ];
 
   const prompt = sections.join('\n\n');
   const realismValidation = validateRealism(prompt);
-  const validation = validateGeneratedPrompt(prompt, { sceneType, identityEnabled, realismPacket });
+  const validation = validateGeneratedPrompt(prompt, { sceneType, identityEnabled, realismPacket, saudiContext });
 
   if (realism.value === 'strict' && !realismValidation.valid) {
     validation.errors.push(...realismValidation.errors.map((e) => `[REALISM] ${e.message}`));
@@ -247,12 +306,13 @@ export function generateImagePrompt(input = {}) {
   }
 
   return {
-    schema_version: '2.1.0',
+    schema_version: '2.2.0',
     mode: 'auto_generate',
     prompt,
     sections,
     realism_packet: realismPacket,
     config: {
+      requested_scene_type: requestedSceneType,
       scene_type: sceneType.value,
       capture_type: sceneType.capture,
       camera: camera.value,
@@ -264,30 +324,80 @@ export function generateImagePrompt(input = {}) {
       identity_reference: identityEnabled,
       location,
       clothing,
+      hair_style: hairStyle,
       pose,
       angle,
       lighting,
       lighting_notes: clean(input.lightingNotes),
       description,
-      custom_constraints: customConstraints
+      custom_constraints: customConstraints,
+      saudi_context: saudiContext
     },
     validation,
     realism_validation: realismValidation
   };
 }
 
+function extractSectionBodies(prompt) {
+  const bodies = new Map();
+  const pattern = /^\[([^\]]+)\]\n([\s\S]*?)(?=\n\n\[[^\]]+\]\n|$)/gm;
+  let match;
+  while ((match = pattern.exec(prompt)) !== null) {
+    const name = match[1];
+    if (bodies.has(name)) bodies.set(name, null);
+    else bodies.set(name, match[2]);
+  }
+  return bodies;
+}
+
 export function validateGeneratedPrompt(prompt, context = {}) {
   const errors = [];
   const warnings = [];
-  const required = ['[GOAL]', '[ACTION-DRIVEN AUTHENTICITY]', '[CAPTURE TYPE LOCK — CRITICAL]', '[OBSERVABLE BACKGROUND ELEMENTS]', '[CAMERA GEOMETRY]', '[PHYSICAL LIGHTING]', '[MIRROR RULES]', '[LENS_PHYSICS]', '[BIOLOGICAL_MICRO_REALISM]', '[CAMERA_METADATA_HINT]', '[AUTHENTIC IMPERFECTIONS]', '[HAIR_STYLE_LOCK]', '[SAUDI CULTURAL DRESS]', '[NEGATIVE CONSTRAINTS]', '[FINAL VERIFICATION]'];
-  for (const marker of required) if (!prompt.includes(marker)) errors.push(`Missing required section: ${marker}`);
-  if (!/Physical illumination/i.test(prompt)) errors.push('Physical illumination rule is missing.');
-  if (!/Exposure, ISO, HDR/i.test(prompt)) errors.push('Exposure/ISO/HDR separation rule is missing.');
-  if (!/chromatic aberration/i.test(prompt)) errors.push('Chromatic aberration realism rule is missing.');
-  if (!/visible skin pores/i.test(prompt)) errors.push('Visible skin pores realism rule is missing.');
-  if (!/corneal reflections/i.test(prompt)) errors.push('Corneal reflections realism rule is missing.');
-  if (!/stray hairs/i.test(prompt)) errors.push('Stray hairs realism rule is missing.');
-  if (!context.realismPacket?.subject || !context.realismPacket?.accessories || !context.realismPacket?.photography || !context.realismPacket?.background) errors.push('Realistic Image Generator JSON structure is incomplete.');
-  if (context.sceneType?.capture?.includes('selfie') && !/reachable|arm-reach|arm length/i.test(prompt)) warnings.push('Selfie prompt should explicitly preserve reachable camera geometry.');
+  const text = String(prompt || '');
+  const sectionBodies = extractSectionBodies(text);
+  const headings = [...text.matchAll(/^\[([^\]]+)\]$/gm)].map((match) => match[1]);
+
+  if (headings.length !== CANONICAL_SECTIONS.length) {
+    errors.push(`Expected exactly ${CANONICAL_SECTIONS.length} canonical sections, found ${headings.length}.`);
+  }
+  if (JSON.stringify(headings) !== JSON.stringify(CANONICAL_SECTIONS)) {
+    errors.push('Canonical prompt sections are missing, duplicated, or out of order.');
+  }
+  for (const name of CANONICAL_SECTIONS) {
+    if (!sectionBodies.has(name)) errors.push(`Missing required section: [${name}]`);
+    else if (sectionBodies.get(name) === null) errors.push(`Duplicate required section: [${name}]`);
+    else if (!clean(sectionBodies.get(name))) errors.push(`Required section is empty: [${name}]`);
+  }
+
+  const critical = [
+    ['PHYSICAL LIGHTING', /Physical illumination/i, 'Physical illumination rule is missing from [PHYSICAL LIGHTING].'],
+    ['PHYSICAL LIGHTING', /Exposure, ISO, HDR/i, 'Exposure/ISO/HDR separation rule is missing from [PHYSICAL LIGHTING].'],
+    ['LENS_PHYSICS', /chromatic aberration/i, 'Chromatic aberration rule is missing from [LENS_PHYSICS].'],
+    ['LENS_PHYSICS', /vignetting/i, 'Vignetting rule is missing from [LENS_PHYSICS].'],
+    ['LENS_PHYSICS', /barrel distortion/i, 'Barrel-distortion rule is missing from [LENS_PHYSICS].'],
+    ['BIOLOGICAL_MICRO_REALISM', /visible skin pores/i, 'Visible skin pores rule is missing from [BIOLOGICAL_MICRO_REALISM].'],
+    ['BIOLOGICAL_MICRO_REALISM', /corneal reflections/i, 'Corneal reflections rule is missing from [BIOLOGICAL_MICRO_REALISM].'],
+    ['BIOLOGICAL_MICRO_REALISM', /stray hairs/i, 'Stray hairs rule is missing from [BIOLOGICAL_MICRO_REALISM].'],
+    ['IDENTITY / SUBJECT', /Hair length, density, hairline shape/i, 'Hair length/density/hairline lock is missing from [IDENTITY / SUBJECT].'],
+    ['CAMERA METADATA HINT', /./, ''],
+    ['CAMERA_METADATA_HINT', /CAPTURE METADATA/i, 'Capture metadata guidance is missing from [CAMERA_METADATA_HINT].'],
+    ['NEGATIVE CONSTRAINTS', /Avoid:/i, 'Negative constraint language is missing from [NEGATIVE CONSTRAINTS].'],
+    ['FINAL VERIFICATION', /Before finalizing/i, 'Final verification language is missing from [FINAL VERIFICATION].']
+  ];
+  for (const [name, pattern, message] of critical) {
+    if (!message) continue;
+    const body = sectionBodies.get(name) || '';
+    if (!pattern.test(body)) errors.push(message);
+  }
+
+  if (context.saudiContext && !/CULTURAL CONTEXT — SAUDI/i.test(sectionBodies.get('SCENE') || '')) {
+    errors.push('Saudi cultural dress rule is missing from [SCENE] for a Saudi context.');
+  }
+  if (!context.realismPacket?.subject || !context.realismPacket?.accessories || !context.realismPacket?.photography || !context.realismPacket?.background) {
+    errors.push('Realistic Image Generator JSON structure is incomplete.');
+  }
+  if (context.sceneType?.capture?.includes('selfie') && !/reachable|arm-reach|arm length/i.test(text)) {
+    warnings.push('Selfie prompt should explicitly preserve reachable camera geometry.');
+  }
   return { valid: errors.length === 0, errors, warnings };
 }

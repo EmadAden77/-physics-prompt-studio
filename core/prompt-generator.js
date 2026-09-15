@@ -103,13 +103,25 @@ function smartphoneBehavior() {
   return 'The result must read as an ordinary real smartphone photograph, not a studio portrait, CGI render or cinematic frame. Use broad smartphone focus, restrained computational sharpening, realistic local contrast, modest dynamic range, plausible white balance, subtle edge softness, mild sensor/noise-reduction texture in darker areas, and natural clipping of strong practical lights when appropriate.';
 }
 
+function lensPhysics() {
+  return 'LENS PHYSICS (mandatory): Preserve mild lateral chromatic aberration on high-contrast edges, visible as faint color fringing near frame corners. Preserve mild vignetting consistent with wide aperture, corners 15-20% darker than center. Preserve 2-3% barrel distortion typical of 23mm-equivalent smartphone wide-angle lens. Preserve natural lens flare and ghosting only when a bright source is in or near the frame. Do not add artificial or decorative lens effects.';
+}
+
+function biologicalMicroRealism() {
+  return 'BIOLOGICAL MICRO-REALISM (mandatory, apply only where resolvable): Preserve visible skin pores with non-uniform spatial distribution. Preserve fine vellus facial hair where the visible cheek, temple or jaw region is close enough and lit enough to register such detail. Preserve 5-12 stray hairs near the silhouette or hairline of the visible hair mass. Preserve source-consistent corneal reflections showing the actual scene. Preserve slight natural asymmetry in eyebrows, eyelids and jawline. Preserve individual fabric fibers visible at realistic viewing distance. Do not beautify, smooth, symmetrize or sterilize. If a region is cropped, occluded, too dark, too soft, too distant or out of focus, do not invent micro-detail merely to satisfy this section.';
+}
+
+function cameraMetadataHint() {
+  return 'CAPTURE METADATA (for scene fidelity): Shot on Xiaomi 15 Ultra, 23mm equivalent, f/1.63, ISO 800, 1/60s, handheld. File reference: IMG_20250915_143022.HEIC.';
+}
+
 function imperfections() {
   return 'Allow controlled physical imperfections: tiny handheld roll, slight off-center framing, small asymmetries in clothing and posture, minor exposure variation, realistic fabric creasing, non-uniform background spacing, subtle low-light softness or shadow noise, and ordinary environmental wear. Imperfections must support realism, not look intentionally distressed.';
 }
 
 function negatives(sceneType) {
   const captureNegative = sceneType.capture.includes('third-person') ? 'no selfie arm, no implied subject-held camera' : sceneType.capture.includes('mirror') ? 'no direct front-camera viewpoint outside the mirror, no duplicate phone or hands' : 'no third-person viewpoint, no floating external camera, no mirror unless explicitly selected';
-  return `Avoid: beauty filters, waxy or porcelain skin, face reconstruction, artificial symmetry, malformed hands, extra fingers, duplicated limbs, floating objects, impossible body support, incorrect contact shadows, melted textiles, repeated background people, cloned props, impossible reflections, invisible studio key lights, fake rim lights, excessive HDR, aggressive orange-teal grading, fake DSLR bokeh, over-sharpening, oversaturated skin, sterile showroom staging, generic static posing, advertisement-style product placement, and ${captureNegative}.`;
+  return `Avoid: beauty filters, waxy or porcelain skin, face reconstruction, artificial symmetry, malformed hands, extra fingers, duplicated limbs, floating objects, impossible body support, incorrect contact shadows, melted textiles, repeated background people, cloned props, impossible reflections, invisible studio key lights, fake rim lights, excessive HDR, aggressive orange-teal grading, fake DSLR bokeh, over-sharpening, oversaturated skin, sterile showroom staging, generic static posing, advertisement-style product placement, no artificial lens flare, no beauty filter, no plastic skin, no perfectly symmetric face, no missing corneal reflections, no uniform fabric without weave or fibers, and ${captureNegative}.`;
 }
 
 function verification(sceneType, aspectRatio, realismGuidance) {
@@ -164,6 +176,9 @@ export function generateImagePrompt(input = {}) {
     section('PRODUCT INTEGRATION', realismGuidance.product),
     section('PHYSICAL / MATERIAL REALISM', physicalRealism(realism)),
     section('SMARTPHONE IMAGE BEHAVIOR', smartphoneBehavior()),
+    section('LENS_PHYSICS', lensPhysics()),
+    section('BIOLOGICAL_MICRO_REALISM', biologicalMicroRealism()),
+    section('CAMERA_METADATA_HINT', cameraMetadataHint()),
     section('AUTHENTIC IMPERFECTIONS', realismGuidance.imperfections),
     section('CONTROLLED PHYSICAL IMPERFECTIONS', imperfections()),
     customConstraints ? section('USER CONSTRAINTS', customConstraints) : '',
@@ -204,10 +219,14 @@ export function generateImagePrompt(input = {}) {
 export function validateGeneratedPrompt(prompt, context = {}) {
   const errors = [];
   const warnings = [];
-  const required = ['[GOAL]', '[ACTION-DRIVEN AUTHENTICITY]', '[CAPTURE TYPE LOCK — CRITICAL]', '[OBSERVABLE BACKGROUND ELEMENTS]', '[CAMERA GEOMETRY]', '[PHYSICAL LIGHTING]', '[MIRROR RULES]', '[AUTHENTIC IMPERFECTIONS]', '[NEGATIVE CONSTRAINTS]', '[FINAL VERIFICATION]'];
+  const required = ['[GOAL]', '[ACTION-DRIVEN AUTHENTICITY]', '[CAPTURE TYPE LOCK — CRITICAL]', '[OBSERVABLE BACKGROUND ELEMENTS]', '[CAMERA GEOMETRY]', '[PHYSICAL LIGHTING]', '[MIRROR RULES]', '[LENS_PHYSICS]', '[BIOLOGICAL_MICRO_REALISM]', '[CAMERA_METADATA_HINT]', '[AUTHENTIC IMPERFECTIONS]', '[NEGATIVE CONSTRAINTS]', '[FINAL VERIFICATION]'];
   for (const marker of required) if (!prompt.includes(marker)) errors.push(`Missing required section: ${marker}`);
   if (!/Physical illumination/i.test(prompt)) errors.push('Physical illumination rule is missing.');
   if (!/Exposure, ISO, HDR/i.test(prompt)) errors.push('Exposure/ISO/HDR separation rule is missing.');
+  if (!/chromatic aberration/i.test(prompt)) errors.push('Chromatic aberration realism rule is missing.');
+  if (!/visible skin pores/i.test(prompt)) errors.push('Visible skin pores realism rule is missing.');
+  if (!/corneal reflections/i.test(prompt)) errors.push('Corneal reflections realism rule is missing.');
+  if (!/stray hairs/i.test(prompt)) errors.push('Stray hairs realism rule is missing.');
   if (!context.realismPacket?.subject || !context.realismPacket?.accessories || !context.realismPacket?.photography || !context.realismPacket?.background) errors.push('Realistic Image Generator JSON structure is incomplete.');
   if (context.sceneType?.capture?.includes('selfie') && !/reachable|arm-reach|arm length/i.test(prompt)) warnings.push('Selfie prompt should explicitly preserve reachable camera geometry.');
   return { valid: errors.length === 0, errors, warnings };

@@ -11,27 +11,170 @@
     <header class="hero">
       <a class="back" href="index.html">العودة</a>
       <p class="eyebrow">Car Studio</p>
-      <h1>قسم السيارات</h1>
-      <p>تم حذف جميع قواعد البرومبت والفيزياء والتحقق والتعليمات الثابتة. بقيت الواجهة فقط.</p>
+      <h1>استوديو سيلفي السيارات</h1>
+      <p>ابنِ مشهد سيارة واقعي، ولّد Prompt فيزيائي، ثم عالج الصورة محليًا داخل المتصفح بدون أي API خارجي.</p>
     </header>
 
-    <section class="card">
-      <div class="mode-switch" role="tablist" aria-label="وضع السيارة">
-        <button class="mode active" data-mode="inside" type="button">داخل السيارة</button>
-        <button class="mode" data-mode="outside" type="button">خارج السيارة</button>
+    <section class="card" aria-labelledby="sceneTitle">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Scene Builder</p>
+          <h2 id="sceneTitle">إعداد المشهد</h2>
+        </div>
+        <span id="modeLabel" class="status-pill">سيلفي داخل السيارة</span>
       </div>
 
-      <label for="request">الطلب</label>
-      <textarea id="request" rows="10" placeholder="اكتب طلبك يدويًا..."></textarea>
+      <div class="mode-switch" role="tablist" aria-label="وضع السيارة">
+        <button class="mode active" data-mode="inside" type="button" role="tab" aria-selected="true">سيلفي داخل السيارة</button>
+        <button class="mode" data-mode="outside" type="button" role="tab" aria-selected="false">سيلفي بالخارج بجانب السيارة</button>
+      </div>
 
-      <label for="output">المخرجات</label>
-      <textarea id="output" rows="10" placeholder="لا يوجد محرّك توليد حاليًا. هذه مساحة فارغة." readonly></textarea>
+      <div class="form-grid">
+        <label class="field">
+          <span>المركبة</span>
+          <select id="vehicle"></select>
+        </label>
+
+        <label class="field">
+          <span>الحالة</span>
+          <select id="vehicleState"></select>
+        </label>
+
+        <label class="field" id="seatField">
+          <span>المقعد</span>
+          <select id="seat"></select>
+        </label>
+
+        <label class="field is-hidden" id="standingPoseField">
+          <span>وضعية الوقوف</span>
+          <select id="standingPose"></select>
+        </label>
+
+        <label class="field">
+          <span>الوقت</span>
+          <select id="timeOfDay"></select>
+        </label>
+
+        <label class="field">
+          <span>المكان</span>
+          <select id="place"></select>
+        </label>
+
+        <label class="field">
+          <span>الملابس</span>
+          <select id="clothing"></select>
+        </label>
+
+        <label class="field">
+          <span>زاوية السيلفي</span>
+          <select id="selfieAngle"></select>
+        </label>
+
+        <label class="field field-wide">
+          <span>الإضاءة الفيزيائية</span>
+          <select id="lighting"></select>
+        </label>
+      </div>
+
+      <label for="request">ملاحظات إضافية للمشهد</label>
+      <textarea id="request" rows="4" placeholder="اختياري: تفاصيل إضافية لا تغيّر منطق الفيزياء أو نوع الالتقاط..."></textarea>
+
+      <div class="actions primary-actions">
+        <button id="generatePrompt" class="primary" type="button">توليد Prompt</button>
+        <button id="clearAll" class="secondary" type="button">مسح</button>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="promptTitle">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Prompt Output</p>
+          <h2 id="promptTitle">البرومبت</h2>
+        </div>
+        <span id="realismBadge" class="status-pill neutral">REALISM: WAITING</span>
+      </div>
+
+      <div id="validationAlert" class="validation-alert is-hidden" role="alert"></div>
+      <textarea id="output" rows="20" placeholder="سيظهر البرومبت هنا بعد التوليد." readonly></textarea>
 
       <div class="actions">
-        <button id="clearAll" type="button">مسح</button>
+        <button id="copyPrompt" type="button" disabled>نسخ</button>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="processingTitle">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Local Photo Processing</p>
+          <h2 id="processingTitle">معالجة الصورة</h2>
+        </div>
+        <span class="status-pill neutral">LOCAL ONLY</span>
+      </div>
+
+      <label class="upload-zone" for="imageUpload">
+        <strong>ارفع صورة مولّدة هنا</strong>
+        <span>JPEG أو PNG. المعالجة تتم بالكامل داخل المتصفح.</span>
+        <input id="imageUpload" type="file" accept="image/jpeg,image/png">
+      </label>
+
+      <div class="processing-grid">
+        <label class="field">
+          <span>Preset</span>
+          <select id="processingPreset">
+            <option value="xiaomi">Xiaomi 15 Ultra</option>
+            <option value="iphone">iPhone 15 Pro Max</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>ISO</span>
+          <select id="isoMode">
+            <option value="auto">Auto</option>
+            <option value="manual">Manual</option>
+          </select>
+        </label>
+
+        <label class="field is-hidden" id="manualIsoField">
+          <span>Manual ISO</span>
+          <input id="manualIso" type="number" min="50" max="12800" step="50" value="800">
+        </label>
+
+        <label class="field">
+          <span>Seed</span>
+          <input id="seed" type="number" step="1" value="42">
+        </label>
+
+        <label class="field">
+          <span>JPEG Quality</span>
+          <input id="jpegQuality" type="number" min="0.50" max="1" step="0.01" value="0.94">
+        </label>
+      </div>
+
+      <div class="actions">
+        <button id="reprocessImage" class="primary" type="button" disabled>إعادة المعالجة</button>
+        <button id="downloadProcessed" type="button" disabled>تنزيل الصورة المعالجة</button>
+      </div>
+
+      <div id="processingStatus" class="processing-status" aria-live="polite">لم تُرفع صورة بعد.</div>
+
+      <div class="preview-toolbar" role="group" aria-label="معاينة الصورة">
+        <button class="preview-toggle active" data-preview="original" type="button">Original</button>
+        <button class="preview-toggle" data-preview="processed" type="button">Processed</button>
+      </div>
+
+      <div class="preview-stage">
+        <div id="originalPanel" class="preview-panel active">
+          <img id="originalPreview" alt="معاينة الصورة الأصلية">
+          <p class="preview-placeholder">ارفع صورة لعرض النسخة الأصلية.</p>
+        </div>
+        <div id="processedPanel" class="preview-panel">
+          <canvas id="processedCanvas" aria-label="معاينة الصورة المعالجة"></canvas>
+          <p class="preview-placeholder">ستظهر النسخة المعالجة هنا.</p>
+        </div>
       </div>
     </section>
   </main>
-  <script src="car-selfie.js"></script>
+
+  <script type="module" src="car-selfie.js"></script>
 </body>
 </html>

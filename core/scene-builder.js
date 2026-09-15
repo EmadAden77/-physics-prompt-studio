@@ -1,3 +1,5 @@
+export const SAUDI_CULTURAL_DRESS_LOCK = 'CULTURAL CONTEXT — SAUDI: All women who appear in the frame must wear a plain black abaya. Adult women should also wear a black niqab covering everything except the eyes. Do not show exposed hair, uncovered female faces, or Western-style female clothing. Men may wear a white Saudi thobe, a bisht, or ordinary business attire (shirt and trousers). This rule applies to every Saudi location, indoor or outdoor, day or night.';
+
 export const SAUDI_LOCATIONS = [
   { group: 'مجالس ومنازل', value: 'modern_saudi_majlis', label: 'مجلس سعودي حديث وأنيق', prompt: 'inside a modern, lived-in Saudi Arabian majlis with realistic seating, circulation space, hospitality details, and no palace-like exaggeration' },
   { group: 'مجالس ومنازل', value: 'traditional_majlis', label: 'مجلس سعودي تقليدي واقعي', prompt: 'inside a realistic traditional Saudi majlis with restrained heritage details, practical seating, and authentic lived-in proportions' },

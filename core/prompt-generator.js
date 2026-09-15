@@ -1,4 +1,5 @@
 import { buildRealismPacket, renderRealismGuidance } from './realistic-image-generator.js';
+import { SAUDI_CULTURAL_DRESS_LOCK } from './scene-builder.js';
 
 export const SCENE_TYPES = [
   { value: 'front_selfie', label: 'سيلفي عادي', capture: 'subject-held front-camera smartphone selfie', prompt: 'a casual subject-held front-camera smartphone selfie with physically feasible arm-reach geometry', framing: 'chest-up to mid-torso framing' },
@@ -121,7 +122,7 @@ function imperfections() {
 
 function negatives(sceneType) {
   const captureNegative = sceneType.capture.includes('third-person') ? 'no selfie arm, no implied subject-held camera' : sceneType.capture.includes('mirror') ? 'no direct front-camera viewpoint outside the mirror, no duplicate phone or hands' : 'no third-person viewpoint, no floating external camera, no mirror unless explicitly selected';
-  return `Avoid: beauty filters, waxy or porcelain skin, face reconstruction, artificial symmetry, malformed hands, extra fingers, duplicated limbs, floating objects, impossible body support, incorrect contact shadows, melted textiles, repeated background people, cloned props, impossible reflections, invisible studio key lights, fake rim lights, excessive HDR, aggressive orange-teal grading, fake DSLR bokeh, over-sharpening, oversaturated skin, sterile showroom staging, generic static posing, advertisement-style product placement, no artificial lens flare, no beauty filter, no plastic skin, no perfectly symmetric face, no missing corneal reflections, no uniform fabric without weave or fibers, and ${captureNegative}.`;
+  return `Avoid: beauty filters, waxy or porcelain skin, face reconstruction, artificial symmetry, malformed hands, extra fingers, duplicated limbs, floating objects, impossible body support, incorrect contact shadows, melted textiles, repeated background people, cloned props, impossible reflections, invisible studio key lights, fake rim lights, excessive HDR, aggressive orange-teal grading, fake DSLR bokeh, over-sharpening, oversaturated skin, sterile showroom staging, generic static posing, advertisement-style product placement, no artificial lens flare, no beauty filter, no plastic skin, no perfectly symmetric face, no missing corneal reflections, no uniform fabric without weave or fibers, no uncovered female faces in Saudi scenes, no Western female clothing in Saudi scenes, no exposed women's hair in Saudi scenes, and ${captureNegative}.`;
 }
 
 function verification(sceneType, aspectRatio, realismGuidance) {
@@ -229,6 +230,7 @@ export function generateImagePrompt(input = {}) {
     section('AUTHENTIC IMPERFECTIONS', realismGuidance.imperfections),
     section('CONTROLLED PHYSICAL IMPERFECTIONS', imperfections()),
     customConstraints ? section('USER CONSTRAINTS', customConstraints) : '',
+    section('SAUDI CULTURAL DRESS', SAUDI_CULTURAL_DRESS_LOCK),
     section('NEGATIVE CONSTRAINTS', negatives(sceneType)),
     section('FINAL VERIFICATION', verification(sceneType, aspectRatio, realismGuidance))
   ].filter(Boolean);
@@ -275,7 +277,7 @@ export function generateImagePrompt(input = {}) {
 export function validateGeneratedPrompt(prompt, context = {}) {
   const errors = [];
   const warnings = [];
-  const required = ['[GOAL]', '[ACTION-DRIVEN AUTHENTICITY]', '[CAPTURE TYPE LOCK — CRITICAL]', '[OBSERVABLE BACKGROUND ELEMENTS]', '[CAMERA GEOMETRY]', '[PHYSICAL LIGHTING]', '[MIRROR RULES]', '[LENS_PHYSICS]', '[BIOLOGICAL_MICRO_REALISM]', '[CAMERA_METADATA_HINT]', '[AUTHENTIC IMPERFECTIONS]', '[NEGATIVE CONSTRAINTS]', '[FINAL VERIFICATION]'];
+  const required = ['[GOAL]', '[ACTION-DRIVEN AUTHENTICITY]', '[CAPTURE TYPE LOCK — CRITICAL]', '[OBSERVABLE BACKGROUND ELEMENTS]', '[CAMERA GEOMETRY]', '[PHYSICAL LIGHTING]', '[MIRROR RULES]', '[LENS_PHYSICS]', '[BIOLOGICAL_MICRO_REALISM]', '[CAMERA_METADATA_HINT]', '[AUTHENTIC IMPERFECTIONS]', '[SAUDI CULTURAL DRESS]', '[NEGATIVE CONSTRAINTS]', '[FINAL VERIFICATION]'];
   for (const marker of required) if (!prompt.includes(marker)) errors.push(`Missing required section: ${marker}`);
   if (!/Physical illumination/i.test(prompt)) errors.push('Physical illumination rule is missing.');
   if (!/Exposure, ISO, HDR/i.test(prompt)) errors.push('Exposure/ISO/HDR separation rule is missing.');

@@ -2,6 +2,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateImagePrompt, validateGeneratedPrompt, validateRealism } from '../core/prompt-generator.js';
 
+const canonical = [
+  'GOAL','ACTION-DRIVEN AUTHENTICITY','CAPTURE TYPE LOCK — CRITICAL','IDENTITY / SUBJECT','SCENE',
+  'OBSERVABLE BACKGROUND ELEMENTS','CLOTHING','CONTEXTUAL ACCESSORIES','POSE & BODY MECHANICS','CAMERA GEOMETRY',
+  'PHYSICAL LIGHTING','MIRROR RULES','PRODUCT INTEGRATION','PHYSICAL / MATERIAL REALISM','SMARTPHONE IMAGE BEHAVIOR',
+  'LENS_PHYSICS','BIOLOGICAL_MICRO_REALISM','CAMERA_METADATA_HINT','AUTHENTIC IMPERFECTIONS','CONTROLLED PHYSICAL IMPERFECTIONS',
+  'USER CONSTRAINTS','NEGATIVE CONSTRAINTS','FINAL VERIFICATION'
+];
+
+function headings(prompt) {
+  return [...prompt.matchAll(/^\[([^\]]+)\]$/gm)].map((match) => match[1]);
+}
+
 test('generates a complete prompt without free-form source text', () => {
   const result = generateImagePrompt();
   assert.equal(result.validation.valid, true);
@@ -9,6 +21,14 @@ test('generates a complete prompt without free-form source text', () => {
   assert.ok(result.prompt.includes('[ACTION-DRIVEN AUTHENTICITY]'));
   assert.ok(result.prompt.includes('[FINAL VERIFICATION]'));
   assert.ok(result.prompt.length > 3000);
+});
+
+test('generated prompt has exactly the 23 canonical sections in order', () => {
+  const result = generateImagePrompt({ sceneType: 'front_selfie' });
+  assert.deepEqual(headings(result.prompt), canonical);
+  assert.equal(result.sections.length, 23);
+  assert.equal(result.prompt.includes('[HAIR_STYLE_LOCK]'), false);
+  assert.equal(result.prompt.includes('[SAUDI CULTURAL DRESS]'), false);
 });
 
 test('selected scene controls are injected into the generated prompt', () => {
@@ -30,7 +50,7 @@ test('physical lighting explicitly separates illumination from exposure processi
   const result = generateImagePrompt({ lighting: 'localized white LED parking lights' });
   assert.ok(result.prompt.includes('Physical illumination alone determines'));
   assert.ok(result.prompt.includes('Exposure, ISO, HDR'));
-  assert.equal(validateGeneratedPrompt(result.prompt, { realismPacket: result.realism_packet }).valid, true);
+  assert.equal(validateGeneratedPrompt(result.prompt, { realismPacket: result.realism_packet, sceneType: { capture: result.config.capture_type }, saudiContext: result.config.saudi_context }).valid, true);
 });
 
 test('selfie modes lock reachable subject-held geometry', () => {
@@ -53,12 +73,31 @@ test('identity reference can be disabled', () => {
   assert.equal(result.config.identity_reference, false);
 });
 
+test('selected hair style affects identity while length density and hairline remain locked', () => {
+  const style = 'hair parted on the left side with a clean visible line, natural fall on both sides, density and hairline unchanged';
+  const result = generateImagePrompt({ sceneType: 'front_selfie', hairStyle: style });
+  assert.ok(result.prompt.includes(style));
+  assert.match(result.prompt, /Hair length, density, hairline shape/i);
+  assert.match(result.prompt, /Do not shorten, lengthen, thin, thicken/i);
+  assert.equal(result.config.hair_style, style);
+});
+
 test('realism JSON packet exposes required subject accessories photography and background fields', () => {
   const result = generateImagePrompt({ sceneType: 'cafe_selfie' });
   assert.equal(result.realism_packet.methodology, 'REALISTIC IMAGE GENERATOR');
   for (const key of ['subject', 'accessories', 'photography', 'background']) assert.ok(result.realism_packet[key], `missing ${key}`);
   assert.ok(Array.isArray(result.realism_packet.background.elements));
   assert.ok(Array.isArray(result.realism_packet.imperfections));
+});
+
+test('background activity controls people count without cross-section conflict', () => {
+  const quiet = generateImagePrompt({ sceneType: 'front_selfie', backgroundActivity: 'quiet' });
+  const normal = generateImagePrompt({ sceneType: 'front_selfie', backgroundActivity: 'normal' });
+  const lively = generateImagePrompt({ sceneType: 'front_selfie', backgroundActivity: 'lively' });
+  assert.match(quiet.prompt, /no background people/i);
+  assert.doesNotMatch(quiet.prompt, /1-2 independently behaving background people/i);
+  assert.match(normal.prompt, /1-2 independently behaving background people/i);
+  assert.match(lively.prompt, /3-5 independently behaving background people/i);
 });
 
 test('mirror selfie always emits mirror rules and final text-orientation guidance', () => {
@@ -76,15 +115,11 @@ test('non-mirror scenes explicitly mark mirror rules not applicable', () => {
 });
 
 test('gym context is action-driven and receives fitness-specific imperfections and accessories', () => {
-  const result = generateImagePrompt({
-    sceneType: 'front_selfie',
-    location: 'inside a modern Saudi gym',
-    description: 'post-workout selfie after finishing a set'
-  });
+  const result = generateImagePrompt({ sceneType: 'front_selfie', location: 'inside a modern Saudi gym', description: 'post-workout selfie after finishing a set' });
   assert.equal(result.realism_packet.template_type, 'Gym/Fitness Selfie');
   assert.match(result.realism_packet.action, /post-workout|recovering|water bottle/i);
   assert.match(result.realism_packet.accessories.jewelry, /no luxury jewelry/i);
-  assert.ok(result.realism_packet.imperfections.some((item) => /sweat|flushed|flyaways/i.test(item)));
+  assert.ok(result.realism_packet.imperfections.some((item) => /sweat|flushed/i.test(item)));
 });
 
 test('camera wording is simpler while physical geometry remains enforced separately', () => {
@@ -95,13 +130,20 @@ test('camera wording is simpler while physical geometry remains enforced separat
   assert.ok(result.prompt.includes('[CAMERA GEOMETRY]'));
 });
 
+test('camera metadata follows the selected camera instead of always claiming Xiaomi', () => {
+  const iphone = generateImagePrompt({ sceneType: 'front_selfie', camera: 'iphone15pm_front' });
+  const metadata = iphone.prompt.split('[CAMERA_METADATA_HINT]\n')[1].split('\n\n[AUTHENTIC IMPERFECTIONS]')[0];
+  assert.match(metadata, /iPhone 15 Pro Max/i);
+  assert.doesNotMatch(metadata, /Xiaomi 15 Ultra/i);
+});
+
 test('every generated prompt contains the three mandatory realism sections', () => {
   for (const sceneType of ['front_selfie', 'inside_car_selfie', 'mirror_selfie', 'third_person_portrait']) {
     const result = generateImagePrompt({ sceneType });
     assert.ok(result.prompt.includes('[LENS_PHYSICS]'), sceneType);
     assert.ok(result.prompt.includes('[BIOLOGICAL_MICRO_REALISM]'), sceneType);
     assert.ok(result.prompt.includes('[CAMERA_METADATA_HINT]'), sceneType);
-    assert.equal(result.validation.valid, true, `${sceneType} failed validation`);
+    assert.equal(result.validation.valid, true, `${sceneType} failed validation: ${result.validation.errors.join(' | ')}`);
   }
 });
 
@@ -116,17 +158,20 @@ test('realism sections include physical photographic language', () => {
 
 test('negatives include anti-AI-tell bans', () => {
   const result = generateImagePrompt({ sceneType: 'front_selfie' });
-  for (const phrase of ['no plastic skin', 'no perfectly symmetric face', 'no beauty filter', 'no missing corneal reflections']) {
-    assert.ok(result.prompt.toLowerCase().includes(phrase), phrase);
-  }
+  for (const phrase of ['no plastic skin', 'no perfectly symmetric face', 'no beauty filter', 'no missing corneal reflections']) assert.ok(result.prompt.toLowerCase().includes(phrase), phrase);
 });
 
-test('validateRealism rejects banned terms', () => {
+test('validateRealism rejects positive banned terms', () => {
   const bad = 'A portrait with perfect skin and studio lighting, beautifully airbrushed';
   const result = validateRealism(bad);
   assert.equal(result.valid, false);
-  assert.ok(result.errors.some(e => e.message.includes('perfect skin')));
-  assert.ok(result.errors.some(e => e.message.includes('studio lighting')));
+  assert.ok(result.errors.some((e) => e.message.includes('perfect skin')));
+  assert.ok(result.errors.some((e) => e.message.includes('studio lighting')));
+});
+
+test('validateRealism does not reject explicitly negated banned terms', () => {
+  const text = 'visible skin pores, chromatic aberration, corneal reflections, stray hairs. Do not use studio lighting. No DSLR bokeh.';
+  assert.equal(validateRealism(text).valid, true);
 });
 
 test('validateRealism accepts physically plausible prompts', () => {
@@ -138,7 +183,7 @@ test('validateRealism accepts physically plausible prompts', () => {
 test('every generated prompt passes validateRealism', () => {
   for (const sceneType of ['front_selfie', 'inside_car_selfie', 'mirror_selfie', 'third_person_portrait']) {
     const result = generateImagePrompt({ sceneType });
-    assert.equal(result.realism_validation.valid, true, `${sceneType} failed realism validation`);
+    assert.equal(result.realism_validation.valid, true, `${sceneType} failed realism validation: ${result.realism_validation.errors.map((e) => e.message).join(' | ')}`);
   }
 });
 
@@ -153,42 +198,40 @@ test('generated prompt exposes realism_validation in output object', () => {
 test('formal looks contains 120 unique complete outfits', async () => {
   const { FORMAL_LOOKS } = await import('../core/scene-builder.js');
   assert.equal(FORMAL_LOOKS.length, 120);
-  const labels = FORMAL_LOOKS.map(l => l.label);
+  const labels = FORMAL_LOOKS.map((look) => look.label);
   assert.equal(new Set(labels).size, 120);
-  for (const look of FORMAL_LOOKS) {
-    assert.ok(look.label.includes(' + بنطال'), `not a complete outfit: ${look.label}`);
-  }
+  for (const look of FORMAL_LOOKS) assert.ok(look.label.includes(' + بنطال'), `not a complete outfit: ${look.label}`);
 });
 
 test('no duplicate color pairs', async () => {
   const { FORMAL_LOOKS } = await import('../core/scene-builder.js');
-  const pairs = FORMAL_LOOKS.map(l => l.label);
+  const pairs = FORMAL_LOOKS.map((look) => look.label);
   assert.equal(new Set(pairs).size, pairs.length);
 });
 
-test('every Saudi scene enforces cultural dress lock', () => {
-  const result = generateImagePrompt({
-    sceneType: 'front_selfie',
-    location: 'saudi_cafe'
-  });
-  assert.match(result.prompt, /SAUDI CULTURAL DRESS/);
-  assert.match(result.prompt, /black abaya/i);
-  assert.match(result.prompt, /niqab/i);
+test('every Saudi scene enforces cultural dress lock inside the canonical SCENE section', () => {
+  const result = generateImagePrompt({ sceneType: 'front_selfie', location: 'inside an ordinary Saudi cafe' });
+  const scene = result.prompt.split('[SCENE]\n')[1].split('\n\n[OBSERVABLE BACKGROUND ELEMENTS]')[0];
+  assert.match(scene, /CULTURAL CONTEXT — SAUDI/);
+  assert.match(scene, /black abaya/i);
+  assert.match(scene, /niqab/i);
+  assert.equal(result.prompt.includes('[SAUDI CULTURAL DRESS]'), false);
 });
 
-test('women in Saudi scenes must be covered', () => {
-  const result = generateImagePrompt({
-    sceneType: 'front_selfie',
-    location: 'saudi_office'
-  });
-  assert.match(result.prompt, /no uncovered female faces/i);
-  assert.match(result.prompt, /no exposed women's hair/i);
+test('Saudi negative constraints cover uncovered women while non-Saudi scenes do not receive Saudi rules', () => {
+  const saudi = generateImagePrompt({ sceneType: 'front_selfie', location: 'saudi_office' });
+  assert.match(saudi.prompt, /no uncovered female faces/i);
+  assert.match(saudi.prompt, /no exposed women's hair/i);
+  const paris = generateImagePrompt({ sceneType: 'front_selfie', location: 'inside a cafe in Paris, France' });
+  assert.equal(paris.config.saudi_context, false);
+  assert.doesNotMatch(paris.prompt, /CULTURAL CONTEXT — SAUDI/i);
+  assert.doesNotMatch(paris.prompt, /no uncovered female faces in Saudi scenes/i);
 });
 
 test('hair catalog contains 30 styling options across 7 groups', async () => {
   const { HAIR_STYLES } = await import('../core/scene-builder.js');
   assert.equal(HAIR_STYLES.length, 30);
-  const groups = new Set(HAIR_STYLES.map(h => h.group));
+  const groups = new Set(HAIR_STYLES.map((hair) => hair.group));
   assert.ok(groups.size >= 7);
   for (const style of HAIR_STYLES) {
     assert.ok(style.label.length > 5);
@@ -196,14 +239,17 @@ test('hair catalog contains 30 styling options across 7 groups', async () => {
   }
 });
 
-test('hair style lock appears in every generated prompt', () => {
+test('hair style lock is merged into IDENTITY SUBJECT rather than emitted as an extra section', () => {
   const result = generateImagePrompt({ sceneType: 'front_selfie' });
-  assert.match(result.prompt, /\[HAIR_STYLE_LOCK\]/);
-  assert.match(result.prompt, /density.*EXACTLY/i);
+  const identity = result.prompt.split('[IDENTITY / SUBJECT]\n')[1].split('\n\n[SCENE]')[0];
+  assert.match(identity, /Hair length, density, hairline shape/i);
+  assert.match(identity, /Do not shorten/i);
+  assert.equal(result.prompt.includes('[HAIR_STYLE_LOCK]'), false);
 });
 
-test('hair style lock states length and density are unchanged', () => {
-  const result = generateImagePrompt({ sceneType: 'front_selfie' });
-  assert.match(result.prompt, /length.*density.*hairline/i);
-  assert.match(result.prompt, /Do not shorten/i);
+test('expanded scene type values resolve to their real base capture family', () => {
+  const result = generateImagePrompt({ sceneType: 'inside_car_driver_selfie' });
+  assert.equal(result.config.requested_scene_type, 'inside_car_driver_selfie');
+  assert.equal(result.config.scene_type, 'inside_car_selfie');
+  assert.match(result.prompt, /driver-seat selfie/i);
 });

@@ -309,3 +309,38 @@ test('expanded scene type values resolve to their real base capture family', () 
   assert.equal(result.config.scene_type, 'inside_car_selfie');
   assert.match(result.prompt, /driver-seat selfie/i);
 });
+
+test('third-person car scene does not use car-interior action or imperfections', () => {
+  const result = generateImagePrompt({
+    sceneType: 'third_person_car_adjacent',
+    location: 'day_parking'
+  });
+  assert.equal(result.realism_packet.template_type, 'Third-Person Photo Beside a Parked Car');
+  assert.match(result.prompt, /standing beside a parked vehicle/i);
+  assert.doesNotMatch(result.prompt, /cabin shadow noise/i);
+  assert.doesNotMatch(result.prompt, /seated naturally in a stationary car/i);
+  assert.doesNotMatch(result.prompt, /minor fabric creasing from the seat/i);
+  assert.equal(result.config.camera, 'smartphone_rear');
+});
+
+test('third-person scene does not mention front camera in accessories', () => {
+  const result = generateImagePrompt({
+    sceneType: 'third_person_portrait',
+    location: 'day_parking'
+  });
+  const accessories = result.prompt.split('[CONTEXTUAL ACCESSORIES]\n')[1].split('\n\n[POSE & BODY MECHANICS]')[0];
+  assert.doesNotMatch(accessories, /device: smartphone front camera/i);
+  assert.match(accessories, /none held by the subject; photographed by another person/i);
+  assert.match(result.prompt, /photographed by another person|not holding the camera/i);
+});
+
+test('formal look prompt is preserved verbatim in clothing section', async () => {
+  const { EXTRA_CLOTHING_OPTIONS } = await import('../core/expanded-catalogs.js');
+  const look = EXTRA_CLOTHING_OPTIONS.find((item) => item.value === 'navy_suit_lightblue_shirt');
+  assert.ok(look, 'missing navy suit + light-blue shirt catalog entry');
+  const result = generateImagePrompt({ clothing: look.prompt });
+  const clothing = result.prompt.split('[CLOTHING]\n')[1].split('\n\n[CONTEXTUAL ACCESSORIES]')[0];
+  assert.ok(clothing.startsWith(look.prompt), 'clothing section should begin with the exact selected catalog prompt');
+  assert.match(clothing, /a navy two-piece suit with a light-blue dress shirt/i);
+  assert.doesNotMatch(clothing, /a clean collared shirt with tailored trousers/i);
+});

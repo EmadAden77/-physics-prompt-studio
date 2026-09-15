@@ -60,6 +60,13 @@ function clean(value){ return typeof value === 'string' ? value.trim() : ''; }
 function pick(options,value,fallback){ return options.find((item)=>item.value===value) || fallback; }
 function section(title,body){ return `[${title}]\n${clean(body)}`; }
 function isSaudi(location){ return SAUDI_CONTEXT.test(clean(location)); }
+function captureDeviceRule(capture=''){
+  const value=clean(capture).toLowerCase();
+  if(value.includes('mirror')) return 'smartphone visible in the mirror reflection';
+  if(value.includes('third-person')) return 'none held by the subject; photographed by another person';
+  if(value.includes('selfie')) return 'smartphone held in the subject\'s hand';
+  return 'no camera device held by the subject unless explicitly required by the scene';
+}
 function captureRules(scene){
   if (/mirror selfie/i.test(scene.capture)) return 'Capture type is locked to a true mirror selfie. The phone must exist inside the mirror reflection, reflection geometry must be consistent, and the image must not silently become a direct front-camera selfie or a third-person photograph.';
   if (/selfie/i.test(scene.capture)) return 'Capture type is locked to a subject-held smartphone selfie. Camera position must remain reachable by the subject at ordinary arm length; shoulder, elbow, wrist, torso rotation and perspective must agree with the phone position. Never silently convert the shot into a third-person camera, floating camera, mirror shot or telephoto portrait.';
@@ -130,7 +137,8 @@ export function generateImagePrompt(input={}){
   const requested=clean(input.sceneType)||DEFAULTS.sceneType.value;
   const scene=pick(SCENE_TYPES,baseSceneTypeFor(requested),DEFAULTS.sceneType);
   const extra=sceneMeta(requested);
-  const camera=pick(CAMERA_PROFILES,input.camera,DEFAULTS.camera);
+  const captureDefaultCamera=scene.capture.includes('third-person') ? CAMERA_PROFILES.find((item)=>item.value==='smartphone_rear') : DEFAULTS.camera;
+  const camera=pick(CAMERA_PROFILES,input.camera,captureDefaultCamera||DEFAULTS.camera);
   const ratio=pick(ASPECT_RATIOS,input.aspectRatio,DEFAULTS.aspectRatio);
   const expression=pick(EXPRESSIONS,input.expression,DEFAULTS.expression);
   const realism=pick(REALISM_LEVELS,input.realismLevel,DEFAULTS.realism);
@@ -149,9 +157,10 @@ export function generateImagePrompt(input={}){
   const lighting=contextual.lighting;
   const description=clean(input.description)||clean(extra?.prompt), custom=clean(input.customConstraints), identity=input.identityReference!==false, saudi=isSaudi(location);
   const packet=buildRealismPacket({
-    sceneType:scene.value,captureType:scene.capture,location,clothing,hairStyle:hair,expression:expression.prompt,angle,lighting,description,
+    sceneType:scene.value,requestedSceneType:requested,captureType:scene.capture,location,clothing,hairStyle:hair,expression:expression.prompt,angle,lighting,description,
     aspectRatio:ratio.prompt,pose,backgroundActivity:background.value,backgroundElements:backgroundElements(background,contextual,saudi)
   });
+  packet.accessories.device=captureDeviceRule(scene.capture);
   const guidance=renderRealismGuidance(packet);
   const sceneCulture=saudi?` ${SAUDI_CULTURAL_DRESS_LOCK}`:'';
   const sections=[

@@ -90,6 +90,33 @@ test('gym context is action-driven and receives fitness-specific imperfections a
 test('camera wording is simpler while physical geometry remains enforced separately', () => {
   const result = generateImagePrompt({ sceneType: 'front_selfie', camera: 'xiaomi15_front' });
   assert.ok(result.prompt.includes('Xiaomi 15 Ultra front camera with a natural wide selfie look'));
-  assert.doesNotMatch(result.prompt, /21mm-equivalent|f\/\d/i);
+  const cameraGeometry = result.prompt.split('[CAMERA GEOMETRY]\n')[1].split('\n\n[PHYSICAL LIGHTING]')[0];
+  assert.doesNotMatch(cameraGeometry, /21mm-equivalent|f\/\d/i);
   assert.ok(result.prompt.includes('[CAMERA GEOMETRY]'));
+});
+
+test('every generated prompt contains the three mandatory realism sections', () => {
+  for (const sceneType of ['front_selfie', 'inside_car_selfie', 'mirror_selfie', 'third_person_portrait']) {
+    const result = generateImagePrompt({ sceneType });
+    assert.ok(result.prompt.includes('[LENS_PHYSICS]'), sceneType);
+    assert.ok(result.prompt.includes('[BIOLOGICAL_MICRO_REALISM]'), sceneType);
+    assert.ok(result.prompt.includes('[CAMERA_METADATA_HINT]'), sceneType);
+    assert.equal(result.validation.valid, true, `${sceneType} failed validation`);
+  }
+});
+
+test('realism sections include physical photographic language', () => {
+  const result = generateImagePrompt({ sceneType: 'front_selfie' });
+  assert.match(result.prompt, /chromatic aberration/i);
+  assert.match(result.prompt, /visible skin pores/i);
+  assert.match(result.prompt, /corneal reflections/i);
+  assert.match(result.prompt, /stray hairs/i);
+  assert.match(result.prompt, /vignetting/i);
+});
+
+test('negatives include anti-AI-tell bans', () => {
+  const result = generateImagePrompt({ sceneType: 'front_selfie' });
+  for (const phrase of ['no plastic skin', 'no perfectly symmetric face', 'no beauty filter', 'no missing corneal reflections']) {
+    assert.ok(result.prompt.toLowerCase().includes(phrase), phrase);
+  }
 });

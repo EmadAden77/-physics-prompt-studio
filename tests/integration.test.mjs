@@ -33,7 +33,7 @@ test('end-to-end prompt generation is deterministic and structurally valid', () 
 
     assert.equal(first.prompt, second.prompt, `${sceneType} prompt is not deterministic`);
     assert.deepEqual(first.config, second.config, `${sceneType} config is not deterministic`);
-    assert.equal(first.sections.length, 22, `${sceneType} must contain 22 mandatory sections`);
+    assert.equal(first.sections.length, 23, `${sceneType} must contain 23 mandatory sections`);
     assert.equal(first.validation.valid, true, `${sceneType} failed structural validation`);
     assert.equal(first.realism_validation.valid, true, `${sceneType} failed realism validation`);
     assert.equal(validateGeneratedPrompt(first.prompt, { realismPacket: first.realism_packet }).valid, true);

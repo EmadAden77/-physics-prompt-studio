@@ -16,8 +16,8 @@ import {
   REALISM_LEVELS,
   FRAMING_OPTIONS
 } from './core/prompt-generator.js';
-import { compatibilitySnapshot, recommendedDefaults } from './core/scene-compatibility.js';
-import { baseSceneTypeFor } from './core/scene-type-expansion.js';
+import { compatibilitySnapshot, recommendedDefaults, resolveCompatibleValue } from './core/scene-compatibility.js';
+import { baseSceneTypeFor, narrowOptions, sceneMeta } from './core/scene-type-expansion.js';
 import { enforceSaudiNoLandmarks, mergeSaudiNoLandmarksConstraint } from './core/saudi-location-lock.js';
 
 const $ = (id) => document.getElementById(id);
@@ -147,23 +147,54 @@ function rebuildRequiredSelect(select, options, preferredValue) {
   select.value = preserved || preferred || unique[0]?.value || '';
 }
 
-function selectedBaseSceneType() {
-  return baseSceneTypeFor(controls.sceneType.value || 'front_selfie');
+function selectedSceneType() {
+  return controls.sceneType.value || 'front_selfie';
+}
+
+function specializedOptions(sceneType, kind, options) {
+  return sceneMeta(sceneType) ? narrowOptions(sceneType, kind, options) : options;
+}
+
+function restoreCompatibleSelection(control, previousValue, options, preferredValue = '') {
+  if (!previousValue) return;
+  control.value = resolveCompatibleValue(previousValue, options, preferredValue);
 }
 
 function applySceneCompatibility() {
-  const baseSceneType = selectedBaseSceneType();
-  const compatible = compatibilitySnapshot(baseSceneType, CATALOGS);
-  const defaults = recommendedDefaults(baseSceneType);
+  const sceneType = selectedSceneType();
+  const baseSceneType = baseSceneTypeFor(sceneType);
+  const compatibilityType = sceneType === 'supermarket_selfie' ? sceneType : baseSceneType;
+  const compatible = compatibilitySnapshot(compatibilityType, CATALOGS);
+  const defaults = recommendedDefaults(compatibilityType);
+  const previous = {
+    location: controls.location.value,
+    pose: controls.pose.value,
+    angle: controls.angle.value,
+    lighting: controls.lighting.value,
+    framing: controls.framing.value
+  };
   const expandedLocations = extraLocationsForScene(baseSceneType);
-  const locationOptions = uniqueByValue([...compatible.location, ...expandedLocations]);
+  const locationCandidates = uniqueByValue([...compatible.location, ...expandedLocations]);
+  const options = {
+    location: specializedOptions(sceneType, 'location', locationCandidates),
+    pose: specializedOptions(sceneType, 'pose', compatible.pose),
+    angle: specializedOptions(sceneType, 'angle', compatible.angle),
+    lighting: specializedOptions(sceneType, 'lighting', compatible.lighting),
+    framing: compatible.framing
+  };
 
-  rebuildOptionalSelect(controls.location, locationOptions, 'تلقائي — مكان سعودي واقعي جدًا بدون معالم', true);
-  rebuildOptionalSelect(controls.pose, compatible.pose, 'تلقائي — وضعية متناسقة مع نوع المشهد');
-  rebuildOptionalSelect(controls.angle, compatible.angle, 'تلقائي — زاوية متناسقة مع نوع المشهد');
-  rebuildOptionalSelect(controls.lighting, compatible.lighting, 'تلقائي — إضاءة متناسقة مع نوع المشهد', true);
+  rebuildOptionalSelect(controls.location, options.location, 'تلقائي — مكان سعودي واقعي جدًا بدون معالم', true);
+  rebuildOptionalSelect(controls.pose, options.pose, 'تلقائي — وضعية متناسقة مع نوع المشهد');
+  rebuildOptionalSelect(controls.angle, options.angle, 'تلقائي — زاوية متناسقة مع نوع المشهد');
+  rebuildOptionalSelect(controls.lighting, options.lighting, 'تلقائي — إضاءة متناسقة مع نوع المشهد', true);
   rebuildRequiredSelect(controls.camera, compatible.camera, defaults.camera);
-  rebuildRequiredSelect(controls.framing, compatible.framing, defaults.framing);
+  rebuildRequiredSelect(controls.framing, options.framing, defaults.framing);
+
+  restoreCompatibleSelection(controls.location, previous.location, options.location, defaults.location);
+  restoreCompatibleSelection(controls.pose, previous.pose, options.pose, defaults.pose);
+  restoreCompatibleSelection(controls.angle, previous.angle, options.angle, defaults.angle);
+  restoreCompatibleSelection(controls.lighting, previous.lighting, options.lighting, defaults.lighting);
+  controls.framing.value = resolveCompatibleValue(previous.framing, options.framing, defaults.framing);
 }
 
 populateFlat(controls.sceneType, SCENE_TYPES);

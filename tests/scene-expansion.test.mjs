@@ -43,7 +43,7 @@ test('supermarket metadata narrows to real supermarket catalogs', () => {
   );
   assert.deepEqual(
     narrowOptions('supermarket_selfie', 'lighting', LIGHTING_PROFILES).map((item) => item.value),
-    ['supermarket_fluorescent', 'retail_ceiling_led']
+    ['supermarket_fluorescent', 'retail_ceiling_led', 'mixed_retail']
   );
   assert.deepEqual(
     narrowOptions('supermarket_selfie', 'pose', SELFIE_POSES).map((item) => item.value),

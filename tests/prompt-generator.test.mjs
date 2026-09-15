@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { generateImagePrompt, validateGeneratedPrompt } from '../core/prompt-generator.js';
+import { generateImagePrompt, validateGeneratedPrompt, validateRealism } from '../core/prompt-generator.js';
 
 test('generates a complete prompt without free-form source text', () => {
   const result = generateImagePrompt();
@@ -119,4 +119,33 @@ test('negatives include anti-AI-tell bans', () => {
   for (const phrase of ['no plastic skin', 'no perfectly symmetric face', 'no beauty filter', 'no missing corneal reflections']) {
     assert.ok(result.prompt.toLowerCase().includes(phrase), phrase);
   }
+});
+
+test('validateRealism rejects banned terms', () => {
+  const bad = 'A portrait with perfect skin and studio lighting, beautifully airbrushed';
+  const result = validateRealism(bad);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(e => e.message.includes('perfect skin')));
+  assert.ok(result.errors.some(e => e.message.includes('studio lighting')));
+});
+
+test('validateRealism accepts physically plausible prompts', () => {
+  const good = 'A photo with visible skin pores, chromatic aberration near corners, corneal reflections showing the scene, and 5-12 stray hairs in the visible hair mass';
+  const result = validateRealism(good);
+  assert.equal(result.valid, true);
+});
+
+test('every generated prompt passes validateRealism', () => {
+  for (const sceneType of ['front_selfie', 'inside_car_selfie', 'mirror_selfie', 'third_person_portrait']) {
+    const result = generateImagePrompt({ sceneType });
+    assert.equal(result.realism_validation.valid, true, `${sceneType} failed realism validation`);
+  }
+});
+
+test('generated prompt exposes realism_validation in output object', () => {
+  const result = generateImagePrompt({ sceneType: 'front_selfie' });
+  assert.ok(result.realism_validation, 'missing realism_validation');
+  assert.equal(typeof result.realism_validation.valid, 'boolean');
+  assert.ok(Array.isArray(result.realism_validation.errors));
+  assert.ok(Array.isArray(result.realism_validation.warnings));
 });

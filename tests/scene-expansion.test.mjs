@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { EXTRA_SCENE_TYPES, baseSceneTypeFor, narrowOptions } from '../core/scene-type-expansion.js';
+import { EXTRA_SCENE_TYPES, baseSceneTypeFor, narrowOptions, sceneMeta } from '../core/scene-type-expansion.js';
 import { buildAutomaticSceneDescription } from '../core/automatic-scene-description.js';
+import { SAUDI_LOCATIONS, SELFIE_POSES, LIGHTING_PROFILES } from '../core/scene-builder.js';
 
 test('expanded scene catalog is broad and unique', () => {
   assert.ok(EXTRA_SCENE_TYPES.length >= 75);
@@ -17,6 +18,7 @@ test('specialized scenes route to the correct base capture families', () => {
   assert.equal(baseSceneTypeFor('three_people_group_selfie'), 'front_selfie');
   assert.equal(baseSceneTypeFor('lying_bed_selfie'), 'front_selfie');
   assert.equal(baseSceneTypeFor('third_person_full_body_walking'), 'full_body_third_person');
+  assert.equal(baseSceneTypeFor('supermarket_selfie'), 'front_selfie');
 });
 
 test('specialized option narrowing prefers context-matched choices', () => {
@@ -27,6 +29,26 @@ test('specialized option narrowing prefers context-matched choices', () => {
   ];
   const filtered = narrowOptions('phone_screen_only_selfie', 'lighting', lighting);
   assert.deepEqual(filtered.map((item) => item.value), ['night_phone_screen']);
+});
+
+test('supermarket metadata narrows to real supermarket catalogs', () => {
+  const meta = sceneMeta('supermarket_selfie');
+  assert.ok(meta.location.includes('convenience'));
+  assert.ok(meta.lighting.includes('retail'));
+  assert.ok(meta.pose.includes('holding'));
+
+  assert.deepEqual(
+    narrowOptions('supermarket_selfie', 'location', SAUDI_LOCATIONS).map((item) => item.value),
+    ['supermarket_aisle', 'convenience_store', 'grocery_store']
+  );
+  assert.deepEqual(
+    narrowOptions('supermarket_selfie', 'lighting', LIGHTING_PROFILES).map((item) => item.value),
+    ['supermarket_fluorescent', 'retail_ceiling_led']
+  );
+  assert.deepEqual(
+    narrowOptions('supermarket_selfie', 'pose', SELFIE_POSES).map((item) => item.value),
+    ['standing_relaxed', 'walking_slow', 'holding_basket']
+  );
 });
 
 test('automatic description combines action context and physical coherence', () => {

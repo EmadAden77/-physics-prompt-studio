@@ -19,6 +19,8 @@ const BASIC_SELFIE_ANGLES = [
 const MAJLIS_LOCATIONS = ['modern_saudi_majlis','traditional_majlis','villa_living_room'];
 const CAFE_LOCATIONS = ['saudi_cafe','specialty_coffee','casual_restaurant','hotel_lobby','mall_atrium'];
 const OFFICE_LOCATIONS = ['saudi_office','real_estate_office'];
+const SUPERMARKET_LOCATIONS = ['supermarket_aisle','convenience_store','grocery_store'];
+const SUPERMARKET_LIGHTING = ['supermarket_fluorescent','retail_ceiling_led','mixed_retail'];
 const CAR_LOCATIONS = [
   'villa_driveway','villa_garage','riyadh_residential','riyadh_business','jeddah_residential','jeddah_corniche','khobar_corniche',
   'dammam_street','taif_hills','abha_mountain_city','tabuk_outskirts','ordinary_saudi_street','night_parking','day_parking',
@@ -83,6 +85,7 @@ const PROFILES = {
   majlis_selfie: { location:MAJLIS_LOCATIONS, pose:['seated_sofa','seated_chair','standing_relaxed','standing_one_hand','coffee_hand','adjust_clothing','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'), lighting:['day_window','night_majlis_warm','night_home_warm','night_phone_screen'], camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
   cafe_selfie: { location:CAFE_LOCATIONS, pose:['seated_chair','standing_relaxed','standing_one_hand','lean_counter','coffee_hand','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'), lighting:['day_window','night_cafe_mixed','night_phone_screen'], camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up','three_quarter'] },
   office_selfie: { location:OFFICE_LOCATIONS, pose:['seated_chair','standing_relaxed','standing_one_hand','lean_counter','adjust_clothing','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'), lighting:['day_window','night_office_led','night_phone_screen'], camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up','three_quarter'] },
+  supermarket_selfie: { location:SUPERMARKET_LOCATIONS, pose:['walking_slow','standing_relaxed','holding_basket'], angle:BASIC_SELFIE_ANGLES, lighting:SUPERMARKET_LIGHTING, camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
   outdoor_selfie: { location:OUTDOOR_LOCATIONS, pose:['standing_relaxed','standing_one_hand','walking_slow','lean_wall','door_open_car','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('doorway_three_quarter'), lighting:OUTDOOR_LIGHTING, camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
   mirror_selfie: { location:MIRROR_LOCATIONS, poseCatalog:MIRROR_POSES, angleCatalog:MIRROR_ANGLES, lighting:['day_window','night_home_warm','night_cafe_mixed','night_office_led','night_phone_screen'], camera:['xiaomi15_front','iphone15pm_front','generic_front','smartphone_rear'], framing:['chest_up','waist_up','three_quarter','full_body'] },
   third_person_portrait: { poseCatalog:THIRD_PERSON_POSES, angleCatalog:THIRD_PERSON_ANGLES, lighting:GENERAL_LIGHTING, camera:['smartphone_rear'], framing:['close','chest_up','waist_up','three_quarter'] },
@@ -116,9 +119,20 @@ export function compatibilitySnapshot(sceneType, catalogs = {}) {
 }
 
 export function recommendedDefaults(sceneType) {
+  if (sceneType === 'supermarket_selfie') return {
+    location:'supermarket_aisle', pose:'walking_slow', angle:'eye_centered', lighting:'supermarket_fluorescent',
+    camera:'xiaomi15_front', framing:'chest_up'
+  };
   if (['third_person_portrait','full_body_third_person','candid_third_person'].includes(sceneType)) return { camera:'smartphone_rear', framing: sceneType === 'full_body_third_person' ? 'full_body' : 'chest_up' };
   if (sceneType === 'mirror_selfie') return { camera:'smartphone_rear', framing:'waist_up' };
   return { camera:'xiaomi15_front', framing:'chest_up' };
+}
+
+export function resolveCompatibleValue(currentValue, options = [], preferredValue = '') {
+  const validValues = options.map((item) => item.value).filter(Boolean);
+  if (currentValue && validValues.includes(currentValue)) return currentValue;
+  if (preferredValue && validValues.includes(preferredValue)) return preferredValue;
+  return validValues[0] || '';
 }
 
 export function validateCompatibilityCatalogs(catalogs = {}) {

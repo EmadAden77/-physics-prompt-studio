@@ -3,67 +3,38 @@ import { processImageBlob, XIAOMI_15_ULTRA_PRESET } from './core/photo-post-proc
 import { SAUDI_LOCATIONS, CLOTHING_OPTIONS, SELFIE_ANGLES, LIGHTING_PROFILES } from './core/scene-builder.js';
 
 const IPHONE_15_PRO_MAX_PRESET = Object.freeze({
-  iso: 'auto',
-  lumaNoise: 0.38,
-  chromaNoise: 0.18,
-  chromaticAberration: 0.32,
-  vignette: 0.075,
-  wbDrift: 0.014,
-  sharpnessReduction: 0.045,
-  jpegQuality: 0.95,
-  hdrHalo: 0.030
+  iso: 'auto', lumaNoise: 0.38, chromaNoise: 0.18, chromaticAberration: 0.32,
+  vignette: 0.075, wbDrift: 0.014, sharpnessReduction: 0.045, jpegQuality: 0.95, hdrHalo: 0.030
 });
 
 const VEHICLES = Object.freeze([
-  {
-    value: 'range_rover_l494_2017_white',
-    label: 'Range Rover Sport L494 2017 أبيض',
-    prompt: 'a stationary white 2017 Range Rover Sport L494 with recognizable production-correct SUV proportions, realistic body panels, glazing, wheels and cabin geometry'
-  },
-  {
-    value: 'generic_luxury_suv',
-    label: 'SUV فاخرة عامة',
-    prompt: 'a stationary contemporary luxury SUV with coherent production-style body proportions, premium but believable materials, correct wheels, glazing and cabin geometry'
-  },
-  {
-    value: 'generic_suv',
-    label: 'SUV عادية',
-    prompt: 'a stationary ordinary contemporary SUV with practical trim, correct body proportions, realistic wheels, glazing and cabin geometry'
-  },
-  {
-    value: 'generic_sedan',
-    label: 'سيدان',
-    prompt: 'a stationary contemporary sedan with realistic production proportions, correct doors, wheels, glazing and cabin geometry'
-  }
+  { value: 'range_rover_l494_2017_white', label: 'Range Rover Sport L494 2017 أبيض', prompt: 'a stationary white 2017 Range Rover Sport L494 with recognizable production-correct SUV proportions, realistic body panels, glazing, wheels and cabin geometry' },
+  { value: 'generic_luxury_suv', label: 'SUV فاخرة عامة', prompt: 'a stationary contemporary luxury SUV with coherent production-style body proportions, premium but believable materials, correct wheels, glazing and cabin geometry' },
+  { value: 'generic_suv', label: 'SUV عادية', prompt: 'a stationary ordinary contemporary SUV with practical trim, correct body proportions, realistic wheels, glazing and cabin geometry' },
+  { value: 'generic_sedan', label: 'سيدان', prompt: 'a stationary contemporary sedan with realistic production proportions, correct doors, wheels, glazing and cabin geometry' }
 ]);
-
 const VEHICLE_STATES = Object.freeze([
   { value: 'parked', label: 'متوقفة', prompt: 'The vehicle is fully parked and stationary with no driving action.' },
   { value: 'parked_engine_on', label: 'متوقفة والمحرك يعمل', prompt: 'The vehicle is fully parked and stationary while the engine remains on; do not depict motion or active driving.' }
 ]);
-
 const SEATS = Object.freeze([
   { value: 'driver_seat', label: 'السائق', prompt: 'seated naturally in the driver seat of the stationary vehicle, with correct seat support, cabin side mapping and reachable subject-held phone geometry' },
   { value: 'passenger_seat', label: 'الراكب', prompt: 'seated naturally in the front passenger seat of the stationary vehicle, with correct seat support, cabin side mapping and reachable subject-held phone geometry' }
 ]);
-
 const OUTSIDE_POSES = Object.freeze([
   { value: 'door_open_car', label: 'بجانب باب مفتوح', prompt: 'standing naturally beside the stationary vehicle with one door open, preserving realistic door clearance, body-to-car spacing and subject-held selfie reach' },
   { value: 'standing_relaxed', label: 'وقوف مريح بجانب السيارة', prompt: 'standing relaxed beside the stationary vehicle with natural weight distribution, realistic distance from the body panels and subject-held selfie reach' }
 ]);
-
 const TIMES = Object.freeze([
   { value: 'day', label: 'نهار', prompt: 'daytime' },
   { value: 'sunset', label: 'غروب', prompt: 'sunset / golden-hour period' },
   { value: 'night', label: 'ليل', prompt: 'nighttime' }
 ]);
-
 const PLACE_VALUES_BY_TIME = Object.freeze({
   day: ['day_parking', 'gas_station', 'ordinary_saudi_street'],
   sunset: ['day_parking', 'gas_station', 'ordinary_saudi_street'],
   night: ['night_parking', 'gas_station', 'ordinary_saudi_street']
 });
-
 const INSIDE_DRIVER_ANGLES = Object.freeze(['driver_eye_level', 'driver_slight_high', 'driver_low', 'seated_high_three_quarter']);
 const INSIDE_PASSENGER_ANGLES = Object.freeze(['eye_centered', 'eye_three_quarter_left', 'eye_three_quarter_right', 'slightly_high_center', 'seated_high_three_quarter']);
 const OUTSIDE_ANGLES = Object.freeze(['doorway_three_quarter', 'eye_centered', 'eye_three_quarter_left', 'eye_three_quarter_right', 'slightly_high_center', 'slightly_high_three_quarter', 'low_offcenter', 'waist_up']);
@@ -109,10 +80,7 @@ let uploadedBlob = null;
 let processedBlob = null;
 let originalObjectUrl = '';
 
-function clearSelect(select) {
-  while (select.firstChild) select.removeChild(select.firstChild);
-}
-
+function clearSelect(select) { select.replaceChildren(); }
 function appendOptions(select, items, grouped = false) {
   clearSelect(select);
   if (!grouped) {
@@ -124,44 +92,38 @@ function appendOptions(select, items, grouped = false) {
     }
     return;
   }
-
   const groups = new Map();
   for (const item of items) {
-    const groupName = item.group || 'خيارات';
-    if (!groups.has(groupName)) groups.set(groupName, []);
-    groups.get(groupName).push(item);
+    const name = item.group || 'خيارات';
+    if (!groups.has(name)) groups.set(name, []);
+    groups.get(name).push(item);
   }
-
-  for (const [groupName, groupItems] of groups) {
-    const optgroup = document.createElement('optgroup');
-    optgroup.label = groupName;
+  for (const [name, groupItems] of groups) {
+    const group = document.createElement('optgroup');
+    group.label = name;
     for (const item of groupItems) {
       const option = document.createElement('option');
       option.value = item.value;
       option.textContent = item.label;
-      optgroup.append(option);
+      group.append(option);
     }
-    select.append(optgroup);
+    select.append(group);
   }
 }
-
-function byValue(items, value) {
-  return items.find((item) => item.value === value) || items[0];
-}
-
+function byValue(items, value) { return items.find((item) => item.value === value) || items[0]; }
 function catalogSubset(items, values) {
   const allowed = new Set(values);
   return items.filter((item) => allowed.has(item.value));
 }
-
+function restoreOrDefault(select, items, previous) {
+  select.value = items.some((item) => item.value === previous) ? previous : (items[0]?.value || '');
+}
 function refreshPlaces() {
   const previous = place.value;
-  const allowed = PLACE_VALUES_BY_TIME[timeOfDay.value] || PLACE_VALUES_BY_TIME.day;
-  const items = catalogSubset(SAUDI_LOCATIONS, allowed);
+  const items = catalogSubset(SAUDI_LOCATIONS, PLACE_VALUES_BY_TIME[timeOfDay.value] || PLACE_VALUES_BY_TIME.day);
   appendOptions(place, items);
-  if (items.some((item) => item.value === previous)) place.value = previous;
+  restoreOrDefault(place, items, previous);
 }
-
 function refreshAngles() {
   const previous = selfieAngle.value;
   const values = currentMode === 'inside'
@@ -169,9 +131,8 @@ function refreshAngles() {
     : OUTSIDE_ANGLES;
   const items = catalogSubset(SELFIE_ANGLES, values);
   appendOptions(selfieAngle, items);
-  if (items.some((item) => item.value === previous)) selfieAngle.value = previous;
+  restoreOrDefault(selfieAngle, items, previous);
 }
-
 function lightingValuesForScene() {
   const period = timeOfDay.value;
   if (currentMode === 'inside') {
@@ -179,40 +140,45 @@ function lightingValuesForScene() {
     if (period === 'sunset') return ['golden_hour', 'car_daylight'];
     return ['car_daylight'];
   }
-
   if (period === 'sunset') return ['golden_hour'];
   if (period === 'day') return ['day_direct_sun', 'day_open_shade', 'day_overcast', 'blue_sky_noon'];
   if (place.value === 'gas_station') return ['night_gas_station'];
   if (place.value === 'night_parking') return ['night_parking_led'];
   return ['night_led_street'];
 }
-
 function refreshLighting() {
   const previous = lighting.value;
   const items = catalogSubset(LIGHTING_PROFILES, lightingValuesForScene());
   appendOptions(lighting, items, true);
-  if (items.some((item) => item.value === previous)) lighting.value = previous;
+  restoreOrDefault(lighting, items, previous);
 }
 
-function setMode(nextMode) {
-  currentMode = nextMode === 'outside' ? 'outside' : 'inside';
+function setMode(nextMode, { initialize = false } = {}) {
+  const resolved = nextMode === 'outside' ? 'outside' : 'inside';
+  const changed = resolved !== currentMode;
+  currentMode = resolved;
+  const inside = currentMode === 'inside';
+
   for (const button of modeButtons) {
     const active = button.dataset.mode === currentMode;
     button.classList.toggle('active', active);
     button.setAttribute('aria-selected', String(active));
   }
-  const inside = currentMode === 'inside';
+  seatField.hidden = !inside;
+  standingPoseField.hidden = inside;
   seatField.classList.toggle('is-hidden', !inside);
   standingPoseField.classList.toggle('is-hidden', inside);
+
+  if (initialize || changed) {
+    if (inside) seat.value = 'driver_seat';
+    else standingPose.value = 'door_open_car';
+  }
   modeLabel.textContent = inside ? 'سيلفي داخل السيارة' : 'سيلفي بالخارج بجانب السيارة';
   refreshAngles();
   refreshLighting();
 }
 
-function selectedPose() {
-  return currentMode === 'inside' ? byValue(SEATS, seat.value) : byValue(OUTSIDE_POSES, standingPose.value);
-}
-
+function selectedPose() { return currentMode === 'inside' ? byValue(SEATS, seat.value) : byValue(OUTSIDE_POSES, standingPose.value); }
 function sceneDescription() {
   const chosenVehicle = byValue(VEHICLES, vehicle.value);
   const chosenState = byValue(VEHICLE_STATES, vehicleState.value);
@@ -225,12 +191,11 @@ function sceneDescription() {
     notes ? `Additional user scene notes: ${notes}.` : ''
   ].filter(Boolean).join(' ');
 }
-
 function renderValidation(check) {
   realismBadge.classList.remove('pass', 'fail', 'neutral');
   validationAlert.classList.add('is-hidden');
-  validationAlert.innerHTML = '';
-
+  validationAlert.classList.remove('warning');
+  validationAlert.textContent = '';
   if (check.valid) {
     realismBadge.textContent = 'REALISM: PASS';
     realismBadge.classList.add('pass');
@@ -241,14 +206,11 @@ function renderValidation(check) {
     }
     return;
   }
-
   realismBadge.textContent = 'REALISM: FAIL';
   realismBadge.classList.add('fail');
   validationAlert.classList.remove('is-hidden');
-  validationAlert.classList.remove('warning');
   validationAlert.textContent = check.errors.map((item) => item.message).join(' | ');
 }
-
 function generateCarPrompt() {
   const placeItem = byValue(SAUDI_LOCATIONS, place.value);
   const clothingItem = byValue(CLOTHING_OPTIONS, clothing.value);
@@ -256,7 +218,6 @@ function generateCarPrompt() {
   const lightingItem = byValue(LIGHTING_PROFILES, lighting.value);
   const poseItem = selectedPose();
   const chosenVehicle = byValue(VEHICLES, vehicle.value);
-
   const result = generateImagePrompt({
     sceneType: currentMode === 'inside' ? 'inside_car_selfie' : 'outdoor_selfie',
     camera: 'xiaomi15_front',
@@ -270,7 +231,6 @@ function generateCarPrompt() {
     description: sceneDescription(),
     customConstraints: `Keep ${chosenVehicle.label} visually coherent and stationary. Preserve physically correct vehicle scale, glazing, wheel geometry, doors, seat support and subject-to-vehicle contact. Do not depict driving.`
   });
-
   output.value = result.prompt;
   copyPromptButton.disabled = !result.prompt;
   renderValidation(validateRealism(result.prompt));
@@ -289,19 +249,16 @@ async function copyPrompt() {
     document.execCommand('copy');
   }
 }
-
 function activeProcessingPreset() {
   const base = processingPreset.value === 'iphone' ? IPHONE_15_PRO_MAX_PRESET : XIAOMI_15_ULTRA_PRESET;
   const quality = Math.min(1, Math.max(0.5, Number(jpegQuality.value) || base.jpegQuality));
   const iso = isoMode.value === 'manual' ? Math.max(50, Number(manualIso.value) || 800) : 'auto';
   return Object.freeze({ ...base, iso, jpegQuality: quality });
 }
-
 function activeSeed() {
   const value = Number(seedInput.value);
   return Number.isFinite(value) ? Math.trunc(value) : 42;
 }
-
 async function drawBlobOnCanvas(blob, canvas) {
   if (typeof createImageBitmap === 'function') {
     const bitmap = await createImageBitmap(blob);
@@ -313,7 +270,6 @@ async function drawBlobOnCanvas(blob, canvas) {
     if (typeof bitmap.close === 'function') bitmap.close();
     return;
   }
-
   const url = URL.createObjectURL(blob);
   try {
     const image = new Image();
@@ -329,19 +285,14 @@ async function drawBlobOnCanvas(blob, canvas) {
     URL.revokeObjectURL(url);
   }
 }
-
 async function processUploadedImage() {
   if (!uploadedBlob) return;
   processingStatus.textContent = 'تجري المعالجة محليًا...';
   reprocessImage.disabled = true;
   downloadProcessed.disabled = true;
-
   try {
     const preset = activeProcessingPreset();
-    processedBlob = await processImageBlob(uploadedBlob, preset, {
-      seed: activeSeed(),
-      format: 'jpeg'
-    });
+    processedBlob = await processImageBlob(uploadedBlob, preset, { seed: activeSeed(), format: 'jpeg' });
     await drawBlobOnCanvas(processedBlob, processedCanvas);
     processedPanel.querySelector('.preview-placeholder')?.classList.add('is-hidden');
     processingStatus.textContent = `تمت المعالجة. Seed ${activeSeed()} · JPEG ${preset.jpegQuality.toFixed(2)} · ISO ${preset.iso}`;
@@ -354,14 +305,12 @@ async function processUploadedImage() {
     reprocessImage.disabled = !uploadedBlob;
   }
 }
-
 function showPreview(kind) {
   const processed = kind === 'processed';
   originalPanel.classList.toggle('active', !processed);
   processedPanel.classList.toggle('active', processed);
   for (const button of previewButtons) button.classList.toggle('active', button.dataset.preview === kind);
 }
-
 function loadOriginalPreview(file) {
   if (originalObjectUrl) URL.revokeObjectURL(originalObjectUrl);
   originalObjectUrl = URL.createObjectURL(file);
@@ -369,7 +318,6 @@ function loadOriginalPreview(file) {
   originalPreview.closest('.preview-panel')?.querySelector('.preview-placeholder')?.classList.add('is-hidden');
   showPreview('original');
 }
-
 function downloadProcessedImage() {
   if (!processedBlob) return;
   const url = URL.createObjectURL(processedBlob);
@@ -381,7 +329,6 @@ function downloadProcessedImage() {
   anchor.remove();
   URL.revokeObjectURL(url);
 }
-
 function resetPromptArea() {
   request.value = '';
   output.value = '';
@@ -400,9 +347,7 @@ appendOptions(standingPose, OUTSIDE_POSES);
 appendOptions(timeOfDay, TIMES);
 appendOptions(clothing, CLOTHING_OPTIONS, true);
 refreshPlaces();
-refreshAngles();
-refreshLighting();
-setMode('inside');
+setMode('inside', { initialize: true });
 
 modeButtons.forEach((button) => button.addEventListener('click', () => setMode(button.dataset.mode)));
 previewButtons.forEach((button) => button.addEventListener('click', () => showPreview(button.dataset.preview)));
@@ -412,7 +357,11 @@ place.addEventListener('change', refreshLighting);
 generatePromptButton.addEventListener('click', generateCarPrompt);
 copyPromptButton.addEventListener('click', copyPrompt);
 clearAll.addEventListener('click', resetPromptArea);
-isoMode.addEventListener('change', () => manualIsoField.classList.toggle('is-hidden', isoMode.value !== 'manual'));
+isoMode.addEventListener('change', () => {
+  const manual = isoMode.value === 'manual';
+  manualIsoField.hidden = !manual;
+  manualIsoField.classList.toggle('is-hidden', !manual);
+});
 imageUpload.addEventListener('change', async () => {
   const file = imageUpload.files?.[0];
   if (!file) return;

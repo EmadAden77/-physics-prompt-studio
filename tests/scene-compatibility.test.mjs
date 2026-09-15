@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { compatibleOptions, compatibilitySnapshot, recommendedDefaults, resolveCompatibleValue } from '../core/scene-compatibility.js';
+import { compatibleOptions, compatibilitySnapshot, recommendedDefaults, resolveCompatibleValue, resolveContextAwareConstraints } from '../core/scene-compatibility.js';
 import { SAUDI_LOCATIONS, CLOTHING_OPTIONS, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
 import { CAMERA_PROFILES, FRAMING_OPTIONS } from '../core/prompt-generator.js';
 
@@ -30,6 +30,7 @@ test('majlis selfie only exposes majlis-compatible locations and lighting', () =
   assert.deepEqual(values(snapshot.location), ['modern_saudi_majlis', 'traditional_majlis', 'villa_living_room']);
   assert.equal(values(snapshot.lighting).includes('night_majlis_warm'), true);
   assert.equal(values(snapshot.lighting).includes('night_gas_station'), false);
+  assert.equal(values(snapshot.lighting).includes('night_phone_screen'), false);
   assert.equal(values(snapshot.pose).includes('driver_seat'), false);
 });
 
@@ -63,6 +64,7 @@ test('office selfie excludes unrelated locations and car lighting', () => {
   assert.deepEqual(values(snapshot.location), ['saudi_office', 'real_estate_office']);
   assert.equal(values(snapshot.lighting).includes('night_office_led'), true);
   assert.equal(values(snapshot.lighting).includes('night_car_practicals'), false);
+  assert.equal(values(snapshot.lighting).includes('night_phone_screen'), false);
 });
 
 test('supermarket scene only exposes supermarket-compatible locations', () => {
@@ -99,6 +101,55 @@ test('changing sceneType resets incompatible selections', () => {
   assert.equal(resolveCompatibleValue('lean_counter', snapshot.pose, defaults.pose), 'walking_slow');
   assert.equal(resolveCompatibleValue('driver_eye_level', snapshot.angle, defaults.angle), 'eye_centered');
   assert.equal(resolveCompatibleValue('full_body', snapshot.framing, defaults.framing), 'chest_up');
+});
+
+test('bedroom scene does not allow lively background activity', () => {
+  const snapshot = compatibilitySnapshot('mirror_selfie', catalogs);
+  assert.deepEqual(snapshot.backgroundActivityAllowed, ['quiet', 'normal']);
+
+  const resolved = resolveContextAwareConstraints({
+    sceneType: 'mirror_selfie',
+    requestedSceneType: 'mirror_bedroom_selfie',
+    location: 'inside a Saudi bedroom',
+    backgroundActivity: 'lively',
+    lighting: 'warm room lamp'
+  });
+  assert.equal(resolved.backgroundActivity, 'normal');
+  assert.deepEqual(resolved.backgroundActivityAllowed, ['quiet', 'normal']);
+  assert.match(resolved.warnings.join(' '), /النشاط تغيّر إلى normal/);
+});
+
+test('mosques and libraries are quiet-only while car interiors are quiet-only', () => {
+  const mosque = resolveContextAwareConstraints({ sceneType: 'front_selfie', location: 'inside a Saudi mosque', backgroundActivity: 'lively' });
+  const library = resolveContextAwareConstraints({ sceneType: 'front_selfie', location: 'inside a library reading room', backgroundActivity: 'normal' });
+  const car = resolveContextAwareConstraints({ sceneType: 'inside_car_selfie', location: 'inside a stationary car', backgroundActivity: 'lively' });
+  assert.equal(mosque.backgroundActivity, 'quiet');
+  assert.equal(library.backgroundActivity, 'quiet');
+  assert.equal(car.backgroundActivity, 'quiet');
+});
+
+test('phone-screen-only lighting is not allowed in well-lit indoor scene', () => {
+  const resolved = resolveContextAwareConstraints({
+    sceneType: 'mirror_selfie',
+    requestedSceneType: 'mirror_bedroom_selfie',
+    location: 'inside a Saudi bedroom with normal room lamps',
+    backgroundActivity: 'quiet',
+    lighting: 'phone-screen-only lighting'
+  });
+  assert.doesNotMatch(resolved.lighting, /phone-screen-only/i);
+  assert.match(resolved.lighting, /warm practical room lamp|room ceiling light/i);
+  assert.match(resolved.warnings.join(' '), /الإضاءة تغيّرت/);
+});
+
+test('phone-screen-only remains allowed in a naturally dark car and excludes other visible sources', () => {
+  const resolved = resolveContextAwareConstraints({
+    sceneType: 'inside_car_selfie',
+    location: 'inside a stationary car at night',
+    backgroundActivity: 'quiet',
+    lighting: 'phone-screen-only lighting'
+  });
+  assert.match(resolved.lighting, /phone-screen-only/i);
+  assert.match(resolved.lighting, /No other light sources visible in frame/i);
 });
 
 test('clothing remains available when it is physically compatible with the scene', () => {

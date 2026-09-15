@@ -53,6 +53,16 @@ test('physical lighting explicitly separates illumination from exposure processi
   assert.equal(validateGeneratedPrompt(result.prompt, { realismPacket: result.realism_packet, sceneType: { capture: result.config.capture_type }, saudiContext: result.config.saudi_context }).valid, true);
 });
 
+test('raw realism adds specific underexposure instructions', () => {
+  const result = generateImagePrompt({ realismLevel: 'raw' });
+  const lighting = result.prompt.split('[PHYSICAL LIGHTING]\n')[1].split('\n\n[MIRROR RULES]')[0];
+  assert.match(lighting, /Deliberately underexposed in midtones and shadows/i);
+  assert.match(lighting, /visible noise in shadow regions/i);
+  assert.match(lighting, /Do not lift shadows with HDR/i);
+  assert.match(lighting, /Slight motion blur from handheld capture is acceptable/i);
+  assert.match(lighting, /White balance may be slightly off-neutral/i);
+});
+
 test('selfie modes lock reachable subject-held geometry', () => {
   const result = generateImagePrompt({ sceneType: 'inside_car_selfie' });
   assert.ok(result.prompt.includes('subject-held smartphone selfie'));
@@ -97,7 +107,53 @@ test('background activity controls people count without cross-section conflict',
   assert.match(quiet.prompt, /no background people/i);
   assert.doesNotMatch(quiet.prompt, /1-2 independently behaving background people/i);
   assert.match(normal.prompt, /1-2 independently behaving background people/i);
-  assert.match(lively.prompt, /3-5 independently behaving background people/i);
+  assert.match(lively.prompt, /5 to 7 background people/i);
+  assert.doesNotMatch(lively.prompt, /3-5 independently behaving background people/i);
+});
+
+test('bedroom lively activity is corrected and no other people appear', () => {
+  const result = generateImagePrompt({
+    sceneType: 'mirror_bedroom_selfie',
+    location: 'inside a Saudi bedroom with ordinary room lamps',
+    backgroundActivity: 'lively',
+    lighting: 'phone-screen-only lighting'
+  });
+  const scene = result.prompt.split('[SCENE]\n')[1].split('\n\n[OBSERVABLE BACKGROUND ELEMENTS]')[0];
+  assert.equal(result.config.background_activity, 'normal');
+  assert.deepEqual(result.config.background_activity_allowed, ['quiet', 'normal']);
+  assert.match(scene, /no other people appear in this frame/i);
+  assert.doesNotMatch(scene, /5 to 7 background people/i);
+  assert.match(result.config.context_warnings.join(' '), /النشاط تغيّر إلى normal/);
+  assert.match(result.config.context_warnings.join(' '), /الإضاءة تغيّرت/);
+  assert.doesNotMatch(result.config.lighting, /phone-screen-only/i);
+});
+
+test('lively Saudi retail scene specifies people types and actions', () => {
+  const result = generateImagePrompt({
+    sceneType: 'supermarket_selfie',
+    location: 'inside an ordinary Saudi supermarket',
+    backgroundActivity: 'lively',
+    lighting: 'broad retail ceiling lighting'
+  });
+  const scene = result.prompt.split('[SCENE]\n')[1].split('\n\n[OBSERVABLE BACKGROUND ELEMENTS]')[0];
+  assert.match(scene, /5 to 7 background people/i);
+  assert.match(scene, /men in white thobes/i);
+  assert.match(scene, /women in plain black abayas with black niqabs/i);
+  assert.match(scene, /shopping bag/i);
+  assert.match(scene, /walking, standing/i);
+});
+
+test('dark car phone-only lighting excludes other visible light sources', () => {
+  const result = generateImagePrompt({
+    sceneType: 'inside_car_selfie',
+    location: 'inside a stationary car at night in Saudi Arabia',
+    backgroundActivity: 'quiet',
+    lighting: 'phone-screen-only lighting',
+    lightingNotes: 'add a warm cabin lamp'
+  });
+  const lighting = result.prompt.split('[PHYSICAL LIGHTING]\n')[1].split('\n\n[MIRROR RULES]')[0];
+  assert.match(lighting, /No other light sources visible in frame/i);
+  assert.doesNotMatch(lighting, /warm cabin lamp/i);
 });
 
 test('mirror selfie always emits mirror rules and final text-orientation guidance', () => {

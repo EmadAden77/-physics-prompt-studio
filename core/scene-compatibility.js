@@ -7,7 +7,7 @@ const OUTDOOR_LIGHTING = [
   'day_direct_sun','day_open_shade','day_overcast','golden_hour','blue_sky_noon',
   'night_led_street','night_parking_led','night_storefront','night_gas_station','night_corniche','night_desert_vehicle'
 ];
-const INDOOR_GENERAL_LIGHTING = ['day_window','night_majlis_warm','night_cafe_mixed','night_office_led','night_home_warm','night_phone_screen'];
+const INDOOR_GENERAL_LIGHTING = ['day_window','night_majlis_warm','night_cafe_mixed','night_office_led','night_home_warm'];
 const CAR_LIGHTING = ['car_daylight','night_car_practicals','night_car_screen_only','night_led_street','night_parking_led','night_gas_station'];
 const FRONT_CAMERAS = ['xiaomi15_front','iphone15pm_front','generic_front'];
 const SELFIE_FRAMING = ['close','chest_up','waist_up','three_quarter'];
@@ -15,6 +15,10 @@ const BASIC_SELFIE_ANGLES = [
   'eye_centered','eye_three_quarter_left','eye_three_quarter_right','slightly_high_center','slightly_high_three_quarter',
   'slightly_low_center','low_offcenter','high_offcenter','close_face','chest_up','waist_up'
 ];
+const ALL_BACKGROUND_ACTIVITY = ['quiet','normal','lively'];
+const PRIVATE_BACKGROUND_ACTIVITY = ['quiet','normal'];
+const QUIET_BACKGROUND_ACTIVITY = ['quiet'];
+const EXTERIOR_CAR_BACKGROUND_ACTIVITY = ['quiet','normal'];
 
 const MAJLIS_LOCATIONS = ['modern_saudi_majlis','traditional_majlis','villa_living_room'];
 const CAFE_LOCATIONS = ['saudi_cafe','specialty_coffee','casual_restaurant','hotel_lobby','mall_atrium'];
@@ -77,26 +81,121 @@ export const THIRD_PERSON_ANGLES = [
 ];
 
 const PROFILES = {
-  front_selfie: { pose:['standing_relaxed','standing_one_hand','walking_slow','seated_sofa','seated_chair','lean_wall','lean_counter','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES, lighting:GENERAL_LIGHTING, camera:FRONT_CAMERAS, framing:SELFIE_FRAMING },
-  standing_selfie: { pose:['standing_relaxed','standing_one_hand','lean_wall','lean_counter','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES, lighting:GENERAL_LIGHTING, camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
-  seated_selfie: { location:SEATED_LOCATIONS, pose:['seated_sofa','seated_chair','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'), lighting:INDOOR_GENERAL_LIGHTING.concat('day_open_shade'), camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up','three_quarter'] },
-  walking_selfie: { location:WALKING_LOCATIONS, pose:['walking_slow'], angle:['eye_centered','eye_three_quarter_left','eye_three_quarter_right','slightly_high_center','slightly_low_center','low_offcenter','high_offcenter','chest_up'], lighting:OUTDOOR_LIGHTING, camera:FRONT_CAMERAS, framing:['chest_up','waist_up'] },
-  inside_car_selfie: { location:CAR_LOCATIONS, pose:['driver_seat','passenger_seat'], angle:['driver_eye_level','driver_slight_high','driver_low'], lighting:CAR_LIGHTING, camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up'] },
-  majlis_selfie: { location:MAJLIS_LOCATIONS, pose:['seated_sofa','seated_chair','standing_relaxed','standing_one_hand','coffee_hand','adjust_clothing','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'), lighting:['day_window','night_majlis_warm','night_home_warm','night_phone_screen'], camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
-  cafe_selfie: { location:CAFE_LOCATIONS, pose:['seated_chair','standing_relaxed','standing_one_hand','lean_counter','coffee_hand','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'), lighting:['day_window','night_cafe_mixed','night_phone_screen'], camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up','three_quarter'] },
-  office_selfie: { location:OFFICE_LOCATIONS, pose:['seated_chair','standing_relaxed','standing_one_hand','lean_counter','adjust_clothing','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'), lighting:['day_window','night_office_led','night_phone_screen'], camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up','three_quarter'] },
-  supermarket_selfie: { location:SUPERMARKET_LOCATIONS, pose:['walking_slow','standing_relaxed','holding_basket'], angle:BASIC_SELFIE_ANGLES, lighting:SUPERMARKET_LIGHTING, camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
-  outdoor_selfie: { location:OUTDOOR_LOCATIONS, pose:['standing_relaxed','standing_one_hand','walking_slow','lean_wall','door_open_car','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('doorway_three_quarter'), lighting:OUTDOOR_LIGHTING, camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
-  mirror_selfie: { location:MIRROR_LOCATIONS, poseCatalog:MIRROR_POSES, angleCatalog:MIRROR_ANGLES, lighting:['day_window','night_home_warm','night_cafe_mixed','night_office_led','night_phone_screen'], camera:['xiaomi15_front','iphone15pm_front','generic_front','smartphone_rear'], framing:['chest_up','waist_up','three_quarter','full_body'] },
-  third_person_portrait: { poseCatalog:THIRD_PERSON_POSES, angleCatalog:THIRD_PERSON_ANGLES, lighting:GENERAL_LIGHTING, camera:['smartphone_rear'], framing:['close','chest_up','waist_up','three_quarter'] },
-  full_body_third_person: { poseCatalog:THIRD_PERSON_POSES.filter((item)=>item.value!=='third_seated_relaxed'), angleCatalog:THIRD_PERSON_ANGLES.filter((item)=>['third_eye_level','third_three_quarter_left','third_three_quarter_right','third_slight_low','third_full_body_eye','third_candid_side'].includes(item.value)), lighting:GENERAL_LIGHTING, camera:['smartphone_rear'], framing:['full_body'] },
-  candid_third_person: { poseCatalog:THIRD_PERSON_POSES, angleCatalog:THIRD_PERSON_ANGLES, lighting:GENERAL_LIGHTING, camera:['smartphone_rear'], framing:['chest_up','waist_up','three_quarter','full_body'] }
+  front_selfie: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, pose:['standing_relaxed','standing_one_hand','walking_slow','seated_sofa','seated_chair','lean_wall','lean_counter','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES, lighting:GENERAL_LIGHTING, camera:FRONT_CAMERAS, framing:SELFIE_FRAMING },
+  standing_selfie: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, pose:['standing_relaxed','standing_one_hand','lean_wall','lean_counter','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES, lighting:GENERAL_LIGHTING, camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
+  seated_selfie: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, location:SEATED_LOCATIONS, pose:['seated_sofa','seated_chair','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'), lighting:INDOOR_GENERAL_LIGHTING.concat('day_open_shade'), camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up','three_quarter'] },
+  walking_selfie: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, location:WALKING_LOCATIONS, pose:['walking_slow'], angle:['eye_centered','eye_three_quarter_left','eye_three_quarter_right','slightly_high_center','slightly_low_center','low_offcenter','high_offcenter','chest_up'], lighting:OUTDOOR_LIGHTING, camera:FRONT_CAMERAS, framing:['chest_up','waist_up'] },
+  inside_car_selfie: { backgroundActivityAllowed:QUIET_BACKGROUND_ACTIVITY, location:CAR_LOCATIONS, pose:['driver_seat','passenger_seat'], angle:['driver_eye_level','driver_slight_high','driver_low'], lighting:CAR_LIGHTING, camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up'] },
+  majlis_selfie: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, location:MAJLIS_LOCATIONS, pose:['seated_sofa','seated_chair','standing_relaxed','standing_one_hand','coffee_hand','adjust_clothing','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'), lighting:['day_window','night_majlis_warm','night_home_warm'], camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
+  cafe_selfie: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, location:CAFE_LOCATIONS, pose:['seated_chair','standing_relaxed','standing_one_hand','lean_counter','coffee_hand','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'), lighting:['day_window','night_cafe_mixed'], camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up','three_quarter'] },
+  office_selfie: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, location:OFFICE_LOCATIONS, pose:['seated_chair','standing_relaxed','standing_one_hand','lean_counter','adjust_clothing','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'), lighting:['day_window','night_office_led'], camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up','three_quarter'] },
+  supermarket_selfie: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, location:SUPERMARKET_LOCATIONS, pose:['walking_slow','standing_relaxed','holding_basket'], angle:BASIC_SELFIE_ANGLES, lighting:SUPERMARKET_LIGHTING, camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
+  outdoor_selfie: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, location:OUTDOOR_LOCATIONS, pose:['standing_relaxed','standing_one_hand','walking_slow','lean_wall','door_open_car','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('doorway_three_quarter'), lighting:OUTDOOR_LIGHTING, camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
+  mirror_selfie: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, location:MIRROR_LOCATIONS, poseCatalog:MIRROR_POSES, angleCatalog:MIRROR_ANGLES, lighting:['day_window','night_home_warm','night_cafe_mixed','night_office_led'], camera:['xiaomi15_front','iphone15pm_front','generic_front','smartphone_rear'], framing:['chest_up','waist_up','three_quarter','full_body'] },
+  third_person_portrait: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, poseCatalog:THIRD_PERSON_POSES, angleCatalog:THIRD_PERSON_ANGLES, lighting:GENERAL_LIGHTING, camera:['smartphone_rear'], framing:['close','chest_up','waist_up','three_quarter'] },
+  full_body_third_person: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, poseCatalog:THIRD_PERSON_POSES.filter((item)=>item.value!=='third_seated_relaxed'), angleCatalog:THIRD_PERSON_ANGLES.filter((item)=>['third_eye_level','third_three_quarter_left','third_three_quarter_right','third_slight_low','third_full_body_eye','third_candid_side'].includes(item.value)), lighting:GENERAL_LIGHTING, camera:['smartphone_rear'], framing:['full_body'] },
+  candid_third_person: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, poseCatalog:THIRD_PERSON_POSES, angleCatalog:THIRD_PERSON_ANGLES, lighting:GENERAL_LIGHTING, camera:['smartphone_rear'], framing:['chest_up','waist_up','three_quarter','full_body'] }
 };
 
 function filterValues(options, allowed) {
   if (!allowed) return [...options];
   const set = new Set(allowed);
   return options.filter((item)=>set.has(item.value));
+}
+
+function normalizedContext(sceneType, location = '', requestedSceneType = '') {
+  return `${sceneType} ${requestedSceneType} ${location}`.toLowerCase();
+}
+
+function isPrivatePersonalContext(sceneType, location = '', requestedSceneType = '') {
+  const context = normalizedContext(sceneType, location, requestedSceneType);
+  return /bedroom|bathroom|washroom|private[_ -]?room|locker[_ -]?room|home[_ -]?interior|lying[_ -]?bed|reclining[_ -]?bed/.test(context);
+}
+
+function isQuietOnlyContext(sceneType, location = '', requestedSceneType = '') {
+  const context = normalizedContext(sceneType, location, requestedSceneType);
+  return sceneType === 'inside_car_selfie' || /mosque|masjid|library|reading[_ -]?room/.test(context);
+}
+
+function isExteriorCarContext(sceneType, location = '', requestedSceneType = '') {
+  if (sceneType === 'inside_car_selfie') return false;
+  return /door[_ -]?open[_ -]?car|car[_ -]?adjacent|outside[_ -]?car|vehicle[_ -]?exterior|beside (?:a )?(?:parked )?(?:car|vehicle)/.test(normalizedContext(sceneType, location, requestedSceneType));
+}
+
+function contextArabicLabel(sceneType, location = '', requestedSceneType = '') {
+  const context = normalizedContext(sceneType, location, requestedSceneType);
+  if (/bedroom|lying[_ -]?bed|reclining[_ -]?bed/.test(context)) return 'غرفة نوم';
+  if (/bathroom|washroom/.test(context)) return 'حمام';
+  if (/mosque|masjid/.test(context)) return 'مسجد';
+  if (/library|reading[_ -]?room/.test(context)) return 'مكتبة';
+  if (sceneType === 'inside_car_selfie') return 'داخل السيارة';
+  if (isExteriorCarContext(sceneType, location, requestedSceneType)) return 'خارج السيارة';
+  return 'هذا السياق';
+}
+
+function nearestAllowedActivity(requested, allowed) {
+  const order = ['quiet','normal','lively'];
+  if (allowed.includes(requested)) return requested;
+  const index = Math.max(0, order.indexOf(requested));
+  return [...allowed].sort((a,b) => Math.abs(order.indexOf(a)-index) - Math.abs(order.indexOf(b)-index) || order.indexOf(a)-order.indexOf(b))[0] || 'quiet';
+}
+
+function isPhoneScreenOnlyLighting(lighting = '') {
+  return /night_phone_screen|night_car_screen_only|phone[- _]?screen[- _]?only|phone screen (?:as )?(?:the )?only|screen[- _]?only/i.test(String(lighting));
+}
+
+function isNaturallyDarkPhoneContext(sceneType, location = '', requestedSceneType = '') {
+  const context = normalizedContext(sceneType, location, requestedSceneType);
+  return sceneType === 'inside_car_selfie' || /street[_ -]?night|night[_ -]?(?:street|parking|road|desert|corniche)|parking[_ -]?lot[_ -]?night|phone[_ -]?screen[_ -]?only|dark[_ -]?(?:street|road|parking)|شارع ليلي|موقف ليلي/.test(context);
+}
+
+function isWellLitIndoorContext(sceneType, location = '', requestedSceneType = '') {
+  const context = normalizedContext(sceneType, location, requestedSceneType);
+  if (['majlis_selfie','cafe_selfie','office_selfie','supermarket_selfie','mirror_selfie'].includes(sceneType)) return true;
+  return /bedroom|bathroom|washroom|home|living|majlis|office|cafe|coffee|restaurant|hotel|mall|supermarket|grocery|convenience|clinic|barber|salon|gym|locker|elevator|corridor|hallway|kitchen|airport|indoor|room/.test(context);
+}
+
+function indoorLightingFallback(sceneType, location = '', requestedSceneType = '') {
+  const context = normalizedContext(sceneType, location, requestedSceneType);
+  if (/bedroom|home|living|majlis/.test(context)) return 'warm practical room lamp or ordinary room ceiling light, physically present in the room, with realistic falloff and no invisible fill light';
+  if (/supermarket|grocery|convenience|mall|store|retail/.test(context)) return 'ordinary retail ceiling LED or fluorescent practical lighting with realistic shelf and floor reflections';
+  if (/office|clinic|airport|corridor|elevator/.test(context)) return 'ordinary practical room ceiling LED lighting with realistic falloff and no invisible fill light';
+  return 'ordinary practical room ceiling light with realistic falloff and no invisible fill light';
+}
+
+export function backgroundActivityAllowedForContext(sceneType, location = '', requestedSceneType = '') {
+  const profile = PROFILES[sceneType] || PROFILES.front_selfie;
+  if (isQuietOnlyContext(sceneType, location, requestedSceneType)) return [...QUIET_BACKGROUND_ACTIVITY];
+  if (isExteriorCarContext(sceneType, location, requestedSceneType)) return [...EXTERIOR_CAR_BACKGROUND_ACTIVITY];
+  if (isPrivatePersonalContext(sceneType, location, requestedSceneType)) return [...PRIVATE_BACKGROUND_ACTIVITY];
+  return [...(profile.backgroundActivityAllowed || ALL_BACKGROUND_ACTIVITY)];
+}
+
+export function resolveContextAwareConstraints({ sceneType = 'front_selfie', requestedSceneType = '', location = '', backgroundActivity = 'normal', lighting = '' } = {}) {
+  const allowed = backgroundActivityAllowedForContext(sceneType, location, requestedSceneType);
+  const requestedActivity = ALL_BACKGROUND_ACTIVITY.includes(backgroundActivity) ? backgroundActivity : 'normal';
+  const resolvedActivity = nearestAllowedActivity(requestedActivity, allowed);
+  const warnings = [];
+  if (resolvedActivity !== requestedActivity) warnings.push(`النشاط تغيّر إلى ${resolvedActivity} لأن ${requestedActivity} غير متاح في ${contextArabicLabel(sceneType, location, requestedSceneType)}`);
+
+  let resolvedLighting = String(lighting || '').trim();
+  if (isPhoneScreenOnlyLighting(resolvedLighting)) {
+    if (isNaturallyDarkPhoneContext(sceneType, location, requestedSceneType)) {
+      if (!/no other light sources visible in frame/i.test(resolvedLighting)) resolvedLighting = `${resolvedLighting}. No other light sources visible in frame.`;
+    } else if (isWellLitIndoorContext(sceneType, location, requestedSceneType)) {
+      const replacement = indoorLightingFallback(sceneType, location, requestedSceneType);
+      warnings.push(`الإضاءة تغيّرت لأن phone-screen-only غير متاح في ${contextArabicLabel(sceneType, location, requestedSceneType)}`);
+      resolvedLighting = replacement;
+    }
+  }
+
+  return Object.freeze({
+    backgroundActivity: resolvedActivity,
+    backgroundActivityAllowed: Object.freeze([...allowed]),
+    lighting: resolvedLighting,
+    warnings: Object.freeze(warnings),
+    privateContext: isPrivatePersonalContext(sceneType, location, requestedSceneType) || isQuietOnlyContext(sceneType, location, requestedSceneType)
+  });
 }
 
 export function compatibleOptions(sceneType, kind, baseOptions = []) {
@@ -107,6 +206,7 @@ export function compatibleOptions(sceneType, kind, baseOptions = []) {
 }
 
 export function compatibilitySnapshot(sceneType, catalogs = {}) {
+  const profile = PROFILES[sceneType] || PROFILES.front_selfie;
   return {
     location: compatibleOptions(sceneType, 'location', catalogs.location || []),
     clothing: compatibleOptions(sceneType, 'clothing', catalogs.clothing || []),
@@ -114,7 +214,8 @@ export function compatibilitySnapshot(sceneType, catalogs = {}) {
     angle: compatibleOptions(sceneType, 'angle', catalogs.angle || []),
     lighting: compatibleOptions(sceneType, 'lighting', catalogs.lighting || []),
     camera: compatibleOptions(sceneType, 'camera', catalogs.camera || []),
-    framing: compatibleOptions(sceneType, 'framing', catalogs.framing || [])
+    framing: compatibleOptions(sceneType, 'framing', catalogs.framing || []),
+    backgroundActivityAllowed: [...(profile.backgroundActivityAllowed || ALL_BACKGROUND_ACTIVITY)]
   };
 }
 
@@ -145,6 +246,8 @@ export function validateCompatibilityCatalogs(catalogs = {}) {
   };
 
   for (const [sceneType, profile] of Object.entries(PROFILES)) {
+    if (!Array.isArray(profile.backgroundActivityAllowed) || !profile.backgroundActivityAllowed.length) errors.push(`${sceneType}.backgroundActivityAllowed must contain at least one activity value`);
+    else for (const value of profile.backgroundActivityAllowed) if (!ALL_BACKGROUND_ACTIVITY.includes(value)) errors.push(`${sceneType}.backgroundActivityAllowed references missing value: ${value}`);
     for (const kind of kinds) {
       const explicit = profile[kind];
       if (!Array.isArray(explicit)) continue;

@@ -165,3 +165,22 @@ test('no duplicate color pairs', async () => {
   const pairs = FORMAL_LOOKS.map(l => l.label);
   assert.equal(new Set(pairs).size, pairs.length);
 });
+
+test('every Saudi scene enforces cultural dress lock', () => {
+  const result = generateImagePrompt({
+    sceneType: 'front_selfie',
+    location: 'saudi_cafe'
+  });
+  assert.match(result.prompt, /SAUDI CULTURAL DRESS/);
+  assert.match(result.prompt, /black abaya/i);
+  assert.match(result.prompt, /niqab/i);
+});
+
+test('women in Saudi scenes must be covered', () => {
+  const result = generateImagePrompt({
+    sceneType: 'front_selfie',
+    location: 'saudi_office'
+  });
+  assert.match(result.prompt, /no uncovered female faces/i);
+  assert.match(result.prompt, /no exposed women's hair/i);
+});

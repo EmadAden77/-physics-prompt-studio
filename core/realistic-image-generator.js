@@ -5,14 +5,14 @@ const SCENARIO_PROFILES = {
     template: 'Gym/Fitness Selfie',
     action: 'capture a brief post-workout moment while naturally recovering, adjusting gear, or holding a water bottle rather than posing for an advertisement',
     accessories: { headwear: 'none unless explicitly requested', jewelry: 'minimal or none; no luxury jewelry', device: 'smartphone plus an optional fitness tracker', prop: 'water bottle or gym towel only when it fits the action' },
-    imperfections: ['slight sweat sheen', 'subtle flushed cheeks', 'a few loose hair strands or flyaways', 'small clothing creases from movement'],
+    imperfections: ['slight sweat sheen', 'subtle flushed cheeks', 'small clothing creases from movement'],
     background: ['exercise equipment in believable scale', 'rubber flooring', 'practical ceiling lights', 'ordinary gym users or personal items when appropriate']
   },
   mirror: {
     template: 'Mirror Selfie',
     action: 'capture a quick candid mirror moment while checking the outfit or getting ready, with natural body asymmetry and no staged fashion-ad pose',
     accessories: { headwear: 'match the selected clothing and setting', jewelry: 'minimal everyday jewelry only if contextually appropriate', device: 'smartphone visible in the mirror reflection', prop: 'ordinary nearby personal item only when natural' },
-    imperfections: ['slight mirror smudges or tiny surface marks', 'a few loose hair strands', 'minor clothing wrinkles', 'slightly imperfect framing'],
+    imperfections: ['slight mirror smudges or tiny surface marks', 'minor clothing wrinkles', 'slightly imperfect framing'],
     background: ['mirror edges or frame', 'ordinary bedroom or bathroom items', 'realistic furniture or counter surfaces', 'subtle lived-in clutter']
   },
   car: {
@@ -26,14 +26,14 @@ const SCENARIO_PROFILES = {
     template: 'Street/Outdoor Photo',
     action: 'capture a natural walking, pausing, or lightly leaning moment with real environmental interaction instead of a static portrait pose',
     accessories: { headwear: 'match weather and clothing only', jewelry: 'minimal everyday accessories', device: 'smartphone appropriate to the selected capture type', prop: 'none unless it belongs to the activity' },
-    imperfections: ['light wind effect on hair or clothing when plausible', 'minor posture asymmetry', 'small framing imperfection', 'ordinary environmental wear or dust'],
+    imperfections: ['light wind effect on clothing when plausible', 'minor posture asymmetry', 'small framing imperfection', 'ordinary environmental wear or dust'],
     background: ['realistic pavement or ground texture', 'ordinary Saudi buildings or landscape', 'parked vehicles or sparse pedestrians when appropriate', 'physically plausible sky and depth']
   },
   lifestyle: {
     template: 'Lifestyle Smartphone Photo',
     action: 'capture a real in-between moment while sitting, standing, talking, waiting, drinking, or moving naturally in the chosen setting rather than posing for a staged photograph',
     accessories: { headwear: 'context-appropriate only', jewelry: 'minimal everyday accessories', device: 'smartphone appropriate to the selected capture type', prop: 'only a naturally used object that belongs to the activity' },
-    imperfections: ['a few loose hair strands when visible', 'minor garment wrinkles', 'small posture asymmetry', 'ordinary background clutter or wear'],
+    imperfections: ['minor garment wrinkles', 'small posture asymmetry', 'ordinary background clutter or wear'],
     background: ['context-appropriate furniture or fixtures', 'ordinary personal or work items', 'realistic circulation space', 'small lived-in details rather than showroom styling']
   }
 };
@@ -70,10 +70,19 @@ function productIntegrationRule(description) {
   return 'If the user explicitly mentions a product or prop, integrate it as something naturally used in the activity. Never turn it into a posed display, isolated hero object, or advertisement unless explicitly requested.';
 }
 
-function contextualChecklist(profile, scenario) {
+function backgroundElementsFor(profile, activity) {
+  const peoplePattern = /\b(users?|people|pedestrians?|visitors?|patrons?|famil(?:y|ies)|individuals?|crowd)\b/i;
+  const base = profile.background.filter((item) => !peoplePattern.test(item));
+  if (activity === 'quiet') return base;
+  if (activity === 'lively') return [...base, '3-5 independently behaving background people when people are contextually appropriate, with natural spacing and no duplicated identities'];
+  return [...base, '1-2 independently behaving background people when people are contextually appropriate, kept secondary to the subject'];
+}
+
+function contextualChecklist(scenario, backgroundActivity) {
   return [
     'accessories match the setting and activity',
     'clothing fits the scenario and body movement',
+    `background occupancy matches the selected ${backgroundActivity} activity level`,
     'background elements are observable and contextually plausible',
     'expression matches the action rather than a generic pose',
     scenario === 'mirror' ? 'mirror_rules are explicitly present and reflection geometry remains coherent' : 'mirror_rules are marked not_applicable',
@@ -93,9 +102,11 @@ export function buildRealismPacket(input = {}) {
   const setting = clean(input.location) || 'an ordinary, non-iconic Saudi setting appropriate to the activity';
   const lighting = clean(input.lighting) || 'simple natural or practical light appropriate to the setting';
   const action = clean(input.action) || profile.action;
+  const backgroundActivity = ['quiet', 'normal', 'lively'].includes(input.backgroundActivity) ? input.backgroundActivity : 'normal';
   const backgroundElements = Array.isArray(input.backgroundElements) && input.backgroundElements.length
     ? input.backgroundElements.map(clean).filter(Boolean)
-    : [...profile.background];
+    : backgroundElementsFor(profile, backgroundActivity);
+  const selectedHairStyle = clean(input.hairStyle);
 
   return {
     methodology: 'REALISTIC IMAGE GENERATOR',
@@ -106,7 +117,9 @@ export function buildRealismPacket(input = {}) {
       mirror_rules: mirrorRules,
       age: clean(input.age) || 'preserve the apparent age from the identity reference when provided; otherwise keep a realistic adult age',
       expression,
-      hair: 'preserve reference hairline, density, texture and natural stray hairs when a reference is provided; otherwise use realistic non-perfect hair',
+      hair: selectedHairStyle
+        ? `apply only this visible hair direction/style while preserving reference-consistent hairline, length, density and texture: ${selectedHairStyle}`
+        : 'preserve reference hairline, length, density and texture when a reference is provided; otherwise keep realistic stable hair characteristics',
       clothing,
       face: 'preserve natural asymmetry, pores, under-eye texture, uneven pigmentation and identity-defining details; no beauty retouching'
     },
@@ -120,6 +133,7 @@ export function buildRealismPacket(input = {}) {
     },
     background: {
       setting,
+      activity: backgroundActivity,
       wall_color: clean(input.wallColor) || 'context-dependent; do not invent a decorative wall color if the scene does not require one',
       elements: backgroundElements,
       atmosphere: 'lived-in, ordinary, contextually coherent and not staged',
@@ -127,7 +141,7 @@ export function buildRealismPacket(input = {}) {
     },
     imperfections: [...profile.imperfections],
     product_integration: productIntegrationRule(input.description),
-    contextual_consistency_checklist: contextualChecklist(profile, scenario)
+    contextual_consistency_checklist: contextualChecklist(scenario, backgroundActivity)
   };
 }
 
@@ -138,8 +152,8 @@ export function renderRealismGuidance(packet) {
   return {
     action: `Complete scene action: ${packet.action}. The subject must look occupied by a real moment, not frozen into a generic pose.`,
     accessories: `Keep every accessory consistent with the activity and setting:\n${accessories}`,
-    background: `Observable background elements:\n${background}\nAtmosphere: ${packet.background.atmosphere}.`,
-    imperfections: `Use subtle authentic imperfections only:\n${imperfections}`,
+    background: `Observable background elements:\n${background}\nAtmosphere: ${packet.background.atmosphere}. Background activity: ${packet.background.activity}.`,
+    imperfections: `Use subtle authentic contextual imperfections only:\n${imperfections}`,
     mirror: packet.subject.mirror_rules === DEFAULT_MIRROR_RULE
       ? 'Mirror rules: not applicable for this capture type.'
       : `Mirror rules: ${packet.subject.mirror_rules}`,

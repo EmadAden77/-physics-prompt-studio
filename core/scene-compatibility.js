@@ -49,7 +49,6 @@ export const MIRROR_POSES = [
   { value:'mirror_seated', label:'مرآة — جالس', prompt:'seated naturally in front of a mirror with real seat support, coherent reflected body geometry, and the phone visibly held in the reflection' },
   { value:'mirror_full_length', label:'مرآة — جسم كامل', prompt:'standing at a physically plausible distance for a full-length mirror selfie with visible ground contact, phone reflection, and correct perspective convergence' }
 ];
-
 export const MIRROR_ANGLES = [
   { value:'mirror_eye_level', label:'مرآة — مستوى العين', prompt:'mirror viewpoint composed around eye level with the reflected phone near face height and geometrically consistent reflection lines' },
   { value:'mirror_three_quarter', label:'مرآة — ثلاثة أرباع', prompt:'mild three-quarter body orientation toward the mirror while keeping the reflected phone, face, shoulders, and mirror plane geometrically coherent' },
@@ -57,7 +56,6 @@ export const MIRROR_ANGLES = [
   { value:'mirror_waist_up', label:'مرآة — حتى الخصر', prompt:'waist-up mirror composition with believable phone-to-mirror distance, natural body scale, and no duplicate viewpoints' },
   { value:'mirror_full_length', label:'مرآة — جسم كامل', prompt:'full-length mirror composition showing head-to-foot body scale, ground contact, phone reflection, and consistent mirror perspective' }
 ];
-
 export const THIRD_PERSON_POSES = [
   { value:'third_standing_relaxed', label:'شخص ثالث — واقف طبيعي', prompt:'standing naturally for a third-person smartphone photograph with relaxed weight distribution, mild shoulder asymmetry, and hands resting naturally' },
   { value:'third_seated_relaxed', label:'شخص ثالث — جالس طبيعي', prompt:'seated naturally with correct support, pelvis and back contact, believable foot placement, and relaxed posture while another person takes the photograph' },
@@ -66,7 +64,6 @@ export const THIRD_PERSON_POSES = [
   { value:'third_one_hand_pocket', label:'شخص ثالث — يد في الجيب', prompt:'standing naturally with one hand casually in a pocket, realistic cloth tension, and relaxed non-selfie body language' },
   { value:'third_interaction', label:'شخص ثالث — تفاعل طبيعي', prompt:'naturally interacting with a nearby context-appropriate object or surface while photographed by another person, preserving realistic hand contact and attention' }
 ];
-
 export const THIRD_PERSON_ANGLES = [
   { value:'third_eye_level', label:'شخص ثالث — مستوى العين', prompt:'third-person smartphone camera at natural eye level with believable photographer distance and ordinary handheld composition' },
   { value:'third_three_quarter_left', label:'شخص ثالث — ثلاثة أرباع يسار', prompt:'third-person smartphone viewpoint from a mild left three-quarter angle with realistic perspective and human scale' },
@@ -78,105 +75,19 @@ export const THIRD_PERSON_ANGLES = [
 ];
 
 const PROFILES = {
-  front_selfie: {
-    pose:['standing_relaxed','standing_one_hand','walking_slow','seated_sofa','seated_chair','lean_wall','lean_counter','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'],
-    angle:BASIC_SELFIE_ANGLES,
-    lighting:GENERAL_LIGHTING,
-    camera:FRONT_CAMERAS,
-    framing:SELFIE_FRAMING
-  },
-  standing_selfie: {
-    pose:['standing_relaxed','standing_one_hand','lean_wall','lean_counter','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'],
-    angle:BASIC_SELFIE_ANGLES.filter((value)=>value!=='waist_up').concat('waist_up'),
-    lighting:GENERAL_LIGHTING,
-    camera:FRONT_CAMERAS,
-    framing:['chest_up','waist_up','three_quarter']
-  },
-  seated_selfie: {
-    location:SEATED_LOCATIONS,
-    pose:['seated_sofa','seated_chair','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'],
-    angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'),
-    lighting:INDOOR_GENERAL_LIGHTING.concat('day_open_shade'),
-    camera:FRONT_CAMERAS,
-    framing:['close','chest_up','waist_up','three_quarter']
-  },
-  walking_selfie: {
-    location:WALKING_LOCATIONS,
-    pose:['walking_slow'],
-    angle:['eye_centered','eye_three_quarter_left','eye_three_quarter_right','slightly_high_center','slightly_low_center','low_offcenter','high_offcenter','chest_up'],
-    lighting:OUTDOOR_LIGHTING,
-    camera:FRONT_CAMERAS,
-    framing:['chest_up','waist_up']
-  },
-  inside_car_selfie: {
-    location:CAR_LOCATIONS,
-    pose:['driver_seat','passenger_seat'],
-    angle:['driver_eye_level','driver_slight_high','driver_low'],
-    lighting:CAR_LIGHTING,
-    camera:FRONT_CAMERAS,
-    framing:['close','chest_up','waist_up']
-  },
-  majlis_selfie: {
-    location:MAJLIS_LOCATIONS,
-    pose:['seated_sofa','seated_chair','standing_relaxed','standing_one_hand','coffee_hand','adjust_clothing','one_hand_pocket','close_relaxed'],
-    angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'),
-    lighting:['day_window','night_majlis_warm','night_home_warm','night_phone_screen'],
-    camera:FRONT_CAMERAS,
-    framing:['chest_up','waist_up','three_quarter']
-  },
-  cafe_selfie: {
-    location:CAFE_LOCATIONS,
-    pose:['seated_chair','standing_relaxed','standing_one_hand','lean_counter','coffee_hand','one_hand_pocket','close_relaxed'],
-    angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'),
-    lighting:['day_window','night_cafe_mixed','night_phone_screen'],
-    camera:FRONT_CAMERAS,
-    framing:['close','chest_up','waist_up','three_quarter']
-  },
-  office_selfie: {
-    location:OFFICE_LOCATIONS,
-    pose:['seated_chair','standing_relaxed','standing_one_hand','lean_counter','adjust_clothing','one_hand_pocket','close_relaxed'],
-    angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'),
-    lighting:['day_window','night_office_led','night_phone_screen'],
-    camera:FRONT_CAMERAS,
-    framing:['close','chest_up','waist_up','three_quarter']
-  },
-  outdoor_selfie: {
-    location:OUTDOOR_LOCATIONS,
-    pose:['standing_relaxed','standing_one_hand','walking_slow','lean_wall','door_open_car','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'],
-    angle:BASIC_SELFIE_ANGLES.concat('doorway_three_quarter'),
-    lighting:OUTDOOR_LIGHTING,
-    camera:FRONT_CAMERAS,
-    framing:['chest_up','waist_up','three_quarter']
-  },
-  mirror_selfie: {
-    location:MIRROR_LOCATIONS,
-    poseCatalog:MIRROR_POSES,
-    angleCatalog:MIRROR_ANGLES,
-    lighting:['day_window','night_home_warm','night_cafe_mixed','night_office_led','night_phone_screen'],
-    camera:['xiaomi15_front','iphone15pm_front','generic_front','smartphone_rear'],
-    framing:['chest_up','waist_up','three_quarter','full_body']
-  },
-  third_person_portrait: {
-    poseCatalog:THIRD_PERSON_POSES,
-    angleCatalog:THIRD_PERSON_ANGLES,
-    lighting:GENERAL_LIGHTING,
-    camera:['smartphone_rear'],
-    framing:['close','chest_up','waist_up','three_quarter']
-  },
-  full_body_third_person: {
-    poseCatalog:THIRD_PERSON_POSES.filter((item)=>item.value!=='third_seated_relaxed'),
-    angleCatalog:THIRD_PERSON_ANGLES.filter((item)=>['third_eye_level','third_three_quarter_left','third_three_quarter_right','third_slight_low','third_full_body_eye','third_candid_side'].includes(item.value)),
-    lighting:GENERAL_LIGHTING,
-    camera:['smartphone_rear'],
-    framing:['full_body']
-  },
-  candid_third_person: {
-    poseCatalog:THIRD_PERSON_POSES,
-    angleCatalog:THIRD_PERSON_ANGLES,
-    lighting:GENERAL_LIGHTING,
-    camera:['smartphone_rear'],
-    framing:['chest_up','waist_up','three_quarter','full_body']
-  }
+  front_selfie: { pose:['standing_relaxed','standing_one_hand','walking_slow','seated_sofa','seated_chair','lean_wall','lean_counter','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES, lighting:GENERAL_LIGHTING, camera:FRONT_CAMERAS, framing:SELFIE_FRAMING },
+  standing_selfie: { pose:['standing_relaxed','standing_one_hand','lean_wall','lean_counter','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES, lighting:GENERAL_LIGHTING, camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
+  seated_selfie: { location:SEATED_LOCATIONS, pose:['seated_sofa','seated_chair','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'), lighting:INDOOR_GENERAL_LIGHTING.concat('day_open_shade'), camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up','three_quarter'] },
+  walking_selfie: { location:WALKING_LOCATIONS, pose:['walking_slow'], angle:['eye_centered','eye_three_quarter_left','eye_three_quarter_right','slightly_high_center','slightly_low_center','low_offcenter','high_offcenter','chest_up'], lighting:OUTDOOR_LIGHTING, camera:FRONT_CAMERAS, framing:['chest_up','waist_up'] },
+  inside_car_selfie: { location:CAR_LOCATIONS, pose:['driver_seat','passenger_seat'], angle:['driver_eye_level','driver_slight_high','driver_low'], lighting:CAR_LIGHTING, camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up'] },
+  majlis_selfie: { location:MAJLIS_LOCATIONS, pose:['seated_sofa','seated_chair','standing_relaxed','standing_one_hand','coffee_hand','adjust_clothing','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'), lighting:['day_window','night_majlis_warm','night_home_warm','night_phone_screen'], camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
+  cafe_selfie: { location:CAFE_LOCATIONS, pose:['seated_chair','standing_relaxed','standing_one_hand','lean_counter','coffee_hand','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'), lighting:['day_window','night_cafe_mixed','night_phone_screen'], camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up','three_quarter'] },
+  office_selfie: { location:OFFICE_LOCATIONS, pose:['seated_chair','standing_relaxed','standing_one_hand','lean_counter','adjust_clothing','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'), lighting:['day_window','night_office_led','night_phone_screen'], camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up','three_quarter'] },
+  outdoor_selfie: { location:OUTDOOR_LOCATIONS, pose:['standing_relaxed','standing_one_hand','walking_slow','lean_wall','door_open_car','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('doorway_three_quarter'), lighting:OUTDOOR_LIGHTING, camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
+  mirror_selfie: { location:MIRROR_LOCATIONS, poseCatalog:MIRROR_POSES, angleCatalog:MIRROR_ANGLES, lighting:['day_window','night_home_warm','night_cafe_mixed','night_office_led','night_phone_screen'], camera:['xiaomi15_front','iphone15pm_front','generic_front','smartphone_rear'], framing:['chest_up','waist_up','three_quarter','full_body'] },
+  third_person_portrait: { poseCatalog:THIRD_PERSON_POSES, angleCatalog:THIRD_PERSON_ANGLES, lighting:GENERAL_LIGHTING, camera:['smartphone_rear'], framing:['close','chest_up','waist_up','three_quarter'] },
+  full_body_third_person: { poseCatalog:THIRD_PERSON_POSES.filter((item)=>item.value!=='third_seated_relaxed'), angleCatalog:THIRD_PERSON_ANGLES.filter((item)=>['third_eye_level','third_three_quarter_left','third_three_quarter_right','third_slight_low','third_full_body_eye','third_candid_side'].includes(item.value)), lighting:GENERAL_LIGHTING, camera:['smartphone_rear'], framing:['full_body'] },
+  candid_third_person: { poseCatalog:THIRD_PERSON_POSES, angleCatalog:THIRD_PERSON_ANGLES, lighting:GENERAL_LIGHTING, camera:['smartphone_rear'], framing:['chest_up','waist_up','three_quarter','full_body'] }
 };
 
 function filterValues(options, allowed) {
@@ -205,11 +116,42 @@ export function compatibilitySnapshot(sceneType, catalogs = {}) {
 }
 
 export function recommendedDefaults(sceneType) {
-  if (['third_person_portrait','full_body_third_person','candid_third_person'].includes(sceneType)) {
-    return { camera:'smartphone_rear', framing: sceneType === 'full_body_third_person' ? 'full_body' : 'chest_up' };
-  }
+  if (['third_person_portrait','full_body_third_person','candid_third_person'].includes(sceneType)) return { camera:'smartphone_rear', framing: sceneType === 'full_body_third_person' ? 'full_body' : 'chest_up' };
   if (sceneType === 'mirror_selfie') return { camera:'smartphone_rear', framing:'waist_up' };
-  if (sceneType === 'walking_selfie') return { camera:'xiaomi15_front', framing:'chest_up' };
-  if (sceneType === 'inside_car_selfie') return { camera:'xiaomi15_front', framing:'chest_up' };
   return { camera:'xiaomi15_front', framing:'chest_up' };
+}
+
+export function validateCompatibilityCatalogs(catalogs = {}) {
+  const errors = [];
+  const unused = {};
+  const kinds = ['location','clothing','pose','angle','lighting','camera','framing'];
+  const specialValues = {
+    pose: new Set([...MIRROR_POSES, ...THIRD_PERSON_POSES].map((item) => item.value)),
+    angle: new Set([...MIRROR_ANGLES, ...THIRD_PERSON_ANGLES].map((item) => item.value))
+  };
+
+  for (const [sceneType, profile] of Object.entries(PROFILES)) {
+    for (const kind of kinds) {
+      const explicit = profile[kind];
+      if (!Array.isArray(explicit)) continue;
+      const available = new Set((catalogs[kind] || []).map((item) => item.value));
+      for (const value of specialValues[kind] || []) available.add(value);
+      for (const value of explicit) if (!available.has(value)) errors.push(`${sceneType}.${kind} references missing value: ${value}`);
+    }
+  }
+
+  for (const kind of kinds) {
+    const items = catalogs[kind] || [];
+    const used = new Set();
+    const unrestricted = Object.values(PROFILES).some((profile) => !profile[kind] && !(kind === 'pose' && profile.poseCatalog) && !(kind === 'angle' && profile.angleCatalog));
+    if (unrestricted) items.forEach((item) => used.add(item.value));
+    for (const profile of Object.values(PROFILES)) {
+      for (const value of profile[kind] || []) used.add(value);
+      if (kind === 'pose') for (const item of profile.poseCatalog || []) used.add(item.value);
+      if (kind === 'angle') for (const item of profile.angleCatalog || []) used.add(item.value);
+    }
+    unused[kind] = items.map((item) => item.value).filter((value) => !used.has(value));
+  }
+
+  return { valid: errors.length === 0, errors, unused };
 }

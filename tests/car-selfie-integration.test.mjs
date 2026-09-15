@@ -17,6 +17,19 @@ test('car-selfie.js does not use Math.random()', () => {
   assert.doesNotMatch(js, /Math\.random\s*\(/);
 });
 
+test('inside and outside modes hide irrelevant fields and reset their defaults', () => {
+  assert.match(js, /seatField\.hidden\s*=\s*!inside/);
+  assert.match(js, /standingPoseField\.hidden\s*=\s*inside/);
+  assert.match(js, /seat\.value\s*=\s*['"]driver_seat['"]/);
+  assert.match(js, /standingPose\.value\s*=\s*['"]door_open_car['"]/);
+});
+
+test('local image processing and processed download remain wired', () => {
+  assert.match(js, /processImageBlob\s*\(/);
+  assert.match(js, /function\s+downloadProcessedImage\s*\(/);
+  assert.match(js, /downloadProcessed\.addEventListener\s*\(\s*['"]click['"]/);
+});
+
 test('car-selfie.html exposes a processing canvas', () => {
   assert.match(html, /<canvas\b[^>]*id=["']processedCanvas["'][^>]*>/i);
 });

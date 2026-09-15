@@ -65,7 +65,7 @@ test('realism enrichers improve old catalog prompts and are idempotent', () => {
 test('browser app wires expanded catalogs into generation and optimizer scene context', async () => {
   const app = await readFile(new URL('../app.js', import.meta.url), 'utf8');
   assert.match(app, /EXTRA_CLOTHING_OPTIONS/);
-  assert.match(app, /extraLocationsForScene\(sceneType\)/);
+  assert.match(app, /extraLocationsForScene\(baseSceneType\)/);
   assert.match(app, /enrichLocationPrompt\(selectedPrompt\(controls\.location\)\)/);
   assert.match(app, /enrichClothingPrompt\(selectedPrompt\(controls\.clothing\)\)/);
 });

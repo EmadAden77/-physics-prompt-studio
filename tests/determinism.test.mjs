@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {
+  newSeed,
+  normalizeSeed,
   randomizeWithSeed,
   randomizationOptionsForScene,
   seededRandom,
@@ -71,10 +73,34 @@ test('seededRandom and pickRandom are deterministic', () => {
   assert.deepEqual(picks1, picks2);
 });
 
-test('new scene button uses crypto seeds and persists the visible seed input', () => {
+test('normalizeSeed clamps invalid and out-of-range values', () => {
+  assert.equal(normalizeSeed(undefined), 42);
+  assert.equal(normalizeSeed('not-a-number'), 42);
+  assert.equal(normalizeSeed(0), 1);
+  assert.equal(normalizeSeed(-50), 1);
+  assert.equal(normalizeSeed(1.9), 1);
+  assert.equal(normalizeSeed('250'), 250);
+  assert.equal(normalizeSeed(999999.9), 999999);
+  assert.equal(normalizeSeed(1000000), 999999);
+});
+
+test('newSeed uses crypto.getRandomValues and maps into the supported range', (t) => {
+  const sourceValue = 1234567890;
+  const mockedGetRandomValues = t.mock.method(globalThis.crypto, 'getRandomValues', (buffer) => {
+    buffer[0] = sourceValue;
+    return buffer;
+  });
+
+  const seed = newSeed();
+  assert.equal(seed, (sourceValue % 999999) + 1);
+  assert.ok(seed >= 1 && seed <= 999999);
+  assert.equal(mockedGetRandomValues.mock.callCount(), 1);
+  assert.equal(mockedGetRandomValues.mock.calls[0].arguments[0] instanceof Uint32Array, true);
+});
+
+test('new scene button persists the visible seed input without Math.random', () => {
   const app = fs.readFileSync('app.js', 'utf8');
   const html = fs.readFileSync('index.html', 'utf8');
-  assert.match(app, /crypto\?\.getRandomValues|crypto\.getRandomValues|getRandomValues\(buffer\)/);
   assert.doesNotMatch(app, /Math\.random\s*\(/);
   assert.match(app, /localStorage\?\.setItem\(SEED_STORAGE_KEY/);
   assert.match(app, /localStorage\?\.getItem\(SEED_STORAGE_KEY/);

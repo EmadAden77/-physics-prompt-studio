@@ -1,11 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { compilePrompt, createLedger, sectionOrder, validatePacket } from '../core/prompt-optimizer.js';
+import { compilePrompt, createLedger, sectionOrder, targetSurface, validatePacket } from '../core/prompt-optimizer.js';
 
 test('preserves the original prompt byte-for-byte', () => {
   const source = 'Build the app.\n\nDo not change the public API.\nReturn JSON.';
   const packet = compilePrompt(source, { surface: 'codex' });
   assert.equal(packet.original_prompt, source);
+});
+
+test('optimizer is hard-locked to ChatGPT even if another surface is requested', () => {
+  assert.equal(targetSurface(), 'chatgpt');
+  for (const requested of ['codex', 'openai_api', 'other', 'unknown']) {
+    const packet = compilePrompt('Create a short image prompt.', { surface: requested });
+    assert.equal(packet.target_surface, 'chatgpt');
+    assert.equal(packet.validation.valid, true);
+  }
 });
 
 test('creates all seven canonical section records in order', () => {

@@ -19,12 +19,49 @@ const catalogs = {
 const values = (items) => items.map((item) => item.value);
 
 test('LOCATION_CATALOG is single source of truth', () => {
-  assert.equal(LOCATION_CATALOG.length, 105);
-  assert.equal(new Set(LOCATION_CATALOG.map((item) => item.value)).size, 105, 'location values must be unique');
+  assert.equal(LOCATION_CATALOG.length, 125);
+  assert.equal(new Set(LOCATION_CATALOG.map((item) => item.value)).size, 125, 'location values must be unique');
   for (const loc of LOCATION_CATALOG) {
     assert.ok(Array.isArray(loc.sceneTypes), `${loc.value}: sceneTypes must be an array`);
     assert.ok(loc.sceneTypes.length > 0, `${loc.value}: missing sceneTypes`);
   }
+});
+
+test('LOCATION_CATALOG is now 125', async () => {
+  const { LOCATION_CATALOG } = await import('../core/scene-builder.js');
+  assert.equal(LOCATION_CATALOG.length, 125);
+});
+
+test('there are exactly 20 military locations', async () => {
+  const { LOCATION_CATALOG } = await import('../core/scene-builder.js');
+  const military = LOCATION_CATALOG.filter(l => l.value.startsWith('military_'));
+  assert.equal(military.length, 20);
+});
+
+test('military_meal_selfie exposes at least 20 locations', async () => {
+  const { locationsForScene } = await import('../core/scene-compatibility.js');
+  const meal = locationsForScene('military_meal_selfie');
+  assert.ok(meal.length >= 20, `Only ${meal.length} locations`);
+});
+
+test('every military location explicitly forbids emblems and weapons', async () => {
+  const { LOCATION_CATALOG } = await import('../core/scene-builder.js');
+  const military = LOCATION_CATALOG.filter(l => l.value.startsWith('military_'));
+  for (const loc of military) {
+    assert.match(loc.prompt, /no emblems|without any emblems|no identifiable emblems/i,
+      `${loc.value}: missing emblems prohibition`);
+    assert.match(loc.prompt, /no visible weapons|without weapons|no weapons|no emblems[^.]*\bweapons\b/i,
+      `${loc.value}: missing weapons prohibition`);
+  }
+});
+
+test('military_meal_selfie does not leak civilian locations', async () => {
+  const { locationsForScene } = await import('../core/scene-compatibility.js');
+  const meal = locationsForScene('military_meal_selfie');
+  const values = meal.map(l => l.value);
+  assert.ok(!values.includes('saudi_office'));
+  assert.ok(!values.includes('modern_saudi_majlis'));
+  assert.ok(!values.includes('specialty_coffee'));
 });
 
 test('SAUDI_LOCATIONS is a derived alias of LOCATION_CATALOG', () => {

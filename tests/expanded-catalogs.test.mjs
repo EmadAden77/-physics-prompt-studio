@@ -9,7 +9,7 @@ import {
 } from '../core/expanded-catalogs.js';
 
 test('unified Saudi location catalog is broad and unique', () => {
-  assert.equal(LOCATION_CATALOG.length, 105);
+  assert.equal(LOCATION_CATALOG.length, 125);
   const values = LOCATION_CATALOG.map((item) => item.value);
   assert.equal(new Set(values).size, values.length, 'location values must be unique');
 });

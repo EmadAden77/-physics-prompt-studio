@@ -70,7 +70,7 @@ test('FORMAL_LOOKS contains the two newly added timeless combinations', async ()
 test('SAUDI_LOCATIONS is a derived alias of LOCATION_CATALOG', async () => {
   const { SAUDI_LOCATIONS, LOCATION_CATALOG } = await import('../core/scene-builder.js');
   assert.equal(SAUDI_LOCATIONS.length, LOCATION_CATALOG.length);
-  assert.equal(SAUDI_LOCATIONS.length, 105);
+  assert.equal(SAUDI_LOCATIONS.length, 125);
   assert.deepEqual(
     SAUDI_LOCATIONS.map((location) => location.value).sort(),
     LOCATION_CATALOG.map((location) => location.value).sort()
@@ -83,9 +83,9 @@ test('office_selfie has expanded location coverage', async () => {
   assert.ok(officeLocations.length >= 15, `office_selfie location coverage is ${officeLocations.length}; expected at least 15`);
 });
 
-test('LOCATION_CATALOG contains 105 locations', async () => {
+test('LOCATION_CATALOG contains 125 locations', async () => {
   const { LOCATION_CATALOG } = await import('../core/scene-builder.js');
-  assert.equal(LOCATION_CATALOG.length, 105);
+  assert.equal(LOCATION_CATALOG.length, 125);
 });
 
 test('new office locations expose their required sceneTypes', async () => {

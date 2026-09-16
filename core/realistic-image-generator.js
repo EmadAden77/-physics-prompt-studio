@@ -64,13 +64,24 @@ function detectScenario(input = {}) {
   const requestedSceneType = clean(input.requestedSceneType).toLowerCase();
   const capture = clean(input.captureType).toLowerCase();
   const haystack = [sceneType, requestedSceneType, input.location, input.description, input.pose].map(clean).join(' ').toLowerCase();
-  const thirdPerson = /third-person/.test(capture) || /third[_ -]?person|شخص ثالث/.test(`${sceneType} ${requestedSceneType} ${haystack}`);
-  const carContext = /car|vehicle|driver|passenger|parking|driveway|سيارة|مركبة|موقف|مقعد السائق/.test(haystack);
+
+  if (/mirror selfie/i.test(capture)) return 'mirror';
+  if (/third-person/i.test(capture)) {
+    const carContext = /car|vehicle|driver|passenger|parking|driveway|سيارة|مركبة|موقف|مقعد السائق/.test(haystack);
+    return carContext ? 'third_person_car_exterior' : 'lifestyle';
+  }
+
+  const explicitSceneType = `${sceneType} ${requestedSceneType}`;
+  if (/gym|fitness|workout|نادي|تمرين/.test(explicitSceneType)) return 'gym';
+  if (/mirror_selfie/i.test(explicitSceneType)) return 'mirror';
+
   if (/gym|fitness|workout|نادي|تمرين/.test(haystack)) return 'gym';
-  if (/mirror|مرآة/.test(haystack)) return 'mirror';
-  if (thirdPerson && carContext) return 'third_person_car_exterior';
+
+  const carContext = /car|vehicle|driver|passenger|parking|driveway|سيارة|مركبة|موقف|مقعد السائق/.test(haystack);
   if (carContext) return 'car';
+
   if (/outdoor|street|walking|desert|beach|corniche|park|road|شارع|خارجي|مشي|صحراء|شاطئ|كورنيش|حديقة/.test(haystack)) return 'outdoor';
+
   return 'lifestyle';
 }
 

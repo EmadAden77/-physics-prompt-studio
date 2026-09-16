@@ -13,13 +13,14 @@ import {
   SELFIE_ANGLES,
   LIGHTING_PROFILES
 } from '../core/scene-builder.js';
-import { EXTRA_CLOTHING_OPTIONS } from '../core/expanded-catalogs.js';
+import { EXTRA_CLOTHING_OPTIONS, HOME_CLOTHING, HOME_SELFIE_POSES } from '../core/expanded-catalogs.js';
 import { SCENE_TYPES, CAMERA_PROFILES, FRAMING_OPTIONS } from '../core/prompt-generator.js';
 import {
   MIRROR_POSES,
   MIRROR_ANGLES,
   THIRD_PERSON_POSES,
   THIRD_PERSON_ANGLES,
+  hasCompatibilityProfile,
   validateCompatibilityCatalogs
 } from '../core/scene-compatibility.js';
 import { EXTRA_SCENE_TYPES, baseSceneTypeFor } from '../core/scene-type-expansion.js';
@@ -52,13 +53,25 @@ function haystack(item) {
 
 const combined = {
   location: LOCATION_CATALOG,
-  clothing: [...CLOTHING_OPTIONS, ...EXTRA_CLOTHING_OPTIONS, ...FORMAL_LOOKS],
-  pose: [...SELFIE_POSES, ...MIRROR_POSES, ...THIRD_PERSON_POSES],
+  clothing: [...CLOTHING_OPTIONS, ...EXTRA_CLOTHING_OPTIONS, ...HOME_CLOTHING, ...FORMAL_LOOKS],
+  pose: [...SELFIE_POSES, ...HOME_SELFIE_POSES, ...MIRROR_POSES, ...THIRD_PERSON_POSES],
   angle: [...SELFIE_ANGLES, ...MIRROR_ANGLES, ...THIRD_PERSON_ANGLES],
   lighting: LIGHTING_PROFILES,
   camera: CAMERA_PROFILES,
   framing: FRAMING_OPTIONS
 };
+
+const HOME_SCENE_VALUES = [
+  'reclining_bed_selfie','lying_bed_selfie','morning_bed_selfie','night_bed_selfie','sofa_relaxed_selfie',
+  'sofa_lying_selfie','floor_seated_selfie','floor_leaning_wall_selfie','reading_at_home_selfie','tea_at_home_selfie',
+  'friday_morning_selfie','home_evening_selfie','window_light_home_selfie','balcony_morning_selfie','home_couch_blanket_selfie'
+];
+
+const HOME_POSE_VALUES = [
+  'reclining_bed','sitting_bed_cross','seated_bed_edge','pillow_propped','lying_back','lying_side','lying_stomach',
+  'sofa_lean_back','sofa_corner','sofa_one_knee','sofa_stretched','sofa_lying_side','floor_cross_legs','floor_back_wall',
+  'floor_one_knee_up','squatting'
+];
 
 test('audit tree and exact line counts are reproducible', () => {
   const files = allFiles();
@@ -76,9 +89,11 @@ test('every catalog has unique usable values', () => {
     SAUDI_LOCATIONS,
     CLOTHING_OPTIONS,
     EXTRA_CLOTHING_OPTIONS,
+    HOME_CLOTHING,
     FORMAL_LOOKS,
     HAIR_STYLES,
     SELFIE_POSES,
+    HOME_SELFIE_POSES,
     SELFIE_ANGLES,
     LIGHTING_PROFILES,
     CAMERA_PROFILES,
@@ -93,8 +108,8 @@ test('every catalog has unique usable values', () => {
 test('compatibility profiles reference only real values and leave no base catalog item orphaned', () => {
   const result = validateCompatibilityCatalogs({
     location: LOCATION_CATALOG,
-    clothing: [...CLOTHING_OPTIONS, ...FORMAL_LOOKS],
-    pose: SELFIE_POSES,
+    clothing: [...CLOTHING_OPTIONS, ...HOME_CLOTHING, ...FORMAL_LOOKS],
+    pose: [...SELFIE_POSES, ...HOME_SELFIE_POSES],
     angle: SELFIE_ANGLES,
     lighting: LIGHTING_PROFILES,
     camera: CAMERA_PROFILES,
@@ -119,6 +134,43 @@ test('every expanded scene maps to a real base type and every declared filter ma
   }
 });
 
+test('home relaxation expansion has exactly 15 unique scenes', () => {
+  const relaxation = EXTRA_SCENE_TYPES.filter((scene) => scene.group === 'سيلفي استرخاء');
+  assert.equal(relaxation.length, 15);
+  assert.deepEqual(relaxation.map((scene) => scene.value).sort(), [...HOME_SCENE_VALUES].sort());
+  assert.equal(new Set(relaxation.map((scene) => scene.value)).size, 15);
+  for (const sceneType of HOME_SCENE_VALUES) assert.equal(hasCompatibilityProfile(sceneType), true, `${sceneType} needs a direct compatibility profile`);
+});
+
+test('home catalogs add 15 scoped clothing options and 16 new poses without changing base pose count', () => {
+  assert.equal(SELFIE_POSES.length, 16, 'base SELFIE_POSES contract must stay backward compatible');
+  assert.equal(HOME_CLOTHING.length, 15);
+  assert.equal(HOME_SELFIE_POSES.length, 16);
+  assert.deepEqual(HOME_SELFIE_POSES.map((item) => item.value).sort(), [...HOME_POSE_VALUES].sort());
+  const homeScenes = new Set(HOME_SCENE_VALUES);
+  for (const item of HOME_CLOTHING) {
+    assert.ok(Array.isArray(item.sceneTypes) && item.sceneTypes.length > 0, `${item.value} must declare sceneTypes`);
+    for (const sceneType of item.sceneTypes) assert.ok(homeScenes.has(sceneType), `${item.value} references non-home scene ${sceneType}`);
+  }
+});
+
+test('home clothing and poses reach app scene options without leaking to ordinary office scenes', async () => {
+  const { randomizationOptionsForScene } = await import('../app.js');
+  const morning = randomizationOptionsForScene('morning_bed_selfie');
+  const morningClothing = new Set(morning.clothing.map((item) => item.value));
+  const morningPoses = new Set(morning.pose.map((item) => item.value));
+  assert.ok(morningClothing.has('pj-cotton-navy'));
+  assert.ok(morningClothing.has('bathrobe-cream'));
+  assert.ok(!morningClothing.has('tshirt-jeans-home'));
+  assert.deepEqual([...morningPoses].sort(), ['pillow_propped','reclining_bed','sitting_bed_cross'].sort());
+
+  const floor = randomizationOptionsForScene('floor_seated_selfie');
+  assert.ok(floor.pose.some((item) => item.value === 'squatting'));
+  const office = randomizationOptionsForScene('office_selfie');
+  const homeValues = new Set(HOME_CLOTHING.map((item) => item.value));
+  assert.equal(office.clothing.some((item) => homeValues.has(item.value)), false);
+});
+
 test('main UI exposes and app reads every scene-builder control', () => {
   const html = fs.readFileSync('index.html', 'utf8');
   const app = fs.readFileSync('app.js', 'utf8');
@@ -135,6 +187,8 @@ test('main UI exposes and app reads every scene-builder control', () => {
   assert.match(app, /HAIR_STYLES/);
   assert.match(app, /FORMAL_LOOKS/);
   assert.match(app, /EXTRA_CLOTHING_OPTIONS/);
+  assert.match(app, /HOME_CLOTHING/);
+  assert.match(app, /HOME_SELFIE_POSES/);
 });
 
 test('unified location catalog remains complete and the legacy alias stays derived', () => {

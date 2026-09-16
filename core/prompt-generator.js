@@ -149,11 +149,12 @@ export function generateImagePrompt(input={}){
   const location=clean(input.location)||'a generic, ordinary Saudi Arabian setting appropriate to the scene, without inventing a specific city or landmark';
   const clothing=clean(input.clothing)||'realistic context-appropriate clothing with believable textile weight, seams, folds and material response';
   const hair=clean(input.hairStyle), poseInput=clean(input.pose), angle=clean(input.angle);
-  const selectedBedroomPose=requested.startsWith('bedroom_')
+  const bedroomPoseCameraEnabled=requested==='bedroom_selfie' || requested==='bedroom_mirror_selfie';
+  const selectedBedroomPose=bedroomPoseCameraEnabled
     ? BEDROOM_POSES.find((item)=>item.value===poseInput || item.prompt===poseInput)
     : undefined;
   const pose=selectedBedroomPose?.prompt || poseInput || scene.prompt;
-  const cameraHintText=selectedBedroomPose?.cameraHint || angle || (scene.capture.includes('selfie') ? 'front camera at eye level with a tiny natural handheld roll' : '');
+  const cameraHintText=selectedBedroomPose?.cameraHint || angle || (requested==='bedroom_selfie' ? 'front camera at eye level with a tiny natural handheld roll' : requested==='bedroom_mirror_selfie' ? 'mirror-view camera at eye level, phone visible in reflection' : '');
   const contextual=resolveContextAwareConstraints({
     sceneType:scene.value,
     requestedSceneType:requested,

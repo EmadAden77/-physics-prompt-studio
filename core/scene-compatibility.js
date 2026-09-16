@@ -1,5 +1,5 @@
-import { LOCATION_CATALOG, HAIR_STYLES, HOME_CLOTHING } from './scene-builder.js';
-import { baseSceneTypeFor, sceneMeta, HOME_SCENE_TYPES } from './scene-type-expansion.js';
+import { LOCATION_CATALOG, HAIR_STYLES, HOME_CLOTHING, BEDROOM_POSES } from './scene-builder.js';
+import { baseSceneTypeFor, HOME_SCENE_TYPES } from './scene-type-expansion.js';
 
 const GENERAL_LIGHTING = [
   'day_direct_sun','day_open_shade','day_overcast','day_window','golden_hour','blue_sky_noon',
@@ -73,22 +73,18 @@ const PROFILES = {
   candid_third_person: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, poseCatalog:THIRD_PERSON_POSES, angleCatalog:THIRD_PERSON_ANGLES, lighting:GENERAL_LIGHTING, camera:['smartphone_rear'], framing:['chest_up','waist_up','three_quarter','full_body'] },
   military_meal_selfie: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, pose:['seated_chair','seated_sofa','coffee_hand','standing_relaxed','standing_one_hand'], angle:BASIC_SELFIE_ANGLES, lighting:['night_office_led','day_window','night_cafe_mixed','night_home_warm'], camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
   military_meal_third_person: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, poseCatalog:THIRD_PERSON_POSES, angleCatalog:THIRD_PERSON_ANGLES, lighting:['night_office_led','day_window','night_cafe_mixed','golden_hour'], camera:['smartphone_rear'], framing:['chest_up','waist_up','three_quarter'] },
-  military_coffee_selfie: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, pose:['coffee_hand','seated_chair','standing_relaxed'], angle:BASIC_SELFIE_ANGLES, lighting:['night_office_led','day_window','night_cafe_mixed'], camera:FRONT_CAMERAS, framing:['chest_up','waist_up'] }
+  military_coffee_selfie: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, pose:['coffee_hand','seated_chair','standing_relaxed'], angle:BASIC_SELFIE_ANGLES, lighting:['night_office_led','day_window','night_cafe_mixed'], camera:FRONT_CAMERAS, framing:['chest_up','waist_up'] },
+  bedroom_selfie: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, poseCatalog:BEDROOM_POSES.filter((item)=>item.group!=='مرآة'), angle:BASIC_SELFIE_ANGLES, lighting:['day_window','night_home_warm','night_phone_screen','screen_flash_only','low_key_bedroom'], camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up'] },
+  bedroom_mirror_selfie: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, poseCatalog:BEDROOM_POSES.filter((item)=>item.group==='مرآة'), angleCatalog:MIRROR_ANGLES, lighting:['day_window','night_home_warm','night_phone_screen'], camera:['xiaomi15_front','smartphone_rear'], framing:['waist_up','three_quarter','full_body'] },
+  bedroom_third_person: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, poseCatalog:THIRD_PERSON_POSES, angleCatalog:THIRD_PERSON_ANGLES, lighting:['day_window','night_home_warm','night_phone_screen','phone_led_flash_only','low_key_bedroom'], camera:['smartphone_rear'], framing:['chest_up','waist_up','three_quarter'] }
 };
 
 export function homeClothingForScene(sceneType) {
-  return HOME_CLOTHING.filter((item) => item.sceneTypes.includes(sceneType));
+  if (!sceneType.startsWith('bedroom_')) return [];
+  return HOME_CLOTHING;
 }
 
 function profileFor(sceneType) {
-  if (HOME_SCENE_TYPES.includes(sceneType)) {
-    const meta = sceneMeta(sceneType);
-    return {
-      pose: meta.pose, angle: meta.angle, lighting: meta.lighting,
-      camera: FRONT_CAMERAS, framing: ['close', 'chest_up'],
-      backgroundActivityAllowed: PRIVATE_BACKGROUND_ACTIVITY
-    };
-  }
   return PROFILES[sceneType] || PROFILES.front_selfie;
 }
 
@@ -99,8 +95,7 @@ function filterValues(options, allowed) {
 }
 
 export function locationsForScene(sceneType) {
-  const homeLocations = HOME_SCENE_TYPES.includes(sceneType) && sceneMeta(sceneType).locationValues;
-  if (homeLocations) return filterValues(LOCATION_CATALOG, homeLocations);
+  if (sceneType.startsWith('bedroom_')) return LOCATION_CATALOG.filter((location)=>location.value==='saudi_bedroom_livedin');
   const direct = LOCATION_CATALOG.filter((location) => location.sceneTypes.includes(sceneType));
   if (direct.length) return direct;
   const base = baseSceneTypeFor(sceneType);
@@ -155,7 +150,8 @@ function isPhoneScreenOnlyLighting(lighting = '') {
 }
 
 function isNaturallyDarkPhoneContext(sceneType, location = '', requestedSceneType = '') {
-  if (sceneType === 'night_bed_selfie' || requestedSceneType === 'night_bed_selfie') return true;
+  const requested = requestedSceneType || sceneType;
+  if (requested.startsWith('bedroom_') || sceneType === 'night_bed_selfie' || requestedSceneType === 'night_bed_selfie') return true;
   const context = normalizedContext(sceneType, location, requestedSceneType);
   return sceneType === 'inside_car_selfie' || /street[_ -]?night|night[_ -]?(?:street|parking|road|desert|corniche)|parking[_ -]?lot[_ -]?night|phone[_ -]?screen[_ -]?only|dark[_ -]?(?:street|road|parking)|شارع ليلي|موقف ليلي/.test(context);
 }
@@ -214,10 +210,6 @@ export function compatibleOptions(sceneType, kind, baseOptions = []) {
   if (kind === 'hairStyle') return hairStylesForScene(sceneType);
   if (kind === 'clothing' && HOME_SCENE_TYPES.includes(sceneType)) return homeClothingForScene(sceneType);
   if (kind === 'clothing') return baseOptions.filter((item) => !item.sceneTypes || item.sceneTypes.includes(sceneType));
-  if (kind === 'pose' && HOME_SCENE_TYPES.includes(sceneType)) {
-    const allowed = sceneMeta(sceneType).pose;
-    return baseOptions.filter((item) => allowed.includes(item.value) && (!item.sceneTypes || item.sceneTypes.includes(sceneType)));
-  }
   const profile = profileFor(sceneType);
   if (kind === 'pose' && profile.poseCatalog) return [...profile.poseCatalog];
   if (kind === 'angle' && profile.angleCatalog) return [...profile.angleCatalog];
@@ -244,6 +236,8 @@ export function recommendedDefaults(sceneType) {
     location:'supermarket_aisle', pose:'walking_slow', angle:'eye_centered', lighting:'supermarket_fluorescent',
     camera:'xiaomi15_front', framing:'chest_up'
   };
+  if (sceneType === 'bedroom_mirror_selfie') return { camera:'smartphone_rear', framing:'waist_up' };
+  if (sceneType === 'bedroom_third_person') return { camera:'smartphone_rear', framing:'chest_up' };
   if (['third_person_portrait','full_body_third_person','candid_third_person'].includes(sceneType)) return { camera:'smartphone_rear', framing: sceneType === 'full_body_third_person' ? 'full_body' : 'chest_up' };
   if (sceneType === 'mirror_selfie') return { camera:'smartphone_rear', framing:'waist_up' };
   return { camera:'xiaomi15_front', framing:'chest_up' };
@@ -261,11 +255,11 @@ export function validateCompatibilityCatalogs(catalogs = {}) {
   const unused = {};
   const kinds = ['location','clothing','hairStyle','pose','angle','lighting','camera','framing'];
   const specialValues = {
-    pose: new Set([...MIRROR_POSES, ...THIRD_PERSON_POSES].map((item) => item.value)),
+    pose: new Set([...MIRROR_POSES, ...THIRD_PERSON_POSES, ...BEDROOM_POSES].map((item) => item.value)),
     angle: new Set([...MIRROR_ANGLES, ...THIRD_PERSON_ANGLES].map((item) => item.value))
   };
 
-  const profiles = { ...PROFILES, ...Object.fromEntries(HOME_SCENE_TYPES.map((value) => [value, profileFor(value)])) };
+  const profiles = { ...PROFILES };
   for (const [sceneType, profile] of Object.entries(profiles)) {
     if (!Array.isArray(profile.backgroundActivityAllowed) || !profile.backgroundActivityAllowed.length) errors.push(`${sceneType}.backgroundActivityAllowed must contain at least one activity value`);
     else for (const value of profile.backgroundActivityAllowed) if (!ALL_BACKGROUND_ACTIVITY.includes(value)) errors.push(`${sceneType}.backgroundActivityAllowed references missing value: ${value}`);

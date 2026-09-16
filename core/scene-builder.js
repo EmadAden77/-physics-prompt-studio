@@ -141,8 +141,6 @@ export const LOCATION_CATALOG = locationCatalog([
 ['عسكري — إعاشة','military_outdoor_chair_meal','طعام على كرسي خارجي في المخيم','at a plain outdoor Saudi military camp chair during a meal, with a folding chair, a small side table, food containers, water bottles, dust on the ground, shade from a tent or awning, daylight, and no emblems, insignia, weapons, or identifiable signage',['military_meal_selfie','military_meal_third_person']]
 ]);
 
-// Backward-compatible view for untouched legacy consumers (including car-selfie.js/tests).
-// It is derived from LOCATION_CATALOG and is not a second source of location data.
 export const SAUDI_LOCATIONS = LOCATION_CATALOG.map(({ group, value, label, prompt }) => ({ group, value, label, prompt }));
 
 export const CLOTHING_OPTIONS = grouped([
@@ -174,36 +172,36 @@ export const CLOTHING_OPTIONS = grouped([
 ]);
 
 export const FORMAL_SUITS = [
-  { group: 'كلاسيكي', value: 'suit-navy-white', label: 'بدلة كحلية + قميص أبيض', prompt: 'a navy two-piece suit with a crisp white dress shirt, wool-blend texture, natural lapel roll, sleeve break, trouser crease, restrained sheen' },
-  { group: 'كلاسيكي', value: 'suit-navy-lightblue', label: 'بدلة كحلية + قميص أزرق فاتح', prompt: 'a navy two-piece suit with a light-blue dress shirt, wool-blend texture, matte trouser drape' },
-  { group: 'كلاسيكي', value: 'suit-charcoal-white', label: 'بدلة فحمية + قميص أبيض', prompt: 'a charcoal two-piece suit with a white dress shirt, visible wool weave, structured lapel roll' },
-  { group: 'كلاسيكي', value: 'suit-charcoal-lightblue', label: 'بدلة فحمية + قميص أزرق فاتح', prompt: 'a charcoal two-piece suit with a light-blue dress shirt, restrained matte finish' },
-  { group: 'كلاسيكي', value: 'suit-black-white', label: 'بدلة سوداء + قميص أبيض', prompt: 'a black two-piece suit with a white dress shirt, high contrast, natural fabric folds' },
-  { group: 'كلاسيكي', value: 'suit-black-black', label: 'بدلة سوداء + قميص أسود', prompt: 'a black two-piece suit with a black dress shirt, monochromatic, matte texture' },
-  { group: 'كلاسيكي', value: 'suit-grey-light', label: 'بدلة رمادية فاتحة + قميص أبيض', prompt: 'a light-grey two-piece suit with a white dress shirt, cool palette, wool-blend texture' },
-  { group: 'كلاسيكي', value: 'suit-grey-mid', label: 'بدلة رمادية متوسطة + قميص أبيض', prompt: 'a mid-grey two-piece suit with a white dress shirt, balanced neutral palette' },
-  { group: 'أعمال', value: 'suit-navy-pinstripe', label: 'بدلة كحلية مخطط رفيع + قميص أبيض', prompt: 'a navy pinstripe two-piece suit with a white shirt, subtle white lines, tailored structure' },
-  { group: 'أعمال', value: 'suit-charcoal-pinstripe', label: 'بدلة فحمية مخطط رفيع + قميص أبيض', prompt: 'a charcoal pinstripe two-piece suit with a white shirt, refined business silhouette' },
-  { group: 'أعمال', value: 'suit-grey-check', label: 'بدلة رمادية كاروهات خفيفة + قميص أبيض', prompt: 'a light-grey suit with subtle windowpane check pattern, white shirt, wool-blend' },
-  { group: 'أعمال', value: 'suit-blue-dark', label: 'بدلة زرقاء داكنة + قميص أزرق فاتح', prompt: 'a deep blue two-piece suit with a light-blue shirt, cool professional palette' },
-  { group: 'أعمال', value: 'suit-brown-tobacco', label: 'بدلة بنية تبغي + قميص كريمي', prompt: 'a tobacco-brown two-piece suit with a cream shirt, warm office palette' },
-  { group: 'أعمال', value: 'suit-olive', label: 'بدلة زيتية + قميص بيج', prompt: 'an olive two-piece suit with a beige shirt, muted professional palette' },
-  { group: 'أعراس', value: 'suit-navy-velvet', label: 'بدلة كحلية + بليزر مخملي', prompt: 'a navy two-piece suit with a matching velvet blazer, white shirt, subtle velvet sheen on highlight-facing surfaces' },
-  { group: 'أعراس', value: 'suit-charcoal-velvet', label: 'بدلة فحمية + بليزر مخملي', prompt: 'a charcoal suit with a matching velvet blazer, white shirt, rich fabric depth' },
-  { group: 'أعراس', value: 'suit-burgundy-dark', label: 'بدلة عنابية داكنة + قميص كريمي', prompt: 'a deep burgundy two-piece suit with a cream shirt, warm celebration palette' },
-  { group: 'أعراس', value: 'suit-cream-white', label: 'بدلة كريمية + قميص أبيض', prompt: 'a cream two-piece suit with a white shirt, warm light palette, restrained sheen' },
-  { group: 'أعراس', value: 'suit-beige-light', label: 'بدلة بيج فاتحة + قميص بيج', prompt: 'a light beige two-piece suit with a matching beige shirt, tonal warm palette' },
-  { group: 'أعراس', value: 'suit-grey-dark-midshirt', label: 'بدلة رمادية داكنة + قميص رمادي متوسط', prompt: 'a dark grey two-piece suit with a mid-grey shirt, monochromatic sophisticated' },
-  { group: 'ترابي', value: 'suit-olive-dark', label: 'بدلة زيتية داكنة + قميص بيج', prompt: 'a dark olive two-piece suit with a beige shirt, muted earth palette' },
-  { group: 'ترابي', value: 'suit-brown-dark', label: 'بدلة بنية داكنة + قميص كريمي', prompt: 'a dark brown two-piece suit with a cream shirt, deep warm palette' },
-  { group: 'ترابي', value: 'suit-brown-tobacco-light', label: 'بدلة بنية تبغي فاتحة + قميص بيج', prompt: 'a light tobacco two-piece suit with a beige shirt, warm earth pairing' },
-  { group: 'ترابي', value: 'suit-grey-earthy', label: 'بدلة رمادية ترابية + قميص بيج', prompt: 'an earthy grey two-piece suit with a beige shirt, muted natural palette' },
-  { group: 'ترابي', value: 'suit-burgundy-classic', label: 'بدلة عنابية + قميص أبيض', prompt: 'a burgundy two-piece suit with a white shirt, rich deep palette' },
-  { group: 'بليزر', value: 'blazer-navy-grey', label: 'بليزر كحلي + بنطال رمادي فاتح', prompt: 'a navy blazer with light-grey tailored trousers, smart-casual tailoring, natural lapel roll' },
-  { group: 'بليزر', value: 'blazer-charcoal-navy', label: 'بليزر فحمي + بنطال كحلي', prompt: 'a charcoal blazer with navy tailored trousers, refined business-casual' },
-  { group: 'بليزر', value: 'blazer-beige-tobacco', label: 'بليزر بيج + بنطال بني تبغي', prompt: 'a beige blazer with tobacco-brown trousers, warm earth-tone pairing' },
-  { group: 'بليزر', value: 'blazer-grey-light-charcoal', label: 'بليزر رمادي فاتح + بنطال فحمي', prompt: 'a light-grey blazer with charcoal trousers, cool tonal contrast' },
-  { group: 'بليزر', value: 'blazer-brown-cream', label: 'بليزر بني داكن + بنطال كريمي', prompt: 'a dark brown blazer with cream trousers, warm elegant pairing' }
+  { group:'كلاسيكي', value:'suit-navy-white', label:'بدلة كحلية + قميص أبيض', prompt:'a navy two-piece suit with a crisp white dress shirt, wool-blend texture, natural lapel roll, sleeve break, trouser crease, restrained sheen' },
+  { group:'كلاسيكي', value:'suit-navy-lightblue', label:'بدلة كحلية + قميص أزرق فاتح', prompt:'a navy two-piece suit with a light-blue dress shirt, wool-blend texture, matte trouser drape' },
+  { group:'كلاسيكي', value:'suit-charcoal-white', label:'بدلة فحمية + قميص أبيض', prompt:'a charcoal two-piece suit with a white dress shirt, visible wool weave, structured lapel roll' },
+  { group:'كلاسيكي', value:'suit-charcoal-lightblue', label:'بدلة فحمية + قميص أزرق فاتح', prompt:'a charcoal two-piece suit with a light-blue dress shirt, restrained matte finish' },
+  { group:'كلاسيكي', value:'suit-black-white', label:'بدلة سوداء + قميص أبيض', prompt:'a black two-piece suit with a white dress shirt, high contrast, natural fabric folds' },
+  { group:'كلاسيكي', value:'suit-black-black', label:'بدلة سوداء + قميص أسود', prompt:'a black two-piece suit with a black dress shirt, monochromatic, matte texture' },
+  { group:'كلاسيكي', value:'suit-grey-light', label:'بدلة رمادية فاتحة + قميص أبيض', prompt:'a light-grey two-piece suit with a white dress shirt, cool palette, wool-blend texture' },
+  { group:'كلاسيكي', value:'suit-grey-mid', label:'بدلة رمادية متوسطة + قميص أبيض', prompt:'a mid-grey two-piece suit with a white dress shirt, balanced neutral palette' },
+  { group:'أعمال', value:'suit-navy-pinstripe', label:'بدلة كحلية مخطط رفيع + قميص أبيض', prompt:'a navy pinstripe two-piece suit with a white shirt, subtle white lines, tailored structure' },
+  { group:'أعمال', value:'suit-charcoal-pinstripe', label:'بدلة فحمية مخطط رفيع + قميص أبيض', prompt:'a charcoal pinstripe two-piece suit with a white shirt, refined business silhouette' },
+  { group:'أعمال', value:'suit-grey-check', label:'بدلة رمادية كاروهات خفيفة + قميص أبيض', prompt:'a light-grey suit with subtle windowpane check pattern, white shirt, wool-blend' },
+  { group:'أعمال', value:'suit-blue-dark', label:'بدلة زرقاء داكنة + قميص أزرق فاتح', prompt:'a deep blue two-piece suit with a light-blue shirt, cool professional palette' },
+  { group:'أعمال', value:'suit-brown-tobacco', label:'بدلة بنية تبغي + قميص كريمي', prompt:'a tobacco-brown two-piece suit with a cream shirt, warm office palette' },
+  { group:'أعمال', value:'suit-olive', label:'بدلة زيتية + قميص بيج', prompt:'an olive two-piece suit with a beige shirt, muted professional palette' },
+  { group:'أعراس', value:'suit-navy-velvet', label:'بدلة كحلية + بليزر مخملي', prompt:'a navy two-piece suit with a matching velvet blazer, white shirt, subtle velvet sheen on highlight-facing surfaces' },
+  { group:'أعراس', value:'suit-charcoal-velvet', label:'بدلة فحمية + بليزر مخملي', prompt:'a charcoal suit with a matching velvet blazer, white shirt, rich fabric depth' },
+  { group:'أعراس', value:'suit-burgundy-dark', label:'بدلة عنابية داكنة + قميص كريمي', prompt:'a deep burgundy two-piece suit with a cream shirt, warm celebration palette' },
+  { group:'أعراس', value:'suit-cream-white', label:'بدلة كريمية + قميص أبيض', prompt:'a cream two-piece suit with a white shirt, warm light palette, restrained sheen' },
+  { group:'أعراس', value:'suit-beige-light', label:'بدلة بيج فاتحة + قميص بيج', prompt:'a light beige two-piece suit with a matching beige shirt, tonal warm palette' },
+  { group:'أعراس', value:'suit-grey-dark-midshirt', label:'بدلة رمادية داكنة + قميص رمادي متوسط', prompt:'a dark grey two-piece suit with a mid-grey shirt, monochromatic sophisticated' },
+  { group:'ترابي', value:'suit-olive-dark', label:'بدلة زيتية داكنة + قميص بيج', prompt:'a dark olive two-piece suit with a beige shirt, muted earth palette' },
+  { group:'ترابي', value:'suit-brown-dark', label:'بدلة بنية داكنة + قميص كريمي', prompt:'a dark brown two-piece suit with a cream shirt, deep warm palette' },
+  { group:'ترابي', value:'suit-brown-tobacco-light', label:'بدلة بنية تبغي فاتحة + قميص بيج', prompt:'a light tobacco two-piece suit with a beige shirt, warm earth pairing' },
+  { group:'ترابي', value:'suit-grey-earthy', label:'بدلة رمادية ترابية + قميص بيج', prompt:'an earthy grey two-piece suit with a beige shirt, muted natural palette' },
+  { group:'ترابي', value:'suit-burgundy-classic', label:'بدلة عنابية + قميص أبيض', prompt:'a burgundy two-piece suit with a white shirt, rich deep palette' },
+  { group:'بليزر', value:'blazer-navy-grey', label:'بليزر كحلي + بنطال رمادي فاتح', prompt:'a navy blazer with light-grey tailored trousers, smart-casual tailoring, natural lapel roll' },
+  { group:'بليزر', value:'blazer-charcoal-navy', label:'بليزر فحمي + بنطال كحلي', prompt:'a charcoal blazer with navy tailored trousers, refined business-casual' },
+  { group:'بليزر', value:'blazer-beige-tobacco', label:'بليزر بيج + بنطال بني تبغي', prompt:'a beige blazer with tobacco-brown trousers, warm earth-tone pairing' },
+  { group:'بليزر', value:'blazer-grey-light-charcoal', label:'بليزر رمادي فاتح + بنطال فحمي', prompt:'a light-grey blazer with charcoal trousers, cool tonal contrast' },
+  { group:'بليزر', value:'blazer-brown-cream', label:'بليزر بني داكن + بنطال كريمي', prompt:'a dark brown blazer with cream trousers, warm elegant pairing' }
 ];
 
 export const FORMAL_LOOKS = simple([
@@ -331,22 +329,128 @@ export const FORMAL_LOOKS = simple([
 ['look-steelblue-khaki','قميص أزرق فولاذي + بنطال كاكي','a steel-blue dress shirt with khaki cotton-twill trousers, cool formal-casual pairing with matte finish']
 ]);
 
+export const BEDROOM_ANCHOR = Object.freeze({
+  room: 'A single fixed master bedroom, roughly 4m x 5m, with cream-painted walls, a large window with beige curtains on the RIGHT wall, a wooden door on the LEFT wall, and warm wooden flooring. This layout is locked and identical in every image.',
+  bed: 'A queen-size bed with a dark wooden frame and a beige tufted headboard, positioned against the BACK wall, centered, with two matching nightstands on each side. The bed is always in the same position.',
+  wardrobe: 'A tall wooden wardrobe with three doors, positioned on the LEFT wall near the door, always in the same position.',
+  mirror: 'A full-length framed mirror attached to the wardrobe door, always visible when the camera faces the wardrobe side.',
+  armchair: 'A single upholstered armchair in the far RIGHT corner near the window, with a folded throw blanket on its backrest. It is a chair, not a sofa — no more than one adult can sit in it.',
+  nightstand: 'Two matching wooden nightstands on either side of the bed, each with a small lamp and one or two personal items.',
+  window: 'A large window on the RIGHT wall with beige curtains, always at the same position.',
+  rug: 'A rectangular rug (beige or grey) partially under the bed, extending toward the center of the room.',
+  fixed_layout_rule: 'IMPORTANT: This is a locked room layout. In every image, regardless of the pose, angle, or lighting, the bed is in the same position against the back wall, the wardrobe is on the left wall, the window is on the right wall, the armchair is in the far right corner, the mirror is on the wardrobe door, and the rug is partially under the bed. Do not move, add, remove, or duplicate any of these pieces. Do not change the wall colors, the flooring, or the curtain color. Do not add any new furniture.'
+});
+
+export const BEDROOM_CLUTTER_LEVELS = Object.freeze({
+  clean: 'A neatly made bed with straight sheets, minimal items, no visible clutter.',
+  minimal: 'Slightly rumpled bedding, one folded towel on the armchair, a single mug on the nightstand.',
+  light: 'Slightly rumpled bedding, a charging cable on the nightstand, one mug, one open book, a folded throw on the armchair.',
+  moderate: 'Rumpled bedding, scattered pillows, a couple of mugs, an open book, folded clothes on the armchair, a phone charger on the floor, headphones on the nightstand.',
+  heavy: 'Heavily rumpled bedding, scattered pillows and blankets on the floor, clothes draped over the armchair, two mugs, plates, an open book, tangled chargers, headphones, a backpack on the floor, and visible personal items everywhere.'
+});
+
 export const HOME_CLOTHING = [
-  {"group":"بيجاما","value":"pj-cotton-navy","label":"بيجاما قطنية كحلية","prompt":"a navy cotton pajama set with visible weave, soft folds at the shoulders and knees, natural creases from wear","sceneTypes":["reclining_bed_selfie","lying_bed_selfie","morning_bed_selfie","night_bed_selfie","friday_morning_selfie"]},
-  {"group":"بيجاما","value":"pj-cotton-grey","label":"بيجاما قطنية رمادية","prompt":"a grey cotton pajama set with visible weave and natural compression folds","sceneTypes":["reclining_bed_selfie","lying_bed_selfie","morning_bed_selfie","night_bed_selfie","friday_morning_selfie"]},
-  {"group":"بيجاما","value":"pj-striped-blue","label":"بيجاما مخططة أزرق","prompt":"a striped blue and white cotton pajama set with visible yarn-dyed pattern and natural wear creases","sceneTypes":["reclining_bed_selfie","lying_bed_selfie","morning_bed_selfie","friday_morning_selfie"]},
-  {"group":"بيجاما","value":"pj-silk-charcoal","label":"بيجاما حريرية فحمية","prompt":"a charcoal silk pajama set with subtle sheen on highlight-facing folds, soft drape, and natural lounge wrinkles","sceneTypes":["reclining_bed_selfie","night_bed_selfie"]},
-  {"group":"ثوب نوم","value":"nightthobe-white","label":"ثوب نوم أبيض قطني","prompt":"a white cotton night thobe with visible weave, soft body drape, natural creases from sleep, and relaxed fit","sceneTypes":["reclining_bed_selfie","lying_bed_selfie","morning_bed_selfie","night_bed_selfie","friday_morning_selfie","reading_at_home_selfie","tea_at_home_selfie"]},
-  {"group":"ثوب نوم","value":"nightthobe-grey","label":"ثوب نوم رمادي","prompt":"a grey cotton night thobe with natural drape and comfort creases","sceneTypes":["reclining_bed_selfie","morning_bed_selfie","friday_morning_selfie","home_evening_selfie"]},
-  {"group":"ملابس منزلية","value":"tshirt-shorts-cotton","label":"تيشيرت + شورت قطني","prompt":"a plain cotton t-shirt with comfortable cotton shorts, natural jersey folds at the waist and knees, matte finish","sceneTypes":["sofa_relaxed_selfie","sofa_lying_selfie","floor_seated_selfie","floor_leaning_wall_selfie","reading_at_home_selfie","tea_at_home_selfie","home_evening_selfie","home_couch_blanket_selfie","friday_morning_selfie"]},
-  {"group":"ملابس منزلية","value":"sweatshirt-joggers","label":"سويت شيرت + جوغر","prompt":"a plain sweatshirt with joggers, fleece fabric with soft rounded folds, ribbed cuffs, and natural knee bunching","sceneTypes":["sofa_relaxed_selfie","sofa_lying_selfie","floor_seated_selfie","floor_leaning_wall_selfie","home_evening_selfie","home_couch_blanket_selfie","window_light_home_selfie"]},
-  {"group":"ملابس منزلية","value":"oversized-tshirt-pants","label":"تيشيرت أوفرسايز + بنطال مريح","prompt":"an oversized plain t-shirt with comfortable lounge pants, relaxed fit with natural drape","sceneTypes":["sofa_relaxed_selfie","sofa_lying_selfie","floor_seated_selfie","home_evening_selfie","home_couch_blanket_selfie","reading_at_home_selfie","tea_at_home_selfie"]},
-  {"group":"ملابس منزلية","value":"hoodie-joggers","label":"هودي + جوغر","prompt":"a plain hoodie with joggers, visible fleece texture, hood weight, and natural compression folds at the waist and knees","sceneTypes":["sofa_relaxed_selfie","home_evening_selfie","home_couch_blanket_selfie","window_light_home_selfie","balcony_morning_selfie"]},
-  {"group":"ملابس منزلية","value":"tshirt-jeans-home","label":"تيشيرت + جينز منزلي","prompt":"a plain t-shirt with relaxed-fit denim jeans, visible denim weave, natural knee creasing, and comfortable fit","sceneTypes":["balcony_morning_selfie","home_evening_selfie","tea_at_home_selfie"]},
-  {"group":"روب","value":"bathrobe-navy","label":"روب حمام كحلي","prompt":"a navy bathrobe with visible waffle or terry texture, soft belt at the waist, and natural drape","sceneTypes":["morning_bed_selfie","night_bed_selfie","reclining_bed_selfie"]},
-  {"group":"روب","value":"bathrobe-cream","label":"روب حمام كريمي","prompt":"a cream bathrobe with soft terry texture, natural drape, and visible belt","sceneTypes":["morning_bed_selfie","night_bed_selfie"]},
-  {"group":"ثياب بيت","value":"home-thobe-soft","label":"ثوب بيت خفيف","prompt":"a lightweight home thobe in soft woven cotton, relaxed fit, natural vertical drape, and comfort folds","sceneTypes":["sofa_relaxed_selfie","tea_at_home_selfie","reading_at_home_selfie","home_evening_selfie","window_light_home_selfie","balcony_morning_selfie","friday_morning_selfie"]},
-  {"group":"شرفة","value":"polo-chinos-home","label":"بولو + تشينو منزلي","prompt":"a plain pique polo with comfortable chinos, visible knit texture and matte twill fabric","sceneTypes":["balcony_morning_selfie","window_light_home_selfie"]}
+{ group:'تيشيرت', value:'tee-white', label:'تيشيرت أبيض', prompt:'a plain white cotton crew-neck t-shirt with visible jersey knit texture, natural body-conforming tension, and soft rounded folds' },
+{ group:'تيشيرت', value:'tee-black', label:'تيشيرت أسود', prompt:'a plain black cotton crew-neck t-shirt with matte jersey texture, deep shadow absorption, and natural folds' },
+{ group:'تيشيرت', value:'tee-navy', label:'تيشيرت كحلي', prompt:'a plain navy cotton t-shirt with matte finish and natural body folds' },
+{ group:'تيشيرت', value:'tee-grey', label:'تيشيرت رمادي', prompt:'a plain grey cotton t-shirt with heather knit variation and soft folds' },
+{ group:'تيشيرت', value:'tee-charcoal', label:'تيشيرت فحمي', prompt:'a plain charcoal cotton t-shirt with matte knit texture and natural drape' },
+{ group:'تيشيرت', value:'tee-olive', label:'تيشيرت زيتي', prompt:'a plain olive cotton t-shirt with muted earth tone and natural folds' },
+{ group:'تيشيرت', value:'tee-beige', label:'تيشيرت بيج', prompt:'a plain beige cotton t-shirt with warm neutral tone and natural knit texture' },
+{ group:'تيشيرت', value:'tee-cream', label:'تيشيرت كريمي', prompt:'a plain cream cotton t-shirt with warm light tone and soft folds' },
+{ group:'تيشيرت', value:'tee-burgundy', label:'تيشيرت عنابي', prompt:'a plain burgundy cotton t-shirt with deep warm tone and matte texture' },
+{ group:'تيشيرت', value:'tee-lightblue', label:'تيشيرت أزرق فاتح', prompt:'a plain light blue cotton t-shirt with cool tone and natural knit texture' },
+{ group:'تيشيرت', value:'tee-skyblue', label:'تيشيرت سماوي', prompt:'a plain sky blue cotton t-shirt with fresh cool tone' },
+{ group:'تيشيرت', value:'tee-sage', label:'تيشيرت أخضر مريمي', prompt:'a plain sage green cotton t-shirt with muted tone' },
+{ group:'تيشيرت', value:'tee-dustypink', label:'تيشيرت وردي ترابي', prompt:'a plain dusty pink cotton t-shirt with muted warm tone' },
+{ group:'تيشيرت', value:'tee-mustard', label:'تيشيرت خردلي', prompt:'a plain mustard yellow cotton t-shirt with warm mid-tone' },
+{ group:'تيشيرت', value:'tee-brown', label:'تيشيرت بني', prompt:'a plain brown cotton t-shirt with warm earth tone' },
+{ group:'شورت', value:'shorts-black', label:'شورت أسود', prompt:'plain black cotton lounge shorts with visible woven or jersey texture, natural waistband compression, and soft fabric draping over the thighs' },
+{ group:'شورت', value:'shorts-navy', label:'شورت كحلي', prompt:'plain navy cotton lounge shorts with matte finish' },
+{ group:'شورت', value:'shorts-grey', label:'شورت رمادي', prompt:'plain grey cotton lounge shorts with heather texture' },
+{ group:'شورت', value:'shorts-charcoal', label:'شورت فحمي', prompt:'plain charcoal cotton lounge shorts with matte texture' },
+{ group:'شورت', value:'shorts-white', label:'شورت أبيض', prompt:'plain white cotton lounge shorts with bright clean tone' },
+{ group:'شورت', value:'shorts-beige', label:'شورت بيج', prompt:'plain beige cotton lounge shorts with warm neutral tone' },
+{ group:'شورت', value:'shorts-olive', label:'شورت زيتي', prompt:'plain olive cotton lounge shorts with muted earth tone' },
+{ group:'شورت', value:'shorts-burgundy', label:'شورت عنابي', prompt:'plain burgundy cotton lounge shorts with deep warm tone' },
+{ group:'شورت', value:'shorts-lightblue', label:'شورت أزرق فاتح', prompt:'plain light blue cotton lounge shorts with cool tone' },
+{ group:'شورت', value:'shorts-sage', label:'شورت أخضر مريمي', prompt:'plain sage green cotton lounge shorts with muted tone' },
+{ group:'شورت', value:'shorts-brown', label:'شورت بني', prompt:'plain brown cotton lounge shorts with warm earth tone' },
+{ group:'شورت', value:'shorts-stripe', label:'شورت مخطط', prompt:'yarn-dyed striped cotton lounge shorts in navy and white with visible weave pattern' },
+{ group:'طقم تيشيرت + شورت', value:'set-white-black', label:'تيشيرت أبيض + شورت أسود', prompt:'a plain white cotton t-shirt paired with black cotton lounge shorts, natural contrast and comfortable fit' },
+{ group:'طقم تيشيرت + شورت', value:'set-navy-white', label:'تيشيرت كحلي + شورت أبيض', prompt:'a plain navy t-shirt with white lounge shorts, cool-tone pairing' },
+{ group:'طقم تيشيرت + شورت', value:'set-grey-navy', label:'تيشيرت رمادي + شورت كحلي', prompt:'a grey t-shirt with navy lounge shorts, neutral cool pairing' },
+{ group:'طقم تيشيرت + شورت', value:'set-black-grey', label:'تيشيرت أسود + شورت رمادي', prompt:'a black t-shirt with grey lounge shorts, dark neutral pairing' },
+{ group:'طقم تيشيرت + شورت', value:'set-olive-beige', label:'تيشيرت زيتي + شورت بيج', prompt:'an olive t-shirt with beige lounge shorts, earth-tone pairing' },
+{ group:'طقم تيشيرت + شورت', value:'set-burgundy-black', label:'تيشيرت عنابي + شورت أسود', prompt:'a burgundy t-shirt with black lounge shorts, warm-dark pairing' },
+{ group:'طقم تيشيرت + شورت', value:'set-lightblue-grey', label:'تيشيرت أزرق فاتح + شورت رمادي', prompt:'a light blue t-shirt with grey lounge shorts, cool neutral pairing' },
+{ group:'طقم تيشيرت + شورت', value:'set-cream-brown', label:'تيشيرت كريمي + شورت بني', prompt:'a cream t-shirt with brown lounge shorts, warm earth pairing' },
+{ group:'طقم تيشيرت + شورت', value:'set-charcoal-beige', label:'تيشيرت فحمي + شورت بيج', prompt:'a charcoal t-shirt with beige lounge shorts, dark-warm contrast' },
+{ group:'طقم تيشيرت + شورت', value:'set-sage-cream', label:'تيشيرت أخضر مريمي + شورت كريمي', prompt:'a sage t-shirt with cream lounge shorts, muted natural pairing' },
+{ group:'بيجاما', value:'pj-navy', label:'بيجاما كحلية', prompt:'a navy cotton pajama set with long-sleeve shirt and matching long pants, visible weave, natural waist compression, and soft wear creases' },
+{ group:'بيجاما', value:'pj-grey', label:'بيجاما رمادية', prompt:'a grey cotton pajama set with matte finish and soft folds' },
+{ group:'بيجاما', value:'pj-black', label:'بيجاما سوداء', prompt:'a black cotton pajama set with matte deep tone and natural wear creases' },
+{ group:'بيجاما', value:'pj-white', label:'بيجاما بيضاء', prompt:'a white cotton pajama set with visible weave and light comfort folds' },
+{ group:'بيجاما', value:'pj-striped-blue', label:'بيجاما مخططة أزرق', prompt:'a blue-and-white striped cotton pajama set with visible yarn-dyed pattern and natural creases' },
+{ group:'بيجاما', value:'pj-striped-grey', label:'بيجاما مخططة رمادي', prompt:'a grey-and-white striped cotton pajama set with visible pattern' },
+{ group:'بيجاما', value:'pj-burgundy', label:'بيجاما عنابية', prompt:'a burgundy cotton pajama set with deep warm tone and matte finish' },
+{ group:'بيجاما', value:'pj-silk-charcoal', label:'بيجاما حريرية فحمية', prompt:'a charcoal silk pajama set with subtle sheen on highlight-facing folds and soft drape' },
+{ group:'ثوب نوم', value:'nightthobe-white', label:'ثوب نوم أبيض', prompt:'a white cotton night thobe with visible weave, soft body drape, and natural creases from sleep' },
+{ group:'ثوب نوم', value:'nightthobe-grey', label:'ثوب نوم رمادي', prompt:'a grey cotton night thobe with natural drape' },
+{ group:'ثوب نوم', value:'nightthobe-navy', label:'ثوب نوم كحلي', prompt:'a navy cotton night thobe with matte texture and comfort creases' },
+{ group:'ثوب نوم', value:'nightthobe-beige', label:'ثوب نوم بيج', prompt:'a beige cotton night thobe with warm neutral tone' },
+{ group:'روب', value:'robe-navy', label:'روب حمام كحلي', prompt:'a navy bathrobe with visible terry texture, soft belt at the waist, and natural drape' },
+{ group:'روب', value:'robe-cream', label:'روب حمام كريمي', prompt:'a cream bathrobe with soft terry texture and visible belt' },
+{ group:'روب', value:'robe-grey', label:'روب حمام رمادي', prompt:'a grey bathrobe with waffle texture and natural drape' },
+{ group:'روب', value:'robe-white', label:'روب حمام أبيض', prompt:'a white bathrobe with cotton terry texture, clean tone, and natural drape' },
+{ group:'بنطال بيت', value:'lounge-navy', label:'بنطال بيت كحلي', prompt:'a navy cotton lounge pants with soft jersey texture, ribbed ankle cuffs, and natural knee bunching' },
+{ group:'بنطال بيت', value:'lounge-grey', label:'بنطال بيت رمادي', prompt:'grey cotton lounge pants with heather texture and natural folds' },
+{ group:'بنطال بيت', value:'lounge-black', label:'بنطال بيت أسود', prompt:'black cotton lounge pants with matte finish and natural folds' },
+{ group:'بنطال بيت', value:'lounge-charcoal', label:'بنطال بيت فحمي', prompt:'charcoal cotton joggers with visible texture and ribbed cuffs' },
+{ group:'بنطال بيت', value:'lounge-beige', label:'بنطال بيت بيج', prompt:'beige cotton lounge pants with warm neutral tone' }
+];
+
+export const BEDROOM_POSES = [
+{ group:'استلقاء على السرير', value:'bed-lying-back', label:'مستلقٍ على ظهره على السرير', prompt:'lying flat on his back on the bed, head on the pillow, arm holding the phone above the face, mattress compression visible under shoulders and hips' },
+{ group:'استلقاء على السرير', value:'bed-lying-side', label:'مستلقٍ على جانبه على السرير', prompt:'lying on his side on the bed, one arm bent under the pillow, natural body curve following the mattress, visible bedding wrinkles' },
+{ group:'استلقاء على السرير', value:'bed-lying-stomach', label:'مستلقٍ على بطنه', prompt:'lying on his stomach on the bed, elbows propped, chest slightly lifted, natural lower-back curve, feet up behind' },
+{ group:'استلقاء على السرير', value:'bed-reclining-headboard', label:'مستند على رأس السرير', prompt:'reclining against the headboard, torso at 45 degrees, pillow compressed behind the back, legs extended forward' },
+{ group:'استلقاء على السرير', value:'bed-propped-pillows', label:'مستند على عدة وسائد', prompt:'propped up on two or three pillows against the headboard, natural torso angle, shoulders relaxed' },
+{ group:'استلقاء على السرير', value:'bed-lying-partial', label:'مستلقٍ نصف استلقاء', prompt:'half-lying on the bed with one leg bent and foot on the mattress, upper body slightly raised on elbows' },
+{ group:'استلقاء على السرير', value:'bed-lying-diagonal', label:'مستلقٍ بشكل مائل', prompt:'lying diagonally across the bed, one arm over the edge, natural weight distribution' },
+{ group:'استلقاء على السرير', value:'bed-lying-reading', label:'مستلقٍ يقرأ كتابًا', prompt:'lying on the bed holding an open book in one hand, phone in the other for the selfie, natural relaxation' },
+{ group:'استلقاء على السرير', value:'bed-lying-back-knees-bent', label:'مستلقٍ على الظهر والركبتان مثنيتان', prompt:'lying on his back with both knees comfortably bent and feet resting on the mattress, head supported by a pillow and phone held within arm reach' },
+{ group:'جلوس على السرير', value:'bed-sitting-cross', label:'جالس مربع على السرير', prompt:'sitting cross-legged on the bed with visible mattress compression, phone held at arm length' },
+{ group:'جلوس على السرير', value:'bed-sitting-edge', label:'جالس على حافة السرير', prompt:'seated on the edge of the bed, feet on the floor, slight forward lean, natural weight on hips' },
+{ group:'جلوس على السرير', value:'bed-sitting-back-wall', label:'جالس مستند على الحائط', prompt:'sitting on the bed with back supported against the wall, one knee raised, phone held naturally' },
+{ group:'جلوس على السرير', value:'bed-sitting-legs-extended', label:'جالس ومدد ساقيه', prompt:'seated on the bed with legs extended forward, back slightly reclined, phone at arm length' },
+{ group:'جلوس على السرير', value:'bed-sitting-hugging-pillow', label:'جالس يحتضن وسادة', prompt:'sitting on the bed hugging a pillow against the chest, natural relaxed posture' },
+{ group:'جلوس على السرير', value:'bed-sitting-sideways', label:'جالس جانبيًا على السرير', prompt:'sitting sideways on the bed edge with both feet grounded, torso mildly rotated toward the phone and visible mattress compression under the hips' },
+{ group:'جلوس على الأريكة', value:'sofa-sit-lean-back', label:'متكئ على الأريكة', prompt:'seated in the bedroom armchair with back against the backrest, legs relaxed, natural cushion compression' },
+{ group:'جلوس على الأريكة', value:'sofa-sit-corner', label:'في زاوية الأريكة', prompt:'seated in the bedroom armchair with elbow resting on the armrest, natural asymmetric posture' },
+{ group:'جلوس على الأريكة', value:'sofa-sit-one-knee', label:'على الأريكة بركبة مرفوعة', prompt:'seated in the bedroom armchair with one knee raised, foot planted, casual relaxed posture' },
+{ group:'جلوس على الأريكة', value:'sofa-sit-crossed', label:'جالس مربع على الأريكة', prompt:'sitting cross-legged in the bedroom armchair, natural weight distribution' },
+{ group:'جلوس على الأريكة', value:'armchair-sit-feet-floor', label:'جالس على الكرسي والقدمان على الأرض', prompt:'seated fully inside the bedroom armchair with both feet planted on the floor, pelvis supported by the cushion and phone held within comfortable arm reach' },
+{ group:'وقوف', value:'bedroom-stand-relaxed', label:'واقف باسترخاء', prompt:'standing naturally in the bedroom with relaxed weight distribution, mild shoulder asymmetry' },
+{ group:'وقوف', value:'bedroom-stand-one-hand', label:'واقف ويده الحرة مرتاحة', prompt:'standing with one hand resting naturally near the hip or pocket' },
+{ group:'وقوف', value:'bedroom-stand-lean-wardrobe', label:'متكئ على الخزانة', prompt:'leaning lightly against the wardrobe with visible shoulder contact and natural weight transfer' },
+{ group:'وقوف', value:'bedroom-stand-lean-wall', label:'متكئ على الحائط', prompt:'leaning lightly against the bedroom wall with visible contact physics' },
+{ group:'وقوف', value:'bedroom-stand-near-bed', label:'واقف بجانب السرير', prompt:'standing near the edge of the bed, phone held at arm length' },
+{ group:'وقوف', value:'bedroom-stand-window', label:'واقف عند النافذة', prompt:'standing near the bedroom window with natural daylight from the side' },
+{ group:'ماسك لابتوب', value:'bedroom-laptop-bed', label:'لابتوب على السرير', prompt:'seated on the bed with a laptop resting on the bed in front, phone held for the selfie, natural relaxed posture' },
+{ group:'ماسك لابتوب', value:'bedroom-laptop-armchair', label:'لابتوب على الحضن في الأريكة', prompt:'seated in the bedroom armchair with a laptop on the lap, phone held in the other hand' },
+{ group:'ماسك شيء', value:'bedroom-cup-bed', label:'ماسك كوب قهوة على السرير', prompt:'seated on the bed holding a small cup of coffee in one hand and the phone in the other, natural relaxed posture' },
+{ group:'ماسك شيء', value:'bedroom-tea-sofa', label:'ماسك كوب شاي على الأريكة', prompt:'seated in the bedroom armchair holding a small cup of tea, phone held in the other hand' },
+{ group:'ماسك شيء', value:'bedroom-book-bed', label:'ماسك كتابًا على السرير', prompt:'seated on the bed holding an open book in one hand, phone in the other' },
+{ group:'ماسك شيء', value:'bedroom-phone-only', label:'ماسك الهاتف فقط', prompt:'holding only the phone with the other hand resting naturally on the thigh or side' },
+{ group:'أرضية', value:'bedroom-floor-cross', label:'جالس مربع على الأرض', prompt:'sitting cross-legged on the bedroom rug with natural hip and knee placement' },
+{ group:'أرضية', value:'bedroom-floor-back-wall', label:'جالس مسند على الجدار', prompt:'seated on the bedroom floor with back supported against the wall, one leg bent and one straight' },
+{ group:'أرضية', value:'bedroom-floor-knee-up', label:'على الأرض بركبة مرفوعة', prompt:'seated on the bedroom floor with one knee raised and the arm resting on it' },
+{ group:'تفاعل مع الغرفة', value:'bedroom-curtain-touch', label:'واقف يلمس طرف الستارة', prompt:'standing beside the fixed right-side window while lightly holding the edge of the beige curtain with the free hand, without moving the curtain rail or changing the room layout' },
+{ group:'تفاعل مع الغرفة', value:'bedroom-nightstand-reach', label:'يمد يده نحو الكومدينو', prompt:'seated at the bed edge while the free hand reaches naturally toward the adjacent fixed nightstand, keeping body weight supported by the mattress and the phone-bearing arm independent' },
+{ group:'مرآة', value:'bedroom-mirror-stand-relaxed', label:'أمام المرآة واقف', prompt:'standing naturally in front of the bedroom mirror, phone visible in reflection' },
+{ group:'مرآة', value:'bedroom-mirror-adjust', label:'أمام المرآة يعدل ملابسه', prompt:'adjusting clothing in front of the bedroom mirror, phone in the other hand' },
+{ group:'مرآة', value:'bedroom-mirror-seated', label:'أمام المرآة جالس', prompt:'seated in front of the bedroom mirror on the bed edge, phone visible in reflection' }
 ];
 
 export const SELFIE_POSES = simple([
@@ -366,28 +470,7 @@ export const SELFIE_POSES = simple([
 ['hand_on_head','اليد الحرة على الرأس','placing the free hand naturally on the head with anatomically correct elbow elevation, wrist orientation, and hair or headwear contact'],
 ['one_hand_pocket','اليد الحرة في الجيب','placing the free hand casually in a pocket with realistic elbow angle, cloth tension, and pocket deformation'],
 ['close_relaxed','وقفة قريبة وعفوية','a close relaxed selfie pose with natural neck, shoulder, and upper-torso asymmetry and no influencer-style posing']
-]).concat(simple([
-["reclining_bed", "مستند على رأس السرير", "reclining against the headboard with the back supported by pillows, pelvis on the mattress and one arm holding the phone within reach"],
-["sitting_bed_cross", "متربع على السرير", "sitting cross-legged on the bed, pelvis and legs supported by the mattress, natural knee angles and one hand holding the phone"],
-["seated_bed_edge", "جالس على حافة السرير", "sitting on the bed edge with both feet grounded, thighs supported and mattress compression under the pelvis while holding the phone"],
-["pillow_propped", "مسنود بالمخدات", "semi-reclining on stacked pillows supporting the upper back and head, with pelvis on the mattress and the phone held within arm reach"],
-["lying_back", "مستلقي على الظهر", "lying on the back with head resting on a pillow and shoulders supported by the mattress, holding the phone above the face within arm reach"],
-["lying_side", "مستلقي على الجانب", "lying on the left side with left shoulder and hip supported by the mattress, left cheek resting lightly on a pillow and the right hand holding the phone near face level"],
-["lying_stomach", "مستلقي على البطن", "lying prone with chest and pelvis supported by the mattress, left forearm providing gentle upper-body support and the right hand holding the phone in front of the face without excessive neck extension"],
-["sofa_lean_back", "مستند للخلف على الكنبة", "sitting back on a sofa with lumbar support, pelvis pressing into the cushion and feet supported while one hand holds the phone"],
-["sofa_corner", "جالس في زاوية الكنبة", "sitting in the sofa corner with back and one shoulder supported by cushions, relaxed hips and one arm free to hold the phone"],
-["sofa_one_knee", "على الكنبة مع ركبة مثنية", "sitting on a sofa with one knee comfortably bent on the cushion and the other foot grounded, pelvis supported and phone held independently"],
-["sofa_stretched", "ممدد الرجلين على الكنبة", "reclining along the sofa with back against cushions, legs supported along the seat and phone held within arm reach"],
-["sofa_lying_side", "مستلقي جانبيًا على الكنبة", "lying on the left side along a sofa with left shoulder and hip compressing cushions, head supported by an armrest pillow and right hand holding the phone"],
-["floor_cross_legs", "متربع على الأرض", "sitting cross-legged on the floor with pelvis and legs grounded, natural knee angles and one hand holding the phone"],
-["floor_back_wall", "على الأرض والظهر للجدار", "sitting on the floor with pelvis grounded and back resting against the wall, legs comfortably bent and phone held within reach"],
-["floor_one_knee_up", "على الأرض مع ركبة مرفوعة", "sitting on the floor with pelvis grounded, one knee raised with its foot planted and the other leg folded naturally while holding the phone"],
-["squatting", "قرفصاء متوازنة", "crouching in a balanced squat with both feet planted, knees naturally bent and torso balanced over the feet while one hand holds the phone"]
-]).map((item) => ({
-  ...item,
-  sceneTypes: HOME_SCENE_TYPES.filter((sceneType) => sceneMeta(sceneType).pose.includes(item.value))
-})));
-
+]);
 
 export const SELFIE_ANGLES = simple([
 ['eye_centered','مستوى العين — أمامي','front camera at approximately eye level, yaw 0°, pitch 0°, with a tiny natural handheld roll'],
@@ -431,46 +514,43 @@ export const LIGHTING_PROFILES = grouped([
 ['ليلي داخلي','night_home_warm','منزل — إضاءة دافئة','warm residential practical lighting from ceiling and lamp fixtures, realistic wall bounce, local light falloff, and naturally darker corners'],
 ['ليلي داخلي','night_phone_screen','شاشة الهاتف كمصدر قريب ضعيف','very weak near-field light from the phone screen only, strongest on the closest facial planes, rapid falloff after the upper chest, deep lower-torso shadow, and no exposure/HDR creating physical illumination'],
 ['ليلي داخلي','night_car_practicals','داخل سيارة ليلًا — إنارة محيطية واقعية','stationary car interior at night lit by real exterior street or parking fixtures plus restrained dashboard/screen emission, correct glazing reflections, and steep falloff into unlit cabin areas'],
-['ليلي داخلي','night_car_screen_only','داخل سيارة — شاشة فقط تقريبًا','very low-light stationary car interior dominated by dashboard or phone-screen emission at close range, rapid falloff across torso and cabin, deep shadows, sensor noise, and no invented fill']
+['ليلي داخلي','night_car_screen_only','داخل سيارة — شاشة فقط تقريبًا','very low-light stationary car interior dominated by dashboard or phone-screen emission at close range, rapid falloff across torso and cabin, deep shadows, sensor noise, and no invented fill'],
+['ليلي داخلي','screen_flash_only','سطوع شاشة الهاتف فقط','pitch-dark bedroom where the phone screen (facing the subject) is the ONLY light source. Cool bluish-white light on the face, rapid falloff into deep shadow behind the subject. Visible phone edges catching the light. No ambient room light.'],
+['ليلي داخلي','phone_led_flash_only','فلاش LED فقط','pitch-dark bedroom with the phone rear LED flash as the ONLY light source. Harsh direct frontal light, deep sharp drop-off into shadow behind the subject, visible flash falloff on nearby surfaces. No ambient room light. Acceptable slight overexposure on the face.'],
+['ليلي داخلي','low_key_bedroom','غرفة معتمة تقريبًا','near-dark bedroom with only a very faint practical source. Most of the frame is in deep shadow with visible sensor noise. No fill light.']
 ]);
 
 export const HAIR_STYLES = [
-  { group: 'ممشط للخلف', value: 'hair-back-natural', label: 'ممشط للخلف طبيعي', prompt: 'hair deliberately combed BACKWARD from the forehead, away from the face, hairline fully visible. Natural clumping only in the back section. No strands fall onto the forehead.' },
-  { group: 'ممشط للخلف', value: 'hair-back-lifted', label: 'ممشط للخلف مع رفع خفيف', prompt: 'hair combed BACKWARD from the forehead with a slight natural lift at the crown. Hairline visible. Direction is clearly backward. No forward-falling strands.' },
-  { group: 'ممشط للخلف', value: 'hair-slicked-back', label: 'Slicked back (مبلل)', prompt: 'hair wet and slicked BACKWARD from the forehead, visible clumping from moisture, slight sheen. Every visible strand points backward. Hairline fully visible.' },
-  { group: 'ممشط للخلف', value: 'hair-back-separated', label: 'ممشط للخلف مع انفصال طبيعي', prompt: 'hair firmly combed BACKWARD from the forehead with the front section pushed away from the face. Visible directional flow toward the back. Only the back section shows soft clumping. The hairline remains fully visible. Absolutely no strands fall forward or cover the forehead.' },
-  { group: 'ممشط للخلف', value: 'hair-back-loose-ends', label: 'ممشط للخلف مع أطراف مرتخية', prompt: 'hair combed BACKWARD from the forehead with only 2-3 strands falling near the ears or temples. The main mass points backward. Hairline visible.' },
-
-  { group: 'ممشط للأمام', value: 'hair-forward-natural', label: 'ممشط للأمام طبيعي', prompt: 'hair combed FORWARD onto the forehead with visible individual strands. Direction is clearly forward. Natural finish.' },
-  { group: 'ممشط للأمام', value: 'hair-forward-quiff', label: 'ممشط للأمام مع رفع أمامي', prompt: 'hair brushed FORWARD with a raised front quiff at the forehead. The front section lifts up. No product shine.' },
-  { group: 'ممشط للأمام', value: 'hair-forward-peak', label: 'ممشط للأمام بقمة مرتفعة', prompt: 'hair brushed FORWARD with a higher peak at the front. Strands flow from the crown toward the forehead.' },
-  { group: 'ممشط للأمام', value: 'hair-forward-side-loose', label: 'ممشط للأمام مع خصلات جانبية مرتخية', prompt: 'hair brushed FORWARD with a few strands falling naturally at the temples. Front direction preserved.' },
-  { group: 'ممشط للأمام', value: 'hair-forward-partial-forehead', label: 'ممشط للأمام نصف منسدل', prompt: 'hair brushed FORWARD covering part of the forehead. Direction is forward.' },
-
-  { group: 'جانبي', value: 'hair-side-part-left', label: 'فرق جانبي يسار', prompt: 'hair parted on the LEFT side of the head (subject’s left). Clear visible parting line. Hair falls naturally on both sides of the part, away from the part line. No forward-falling strands.' },
-  { group: 'جانبي', value: 'hair-side-part-right', label: 'فرق جانبي يمين', prompt: 'hair parted on the RIGHT side of the head (subject’s right). Clear visible parting line. Hair falls naturally away from the part line. No forward-falling strands.' },
-  { group: 'جانبي', value: 'hair-deep-side-part', label: 'فرق جانبي عميق', prompt: 'hair parted DEEPLY on one side, visible scalp along the parting line. Hair falls naturally to both sides away from the line.' },
-  { group: 'جانبي', value: 'hair-side-part-lift', label: 'فرق جانبي مع رفع خفيف', prompt: 'hair parted on one side with a slight lift above the forehead. Direction is lateral, not forward.' },
-  { group: 'جانبي', value: 'hair-side-part-separated', label: 'فرق جانبي + انفصال طبيعي', prompt: 'hair parted on one side with soft natural clumping on each side. Clear parting line.' },
-
-  { group: 'وسط', value: 'hair-center-part-classic', label: 'فرق من الوسط كلاسيكي', prompt: 'hair parted down the CENTER of the head. Clean visible parting line. Hair falls symmetrically to both sides away from the line.' },
-  { group: 'وسط', value: 'hair-center-part-natural', label: 'فرق من الوسط مع انفصال طبيعي', prompt: 'hair parted near the CENTER with visible strand separation on both sides. Clear center parting.' },
-  { group: 'وسط', value: 'hair-center-off', label: 'فرق من الوسط غير مضبوط', prompt: 'hair parted slightly off-center. Visible parting line but not perfectly central.' },
-  { group: 'وسط', value: 'hair-center-loose', label: 'فرق من الوسط مع خصلات مرتخية', prompt: 'hair parted at the CENTER with a few loose strands falling near the face.' },
-
-  { group: 'غير مرتب', value: 'hair-messy-natural', label: 'messy طبيعي', prompt: 'hair left completely unstyled. Strands fall in random directions. No fixed direction, no combing, natural soft volume. Do not push the hair backward or forward.' },
-  { group: 'غير مرتب', value: 'hair-messy-lift', label: 'messy مع رفع خفيف', prompt: 'messy hair with a slight lift at the crown. Random direction, no combing.' },
-  { group: 'غير مرتب', value: 'hair-tousled', label: 'tousled طبيعي', prompt: 'hair softly tousled as if after a long day. Random soft direction, natural clumping.' },
-  { group: 'غير مرتب', value: 'hair-wind-light', label: 'غير مرتب بعد هواء خفيف', prompt: 'hair slightly displaced by a light breeze, asymmetric but natural.' },
-
-  { group: 'مبلل', value: 'hair-damp-post-wudu', label: 'مبلل بعد الوضوء', prompt: 'hair slightly damp with visible clumping from moisture, darker at the roots. Natural fall direction without a strong comb.' },
-  { group: 'مبلل', value: 'hair-damp-clumped', label: 'مبلل مع clumping واضح', prompt: 'hair wet with clear clumping, individual strand groups visible, natural moisture sheen.' },
-  { group: 'مبلل', value: 'hair-damp-slicked', label: 'مبلل + ممشط للخلف', prompt: 'hair wet and combed BACKWARD from the forehead. Visible clumping, slight sheen. All strands point backward.' },
-
-  { group: 'مربوط', value: 'hair-tied-back', label: 'مربوط للخلف', prompt: 'hair gathered and tied BACKWARD at the back of the head. Strands pulled away from the face. Tie point visible.' },
-  { group: 'مربوط', value: 'hair-half-tied', label: 'نصف مربوط', prompt: 'top section of hair tied backward at the crown, lower section falls naturally below.' },
-  { group: 'مربوط', value: 'hair-under-cap', label: 'مغطى بطاقية صغيرة', prompt: 'hair fully covered by a small traditional cap. No visible strands outside the cap.' },
-  { group: 'مربوط', value: 'hair-loose-natural', label: 'مرتخي طبيعي', prompt: 'hair worn completely loose with no product, no combing, no fixed direction. Natural fall.' }
+{ group:'ممشط للخلف', value:'hair-back-natural', label:'ممشط للخلف طبيعي', prompt:'hair deliberately combed BACKWARD from the forehead, away from the face, hairline fully visible. Natural clumping only in the back section. No strands fall onto the forehead.' },
+{ group:'ممشط للخلف', value:'hair-back-lifted', label:'ممشط للخلف مع رفع خفيف', prompt:'hair combed BACKWARD from the forehead with a slight natural lift at the crown. Hairline visible. Direction is clearly backward. No forward-falling strands.' },
+{ group:'ممشط للخلف', value:'hair-slicked-back', label:'Slicked back (مبلل)', prompt:'hair wet and slicked BACKWARD from the forehead, visible clumping from moisture, slight sheen. Every visible strand points backward. Hairline fully visible.' },
+{ group:'ممشط للخلف', value:'hair-back-separated', label:'ممشط للخلف مع انفصال طبيعي', prompt:'hair firmly combed BACKWARD from the forehead with the front section pushed away from the face. Visible directional flow toward the back. Only the back section shows soft clumping. The hairline remains fully visible. Absolutely no strands fall forward or cover the forehead.' },
+{ group:'ممشط للخلف', value:'hair-back-loose-ends', label:'ممشط للخلف مع أطراف مرتخية', prompt:'hair combed BACKWARD from the forehead with only 2-3 strands falling near the ears or temples. The main mass points backward. Hairline visible.' },
+{ group:'ممشط للأمام', value:'hair-forward-natural', label:'ممشط للأمام طبيعي', prompt:'hair combed FORWARD onto the forehead with visible individual strands. Direction is clearly forward. Natural finish.' },
+{ group:'ممشط للأمام', value:'hair-forward-quiff', label:'ممشط للأمام مع رفع أمامي', prompt:'hair brushed FORWARD with a raised front quiff at the forehead. The front section lifts up. No product shine.' },
+{ group:'ممشط للأمام', value:'hair-forward-peak', label:'ممشط للأمام بقمة مرتفعة', prompt:'hair brushed FORWARD with a higher peak at the front. Strands flow from the crown toward the forehead.' },
+{ group:'ممشط للأمام', value:'hair-forward-side-loose', label:'ممشط للأمام مع خصلات جانبية مرتخية', prompt:'hair brushed FORWARD with a few strands falling naturally at the temples. Front direction preserved.' },
+{ group:'ممشط للأمام', value:'hair-forward-partial-forehead', label:'ممشط للأمام نصف منسدل', prompt:'hair brushed FORWARD covering part of the forehead. Direction is forward.' },
+{ group:'جانبي', value:'hair-side-part-left', label:'فرق جانبي يسار', prompt:'hair parted on the LEFT side of the head (subject’s left). Clear visible parting line. Hair falls naturally on both sides of the part, away from the part line. No forward-falling strands.' },
+{ group:'جانبي', value:'hair-side-part-right', label:'فرق جانبي يمين', prompt:'hair parted on the RIGHT side of the head (subject’s right). Clear visible parting line. Hair falls naturally away from the part line. No forward-falling strands.' },
+{ group:'جانبي', value:'hair-deep-side-part', label:'فرق جانبي عميق', prompt:'hair parted DEEPLY on one side, visible scalp along the parting line. Hair falls naturally to both sides away from the line.' },
+{ group:'جانبي', value:'hair-side-part-lift', label:'فرق جانبي مع رفع خفيف', prompt:'hair parted on one side with a slight lift above the forehead. Direction is lateral, not forward.' },
+{ group:'جانبي', value:'hair-side-part-separated', label:'فرق جانبي + انفصال طبيعي', prompt:'hair parted on one side with soft natural clumping on each side. Clear parting line.' },
+{ group:'وسط', value:'hair-center-part-classic', label:'فرق من الوسط كلاسيكي', prompt:'hair parted down the CENTER of the head. Clean visible parting line. Hair falls symmetrically to both sides away from the line.' },
+{ group:'وسط', value:'hair-center-part-natural', label:'فرق من الوسط مع انفصال طبيعي', prompt:'hair parted near the CENTER with visible strand separation on both sides. Clear center parting.' },
+{ group:'وسط', value:'hair-center-off', label:'فرق من الوسط غير مضبوط', prompt:'hair parted slightly off-center. Visible parting line but not perfectly central.' },
+{ group:'وسط', value:'hair-center-loose', label:'فرق من الوسط مع خصلات مرتخية', prompt:'hair parted at the CENTER with a few loose strands falling near the face.' },
+{ group:'غير مرتب', value:'hair-messy-natural', label:'messy طبيعي', prompt:'hair left completely unstyled. Strands fall in random directions. No fixed direction, no combing, natural soft volume. Do not push the hair backward or forward.' },
+{ group:'غير مرتب', value:'hair-messy-lift', label:'messy مع رفع خفيف', prompt:'messy hair with a slight lift at the crown. Random direction, no combing.' },
+{ group:'غير مرتب', value:'hair-tousled', label:'tousled طبيعي', prompt:'hair softly tousled as if after a long day. Random soft direction, natural clumping.' },
+{ group:'غير مرتب', value:'hair-wind-light', label:'غير مرتب بعد هواء خفيف', prompt:'hair slightly displaced by a light breeze, asymmetric but natural.' },
+{ group:'مبلل', value:'hair-damp-post-wudu', label:'مبلل بعد الوضوء', prompt:'hair slightly damp with visible clumping from moisture, darker at the roots. Natural fall direction without a strong comb.' },
+{ group:'مبلل', value:'hair-damp-clumped', label:'مبلل مع clumping واضح', prompt:'hair wet with clear clumping, individual strand groups visible, natural moisture sheen.' },
+{ group:'مبلل', value:'hair-damp-slicked', label:'مبلل + ممشط للخلف', prompt:'hair wet and combed BACKWARD from the forehead. Visible clumping, slight sheen. All strands point backward.' },
+{ group:'مربوط', value:'hair-tied-back', label:'مربوط للخلف', prompt:'hair gathered and tied BACKWARD at the back of the head. Strands pulled away from the face. Tie point visible.' },
+{ group:'مربوط', value:'hair-half-tied', label:'نصف مربوط', prompt:'top section of hair tied backward at the crown, lower section falls naturally below.' },
+{ group:'مربوط', value:'hair-under-cap', label:'مغطى بطاقية صغيرة', prompt:'hair fully covered by a small traditional cap. No visible strands outside the cap.' },
+{ group:'مربوط', value:'hair-loose-natural', label:'مرتخي طبيعي', prompt:'hair worn completely loose with no product, no combing, no fixed direction. Natural fall.' }
 ];
 
 function clean(value) { return typeof value === 'string' ? value.trim() : ''; }

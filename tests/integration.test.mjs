@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 import { generateImagePrompt, validateGeneratedPrompt, validateRealism } from '../core/prompt-generator.js';
 import { addSensorNoise, XIAOMI_15_ULTRA_PRESET } from '../core/photo-post-processing.js';
-import { CLOTHING_OPTIONS, FORMAL_SUITS, FORMAL_LOOKS, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
+import { CLOTHING_OPTIONS, FORMAL_SUITS, FORMAL_LOOKS, HOME_CLOTHING, BEDROOM_POSES, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
 
 const sceneTypes = ['front_selfie', 'inside_car_selfie', 'mirror_selfie', 'third_person_portrait'];
 
@@ -46,6 +46,8 @@ test('core catalog counts match the documented production baseline', () => {
   assert.equal(FORMAL_SUITS.length, 30, 'FORMAL_SUITS count changed');
   assert.equal(FORMAL_LOOKS.length, 122, 'FORMAL_LOOKS count changed');
   assert.equal(CLOTHING_OPTIONS.length + FORMAL_SUITS.length, 55, 'combined base clothing and formal suits count changed');
+  assert.equal(HOME_CLOTHING.length, 58, 'HOME_CLOTHING count changed');
+  assert.equal(BEDROOM_POSES.length, 40, 'BEDROOM_POSES count changed');
 
   const clothingLabels = new Set(CLOTHING_OPTIONS.map((item) => item.label));
   const duplicateSuitLabels = FORMAL_SUITS.filter((item) => clothingLabels.has(item.label)).map((item) => item.label);
@@ -55,9 +57,17 @@ test('core catalog counts match the documented production baseline', () => {
   const duplicateSuitValues = FORMAL_SUITS.filter((item) => clothingValues.has(item.value)).map((item) => item.value);
   assert.deepEqual(duplicateSuitValues, [], `CLOTHING_OPTIONS and FORMAL_SUITS duplicate values: ${duplicateSuitValues.join(', ')}`);
 
-  assert.equal(SELFIE_POSES.length, 32, 'SELFIE_POSES count changed');
+  assert.equal(SELFIE_POSES.length, 16, 'SELFIE_POSES count changed');
   assert.equal(SELFIE_ANGLES.length, 16, 'SELFIE_ANGLES count changed');
-  assert.equal(LIGHTING_PROFILES.length, 23, 'LIGHTING_PROFILES count changed');
+  assert.equal(LIGHTING_PROFILES.length, 26, 'LIGHTING_PROFILES count changed');
+});
+
+test('FORMAL_SUITS and HAIR_STYLES are unchanged after bedroom rebuild', async () => {
+  const { FORMAL_SUITS, HAIR_STYLES } = await import('../core/scene-builder.js');
+  assert.equal(FORMAL_SUITS.length, 30);
+  assert.equal(HAIR_STYLES.length, 30);
+  assert.equal(FORMAL_SUITS[0].value, 'suit-navy-white');
+  assert.equal(HAIR_STYLES[0].value, 'hair-back-natural');
 });
 
 test('FORMAL_LOOKS contains the two newly added timeless combinations', async () => {
@@ -146,65 +156,59 @@ test('car studio is wired to prompt generation, realism validation and local pho
   assert.match(html, /type=["']module["'][^>]*src=["']car-selfie\.js["']/i);
 });
 
-const { HOME_CLOTHING, LOCATION_CATALOG } = await import('../core/scene-builder.js');
-const { HOME_SCENE_TYPES, EXTRA_SCENE_TYPES, sceneMeta } = await import('../core/scene-type-expansion.js');
+const { LOCATION_CATALOG } = await import('../core/scene-builder.js');
+const { HOME_SCENE_TYPES, EXTRA_SCENE_TYPES } = await import('../core/scene-type-expansion.js');
 const { homeClothingForScene, compatibleOptions, locationsForScene } = await import('../core/scene-compatibility.js');
 const { randomizationOptionsForScene, buildSeededSceneState, resolveHomeSceneInput } = await import('../app.js');
 
-const homePoseValues = ['reclining_bed','sitting_bed_cross','seated_bed_edge','pillow_propped',
-  'lying_back','lying_side','lying_stomach','sofa_lean_back','sofa_corner','sofa_one_knee',
-  'sofa_stretched','sofa_lying_side','floor_cross_legs','floor_back_wall','floor_one_knee_up','squatting'];
+const bedroomPoseValues = BEDROOM_POSES.map((item) => item.value);
 
-test('home expansion preserves original scenes and exposes 15 unique scenes, 15 outfits and 16 linked poses', () => {
-  assert.equal(HOME_SCENE_TYPES.length, 15);
-  assert.equal(HOME_CLOTHING.length, 15);
+test('bedroom studio exposes 3 scenes, 58 outfits and 40 dedicated poses', () => {
+  assert.deepEqual(HOME_SCENE_TYPES, ['bedroom_selfie', 'bedroom_mirror_selfie', 'bedroom_third_person']);
+  assert.equal(HOME_CLOTHING.length, 58);
+  assert.equal(BEDROOM_POSES.length, 40);
   assert.equal(new Set(EXTRA_SCENE_TYPES.map((item) => item.value)).size, EXTRA_SCENE_TYPES.length);
-  for (const value of ['reclining_bed_selfie','lying_bed_selfie','sofa_relaxed_selfie','floor_seated_selfie']) {
-    assert.ok(HOME_SCENE_TYPES.includes(value));
-  }
-  const homePoses = SELFIE_POSES.filter((item) => item.sceneTypes);
-  assert.deepEqual(homePoses.map((item) => item.value), homePoseValues);
-  for (const item of [...HOME_CLOTHING, ...homePoses]) {
-    assert.ok(item.sceneTypes.length > 0, `${item.value} is unreachable`);
-    for (const scene of item.sceneTypes) assert.ok(HOME_SCENE_TYPES.includes(scene));
-  }
+  for (const value of HOME_SCENE_TYPES) assert.ok(EXTRA_SCENE_TYPES.some((item) => item.value === value));
   const clothes = [...CLOTHING_OPTIONS, ...FORMAL_LOOKS, ...FORMAL_SUITS, ...HOME_CLOTHING];
   assert.equal(new Set(clothes.map((item) => item.value)).size, clothes.length);
 });
 
-test('home UI options have real locations and exact pose, clothing and light compatibility', () => {
+test('bedroom UI options have the fixed bedroom location and scene-specific compatibility', () => {
+  const expectedPoseCounts = {
+    bedroom_selfie: 37,
+    bedroom_mirror_selfie: 3,
+    bedroom_third_person: 6
+  };
+  const expectedLightingCounts = {
+    bedroom_selfie: 5,
+    bedroom_mirror_selfie: 3,
+    bedroom_third_person: 5
+  };
+
   for (const scene of HOME_SCENE_TYPES) {
     const options = randomizationOptionsForScene(scene);
     for (const field of ['location','pose','angle','lighting','camera','framing','clothing']) {
       assert.ok(options[field].length > 0, `${scene}.${field} is empty`);
     }
+    assert.deepEqual(options.location.map((item) => item.value), ['saudi_bedroom_livedin']);
     assert.deepEqual(options.clothing, homeClothingForScene(scene));
-    for (const pose of options.pose) assert.ok(sceneMeta(scene).pose.includes(pose.value));
-    for (const location of options.location) assert.ok(LOCATION_CATALOG.includes(location));
+    assert.equal(options.clothing.length, 58);
+    assert.equal(options.pose.length, expectedPoseCounts[scene]);
+    assert.equal(options.lighting.length, expectedLightingCounts[scene]);
     assert.deepEqual(options.backgroundActivity.map((item) => item.value), ['quiet','normal']);
-  }
-  for (const scene of ['reclining_bed_selfie','lying_bed_selfie','morning_bed_selfie','night_bed_selfie']) {
-    assert.deepEqual(locationsForScene(scene).map((item) => item.value), ['saudi_bedroom_livedin']);
-  }
-  assert.deepEqual(randomizationOptionsForScene('night_bed_selfie').lighting.map((item) => item.value), ['night_home_warm','night_phone_screen']);
-  assert.deepEqual(randomizationOptionsForScene('morning_bed_selfie').lighting.map((item) => item.value), ['day_window']);
-  assert.deepEqual(randomizationOptionsForScene('sofa_lying_selfie').pose.map((item) => item.value), ['sofa_lying_side']);
-  for (const value of ['desert_campsite_simple','wadi_picnic_edge']) {
-    assert.ok(locationsForScene('floor_seated_selfie').some((item) => item.value === value));
   }
 });
 
-test('home-only poses and clothes do not leak into car, office, walking or third-person choices', () => {
+test('bedroom-only pose catalogs and clothing routing stay isolated from core scene profiles', () => {
   for (const scene of ['inside_car_selfie','office_selfie','walking_selfie','third_person_portrait']) {
     const options = randomizationOptionsForScene(scene);
-    assert.ok(options.pose.every((item) => !homePoseValues.includes(item.value)));
-    assert.ok(options.clothing.every((item) => !HOME_CLOTHING.includes(item)));
+    assert.ok(options.pose.every((item) => !bedroomPoseValues.includes(item.value)));
     assert.deepEqual(homeClothingForScene(scene), []);
   }
   assert.deepEqual(compatibleOptions('inside_car_selfie', 'pose', SELFIE_POSES).map((item) => item.value), ['driver_seat','passenger_seat']);
 });
 
-test('home automatic fields reach the generated prompt and explicit fields remain unchanged', () => {
+test('bedroom automatic fields reach generated prompts and explicit fields remain authoritative', () => {
   for (const sceneType of HOME_SCENE_TYPES) {
     const input = resolveHomeSceneInput({ sceneType });
     const result = generateImagePrompt(input);
@@ -214,10 +218,12 @@ test('home automatic fields reach the generated prompt and explicit fields remai
       assert.ok(input[field], `${sceneType}.${field} was left automatic`);
       assert.ok(result.prompt.includes(input[field]), `${sceneType}.${field} did not reach output`);
     }
+    assert.match(result.prompt, /ROOM ANCHOR/i);
     assert.equal(generateImagePrompt(input).prompt, result.prompt);
   }
+
   const explicit = {
-    sceneType: 'lying_bed_selfie', location: 'my own bedroom', clothing: 'my cotton shirt',
+    sceneType: 'bedroom_selfie', location: 'my own bedroom', clothing: 'my cotton shirt',
     pose: 'lying on the right side', angle: 'phone in the left hand', lighting: 'a bedside lamp'
   };
   assert.deepEqual(resolveHomeSceneInput(explicit), explicit);
@@ -225,28 +231,29 @@ test('home automatic fields reach the generated prompt and explicit fields remai
   assert.equal(resolveHomeSceneInput(other), other);
 });
 
-test('seeded home choices remain deterministic and never pair outdoor floor seating with room lighting', () => {
+test('seeded bedroom choices remain deterministic and locked to the fixed bedroom', () => {
   for (const scene of HOME_SCENE_TYPES) {
     for (let seed = 1; seed <= 40; seed += 1) {
       const state = buildSeededSceneState(seed, [scene]);
       assert.deepEqual(buildSeededSceneState(seed, [scene]), state);
       const options = randomizationOptionsForScene(scene, state.location);
+      assert.equal(state.location, 'saudi_bedroom_livedin');
       for (const field of ['location','clothing','pose','lighting']) {
         assert.ok(options[field].some((item) => item.value === state[field]), `${scene}.${field} invalid`);
-      }
-      if (scene === 'floor_seated_selfie') {
-        const outdoors = ['desert_campsite_simple','wadi_picnic_edge'].includes(state.location);
-        assert.equal(state.lighting === 'day_open_shade', outdoors);
       }
     }
   }
 });
 
-
-test('night bed screen lighting survives output without inventing a room lamp', () => {
+test('bedroom selfie screen lighting survives output without inventing a room lamp', () => {
   const lighting = LIGHTING_PROFILES.find((item) => item.value === 'night_phone_screen').prompt;
-  const result = generateImagePrompt(resolveHomeSceneInput({ sceneType: 'night_bed_selfie', lighting }));
+  const result = generateImagePrompt(resolveHomeSceneInput({ sceneType: 'bedroom_selfie', lighting }));
   assert.ok(result.config.lighting.includes(lighting));
   assert.ok(!result.config.context_warnings.some((warning) => warning.includes('phone-screen-only')));
-  assert.ok(!result.config.description.includes('bedside lamp'));
+  assert.match(result.prompt, /ROOM ANCHOR/i);
+});
+
+test('non-bedroom prompt remains free of the bedroom anchor', () => {
+  const result = generateImagePrompt({ sceneType: 'inside_car_selfie', location: 'inside a stationary car' });
+  assert.doesNotMatch(result.prompt, /ROOM ANCHOR/i);
 });

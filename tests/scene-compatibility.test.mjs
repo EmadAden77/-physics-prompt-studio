@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { compatibleOptions, compatibilitySnapshot, locationsForScene, recommendedDefaults, resolveCompatibleValue, resolveContextAwareConstraints } from '../core/scene-compatibility.js';
-import { LOCATION_CATALOG, SAUDI_LOCATIONS, CLOTHING_OPTIONS, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
-import { CAMERA_PROFILES, FRAMING_OPTIONS, SCENE_TYPES } from '../core/prompt-generator.js';
-import { baseSceneTypeFor } from '../core/scene-type-expansion.js';
+import { LOCATION_CATALOG, SAUDI_LOCATIONS, CLOTHING_OPTIONS, HOME_CLOTHING, BEDROOM_POSES, BEDROOM_ANCHOR, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
+import { CAMERA_PROFILES, FRAMING_OPTIONS, SCENE_TYPES, generateImagePrompt } from '../core/prompt-generator.js';
+import { baseSceneTypeFor, EXTRA_SCENE_TYPES } from '../core/scene-type-expansion.js';
 
 const catalogs = {
   location: LOCATION_CATALOG,
@@ -58,10 +58,10 @@ test('every military location explicitly forbids emblems and weapons', async () 
 test('military_meal_selfie does not leak civilian locations', async () => {
   const { locationsForScene } = await import('../core/scene-compatibility.js');
   const meal = locationsForScene('military_meal_selfie');
-  const values = meal.map(l => l.value);
-  assert.ok(!values.includes('saudi_office'));
-  assert.ok(!values.includes('modern_saudi_majlis'));
-  assert.ok(!values.includes('specialty_coffee'));
+  const locationValues = meal.map(l => l.value);
+  assert.ok(!locationValues.includes('saudi_office'));
+  assert.ok(!locationValues.includes('modern_saudi_majlis'));
+  assert.ok(!locationValues.includes('specialty_coffee'));
 });
 
 test('SAUDI_LOCATIONS is a derived alias of LOCATION_CATALOG', () => {
@@ -214,12 +214,12 @@ test('changing sceneType resets incompatible selections', () => {
 });
 
 test('bedroom scene does not allow lively background activity', () => {
-  const snapshot = compatibilitySnapshot('mirror_selfie', catalogs);
+  const snapshot = compatibilitySnapshot('bedroom_mirror_selfie', catalogs);
   assert.deepEqual(snapshot.backgroundActivityAllowed, ['quiet', 'normal']);
 
   const resolved = resolveContextAwareConstraints({
     sceneType: 'mirror_selfie',
-    requestedSceneType: 'mirror_bedroom_selfie',
+    requestedSceneType: 'bedroom_mirror_selfie',
     location: 'inside a Saudi bedroom',
     backgroundActivity: 'lively',
     lighting: 'warm room lamp'
@@ -241,7 +241,7 @@ test('mosques and libraries are quiet-only while car interiors are quiet-only', 
 test('phone-screen-only lighting is not allowed in well-lit indoor scene', () => {
   const resolved = resolveContextAwareConstraints({
     sceneType: 'mirror_selfie',
-    requestedSceneType: 'mirror_bedroom_selfie',
+    requestedSceneType: 'bedroom_mirror_selfie',
     location: 'inside a Saudi bedroom with normal room lamps',
     backgroundActivity: 'quiet',
     lighting: 'phone-screen-only lighting'
@@ -279,4 +279,76 @@ test('recommended defaults switch camera and framing by capture type', () => {
     camera: 'xiaomi15_front',
     framing: 'chest_up'
   });
+});
+
+test('BEDROOM_ANCHOR is complete', () => {
+  for (const key of ['room', 'bed', 'wardrobe', 'mirror', 'armchair', 'nightstand', 'window', 'rug', 'fixed_layout_rule']) {
+    assert.ok(BEDROOM_ANCHOR[key], `missing BEDROOM_ANCHOR.${key}`);
+    assert.ok(BEDROOM_ANCHOR[key].length > 20, `${key} is too short`);
+  }
+});
+
+test('BEDROOM_POSES has exactly 40 positions in 9 groups with 37 direct and 3 mirror poses', () => {
+  assert.equal(BEDROOM_POSES.length, 40);
+  const groups = new Set(BEDROOM_POSES.map((pose) => pose.group));
+  assert.equal(groups.size, 9);
+  assert.equal(BEDROOM_POSES.filter((pose) => pose.group === 'مرآة').length, 3);
+  assert.equal(BEDROOM_POSES.filter((pose) => pose.group !== 'مرآة').length, 37);
+});
+
+test('HOME_CLOTHING has exactly 58 items with explicit color catalogs', () => {
+  assert.equal(HOME_CLOTHING.length, 58);
+  assert.equal(HOME_CLOTHING.filter((item) => item.value.startsWith('tee-')).length, 15);
+  assert.equal(HOME_CLOTHING.filter((item) => item.value.startsWith('shorts-')).length, 12);
+  assert.ok(HOME_CLOTHING.every((item) => !Object.hasOwn(item, 'sceneTypes')));
+});
+
+test('bedroom scenes are only 3 and old bedroom/home-relaxation scenes are gone', () => {
+  const bedroomScenes = EXTRA_SCENE_TYPES.filter((scene) => scene.value.startsWith('bedroom_'));
+  assert.deepEqual(values(bedroomScenes), ['bedroom_selfie', 'bedroom_mirror_selfie', 'bedroom_third_person']);
+  const removed = [
+    'mirror_bedroom_selfie','reclining_bed_selfie','lying_bed_selfie','morning_bed_selfie','night_bed_selfie',
+    'sofa_relaxed_selfie','sofa_lying_selfie','floor_seated_selfie','floor_leaning_wall_selfie','reading_at_home_selfie',
+    'tea_at_home_selfie','friday_morning_selfie','home_evening_selfie','window_light_home_selfie','balcony_morning_selfie','home_couch_blanket_selfie'
+  ];
+  const sceneValues = new Set(EXTRA_SCENE_TYPES.map((scene) => scene.value));
+  for (const value of removed) assert.equal(sceneValues.has(value), false, `${value} still exists`);
+});
+
+test('every bedroom prompt contains the locked room anchor', () => {
+  for (const sceneType of ['bedroom_selfie', 'bedroom_mirror_selfie', 'bedroom_third_person']) {
+    const result = generateImagePrompt({ sceneType });
+    assert.match(result.prompt, /ROOM ANCHOR/i);
+    assert.match(result.prompt, /tufted headboard/i);
+    assert.match(result.prompt, /wooden wardrobe/i);
+    assert.match(result.prompt, /armchair/i);
+    assert.match(result.prompt, /ROOM CLUTTER:/i);
+  }
+});
+
+test('bedroom selfie exposes 37 non-mirror poses and mirror scene exposes only 3 mirror poses', () => {
+  const direct = compatibleOptions('bedroom_selfie', 'pose', []);
+  const mirror = compatibleOptions('bedroom_mirror_selfie', 'pose', []);
+  assert.equal(direct.length, 37);
+  assert.ok(direct.every((pose) => pose.group !== 'مرآة'));
+  assert.equal(mirror.length, 3);
+  assert.ok(mirror.every((pose) => pose.group === 'مرآة'));
+});
+
+test('bedroom scenes expose only their intended lighting sets', () => {
+  assert.deepEqual(values(compatibleOptions('bedroom_selfie', 'lighting', LIGHTING_PROFILES)), [
+    'day_window', 'night_home_warm', 'night_phone_screen', 'screen_flash_only', 'low_key_bedroom'
+  ]);
+  assert.deepEqual(values(compatibleOptions('bedroom_mirror_selfie', 'lighting', LIGHTING_PROFILES)), [
+    'day_window', 'night_home_warm', 'night_phone_screen'
+  ]);
+  assert.deepEqual(values(compatibleOptions('bedroom_third_person', 'lighting', LIGHTING_PROFILES)), [
+    'day_window', 'night_home_warm', 'night_phone_screen', 'phone_led_flash_only', 'low_key_bedroom'
+  ]);
+});
+
+test('non-bedroom prompts do not contain the bedroom anchor', () => {
+  const result = generateImagePrompt({ sceneType: 'front_selfie', location: 'inside an ordinary Saudi cafe' });
+  assert.doesNotMatch(result.prompt, /ROOM ANCHOR/i);
+  assert.doesNotMatch(result.prompt, /This is a locked room layout/i);
 });

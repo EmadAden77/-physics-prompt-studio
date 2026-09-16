@@ -360,38 +360,44 @@ export const LIGHTING_PROFILES = grouped([
 ['ليلي داخلي','night_car_screen_only','داخل سيارة — شاشة فقط تقريبًا','very low-light stationary car interior dominated by dashboard or phone-screen emission at close range, rapid falloff across torso and cabin, deep shadows, sensor noise, and no invented fill']
 ]);
 
-export const HAIR_STYLES = grouped([
-['ممشط للخلف','hair-back-natural','ممشط للخلف طبيعي','hair combed back without product, natural strand separation, no gel shine, length and density unchanged'],
-['ممشط للخلف','hair-back-lifted','ممشط للخلف مع رفع خفيف','hair combed back with a slight natural lift at the crown, no product shine, density unchanged'],
-['ممشط للخلف','hair-slicked-back','Slicked back (مبلل)','hair slicked back with light moisture or product, visible clumping, slight shine, density and hairline unchanged'],
-['ممشط للخلف','hair-back-separated','ممشط للخلف مع انفصال طبيعي','hair combed back but with visible natural separation into soft clumps, no uniform gel, density unchanged'],
-['ممشط للخلف','hair-back-loose-ends','ممشط للخلف مع أطراف مرتخية','hair combed back with a few loose strands falling near the ears or temples, density unchanged'],
-['ممشط للأمام','hair-forward-natural','ممشط للأمام طبيعي','hair brushed forward naturally over the forehead, visible strand separation, density unchanged'],
-['ممشط للأمام','hair-forward-quiff','ممشط للأمام مع رفع أمامي','hair brushed forward with a light natural quiff at the front, no product shine, density unchanged'],
-['ممشط للأمام','hair-forward-peak','ممشط للأمام بقمة مرتفعة','hair brushed forward with a higher front peak, visible strand texture, density unchanged'],
-['ممشط للأمام','hair-forward-side-loose','ممشط للأمام مع خصلات جانبية مرتخية','hair brushed forward with a few strands falling naturally near the temples, density unchanged'],
-['ممشط للأمام','hair-forward-partial-forehead','ممشط للأمام نصف منسدل','hair brushed forward with partial forehead coverage, natural strand separation, density unchanged'],
-['جانبي','hair-side-part-left','فرق جانبي يسار','hair parted on the left side with a clean visible line, natural fall on both sides, density and hairline unchanged'],
-['جانبي','hair-side-part-right','فرق جانبي يمين','hair parted on the right side with a clean visible line, natural fall, density unchanged'],
-['جانبي','hair-deep-side-part','فرق جانبي عميق','hair parted deeply on one side, visible scalp at the part line, natural fall, density unchanged'],
-['جانبي','hair-side-part-lift','فرق جانبي مع رفع خفيف','hair parted on one side with a natural lift above the forehead, visible strand texture, density unchanged'],
-['جانبي','hair-side-part-separated','فرق جانبي + انفصال طبيعي','hair parted on one side with natural clumping and visible strand separation, no product, density unchanged'],
-['وسط','hair-center-part-classic','فرق من الوسط كلاسيكي','hair parted down the center with a clean visible line, natural symmetric fall, density unchanged'],
-['وسط','hair-center-part-natural','فرق من الوسط مع انفصال طبيعي','hair parted near the center with visible natural strand separation, no product, density unchanged'],
-['وسط','hair-center-off','فرق من الوسط غير مضبوط','hair parted slightly off-center naturally, no sharp line, density unchanged'],
-['وسط','hair-center-loose','فرق من الوسط مع خصلات مرتخية','hair parted near the center with a few loose strands falling near the face, density unchanged'],
-['غير مرتب','hair-messy-natural','messy طبيعي','hair left in a natural messy state with no combing, visible strand crossing and soft volume, density unchanged'],
-['غير مرتب','hair-messy-lift','messy مع رفع خفيف','messy hair with a natural lift at the crown, no product, visible separation, density unchanged'],
-['غير مرتب','hair-tousled','tousled طبيعي','hair styled in a soft tousled look as if after a long day, natural strand clumping, density unchanged'],
-['غير مرتب','hair-wind-light','غير مرتب بعد هواء خفيف','hair slightly displaced by a light breeze or movement, asymmetric but natural, density unchanged'],
-['مبلل','hair-damp-post-wudu','مبلل بعد الوضوء','hair slightly damp with visible clumping from moisture, slight darkening at the roots, density unchanged'],
-['مبلل','hair-damp-clumped','مبلل مع clumping واضح','hair wet with clear clumping, strand groups visible, natural moisture sheen, density unchanged'],
-['مبلل','hair-damp-slicked','مبلل + ممشط للخلف','hair damp and slicked back, visible clumping, slight sheen, density unchanged'],
-['مربوط','hair-tied-back','مربوط للخلف بكامل الشعر','hair tied back fully, visible strand separation at the tie point, density unchanged; only length must be enough to tie'],
-['مربوط','hair-half-tied','نصف مربوط','hair half-tied with the remaining length falling naturally, density unchanged'],
-['مربوط','hair-under-cap','مغطى بطاقية صغيرة','hair fully covered by a small traditional cap, no visible strands outside the cap'],
-['مربوط','hair-loose-natural','مرتخي طبيعي بدون تثبيت','hair worn completely loose with no styling product and no fixing, natural fall, density unchanged']
-]);
+export const HAIR_STYLES = [
+  { group: 'ممشط للخلف', value: 'hair-back-natural', label: 'ممشط للخلف طبيعي', prompt: 'hair deliberately combed BACKWARD from the forehead, away from the face, hairline fully visible. Natural clumping only in the back section. No strands fall onto the forehead.' },
+  { group: 'ممشط للخلف', value: 'hair-back-lifted', label: 'ممشط للخلف مع رفع خفيف', prompt: 'hair combed BACKWARD from the forehead with a slight natural lift at the crown. Hairline visible. Direction is clearly backward. No forward-falling strands.' },
+  { group: 'ممشط للخلف', value: 'hair-slicked-back', label: 'Slicked back (مبلل)', prompt: 'hair wet and slicked BACKWARD from the forehead, visible clumping from moisture, slight sheen. Every visible strand points backward. Hairline fully visible.' },
+  { group: 'ممشط للخلف', value: 'hair-back-separated', label: 'ممشط للخلف مع انفصال طبيعي', prompt: 'hair firmly combed BACKWARD from the forehead with the front section pushed away from the face. Visible directional flow toward the back. Only the back section shows soft clumping. The hairline remains fully visible. Absolutely no strands fall forward or cover the forehead.' },
+  { group: 'ممشط للخلف', value: 'hair-back-loose-ends', label: 'ممشط للخلف مع أطراف مرتخية', prompt: 'hair combed BACKWARD from the forehead with only 2-3 strands falling near the ears or temples. The main mass points backward. Hairline visible.' },
+
+  { group: 'ممشط للأمام', value: 'hair-forward-natural', label: 'ممشط للأمام طبيعي', prompt: 'hair combed FORWARD onto the forehead with visible individual strands. Direction is clearly forward. Natural finish.' },
+  { group: 'ممشط للأمام', value: 'hair-forward-quiff', label: 'ممشط للأمام مع رفع أمامي', prompt: 'hair brushed FORWARD with a raised front quiff at the forehead. The front section lifts up. No product shine.' },
+  { group: 'ممشط للأمام', value: 'hair-forward-peak', label: 'ممشط للأمام بقمة مرتفعة', prompt: 'hair brushed FORWARD with a higher peak at the front. Strands flow from the crown toward the forehead.' },
+  { group: 'ممشط للأمام', value: 'hair-forward-side-loose', label: 'ممشط للأمام مع خصلات جانبية مرتخية', prompt: 'hair brushed FORWARD with a few strands falling naturally at the temples. Front direction preserved.' },
+  { group: 'ممشط للأمام', value: 'hair-forward-partial-forehead', label: 'ممشط للأمام نصف منسدل', prompt: 'hair brushed FORWARD covering part of the forehead. Direction is forward.' },
+
+  { group: 'جانبي', value: 'hair-side-part-left', label: 'فرق جانبي يسار', prompt: 'hair parted on the LEFT side of the head (subject’s left). Clear visible parting line. Hair falls naturally on both sides of the part, away from the part line. No forward-falling strands.' },
+  { group: 'جانبي', value: 'hair-side-part-right', label: 'فرق جانبي يمين', prompt: 'hair parted on the RIGHT side of the head (subject’s right). Clear visible parting line. Hair falls naturally away from the part line. No forward-falling strands.' },
+  { group: 'جانبي', value: 'hair-deep-side-part', label: 'فرق جانبي عميق', prompt: 'hair parted DEEPLY on one side, visible scalp along the parting line. Hair falls naturally to both sides away from the line.' },
+  { group: 'جانبي', value: 'hair-side-part-lift', label: 'فرق جانبي مع رفع خفيف', prompt: 'hair parted on one side with a slight lift above the forehead. Direction is lateral, not forward.' },
+  { group: 'جانبي', value: 'hair-side-part-separated', label: 'فرق جانبي + انفصال طبيعي', prompt: 'hair parted on one side with soft natural clumping on each side. Clear parting line.' },
+
+  { group: 'وسط', value: 'hair-center-part-classic', label: 'فرق من الوسط كلاسيكي', prompt: 'hair parted down the CENTER of the head. Clean visible parting line. Hair falls symmetrically to both sides away from the line.' },
+  { group: 'وسط', value: 'hair-center-part-natural', label: 'فرق من الوسط مع انفصال طبيعي', prompt: 'hair parted near the CENTER with visible strand separation on both sides. Clear center parting.' },
+  { group: 'وسط', value: 'hair-center-off', label: 'فرق من الوسط غير مضبوط', prompt: 'hair parted slightly off-center. Visible parting line but not perfectly central.' },
+  { group: 'وسط', value: 'hair-center-loose', label: 'فرق من الوسط مع خصلات مرتخية', prompt: 'hair parted at the CENTER with a few loose strands falling near the face.' },
+
+  { group: 'غير مرتب', value: 'hair-messy-natural', label: 'messy طبيعي', prompt: 'hair left completely unstyled. Strands fall in random directions. No fixed direction, no combing, natural soft volume. Do not push the hair backward or forward.' },
+  { group: 'غير مرتب', value: 'hair-messy-lift', label: 'messy مع رفع خفيف', prompt: 'messy hair with a slight lift at the crown. Random direction, no combing.' },
+  { group: 'غير مرتب', value: 'hair-tousled', label: 'tousled طبيعي', prompt: 'hair softly tousled as if after a long day. Random soft direction, natural clumping.' },
+  { group: 'غير مرتب', value: 'hair-wind-light', label: 'غير مرتب بعد هواء خفيف', prompt: 'hair slightly displaced by a light breeze, asymmetric but natural.' },
+
+  { group: 'مبلل', value: 'hair-damp-post-wudu', label: 'مبلل بعد الوضوء', prompt: 'hair slightly damp with visible clumping from moisture, darker at the roots. Natural fall direction without a strong comb.' },
+  { group: 'مبلل', value: 'hair-damp-clumped', label: 'مبلل مع clumping واضح', prompt: 'hair wet with clear clumping, individual strand groups visible, natural moisture sheen.' },
+  { group: 'مبلل', value: 'hair-damp-slicked', label: 'مبلل + ممشط للخلف', prompt: 'hair wet and combed BACKWARD from the forehead. Visible clumping, slight sheen. All strands point backward.' },
+
+  { group: 'مربوط', value: 'hair-tied-back', label: 'مربوط للخلف', prompt: 'hair gathered and tied BACKWARD at the back of the head. Strands pulled away from the face. Tie point visible.' },
+  { group: 'مربوط', value: 'hair-half-tied', label: 'نصف مربوط', prompt: 'top section of hair tied backward at the crown, lower section falls naturally below.' },
+  { group: 'مربوط', value: 'hair-under-cap', label: 'مغطى بطاقية صغيرة', prompt: 'hair fully covered by a small traditional cap. No visible strands outside the cap.' },
+  { group: 'مربوط', value: 'hair-loose-natural', label: 'مرتخي طبيعي', prompt: 'hair worn completely loose with no product, no combing, no fixed direction. Natural fall.' }
+];
 
 function clean(value) { return typeof value === 'string' ? value.trim() : ''; }
 export function normalizeSceneContext(scene = {}) {

@@ -70,11 +70,49 @@ test('FORMAL_LOOKS contains the two newly added timeless combinations', async ()
 test('SAUDI_LOCATIONS is a derived alias of LOCATION_CATALOG', async () => {
   const { SAUDI_LOCATIONS, LOCATION_CATALOG } = await import('../core/scene-builder.js');
   assert.equal(SAUDI_LOCATIONS.length, LOCATION_CATALOG.length);
-  assert.equal(SAUDI_LOCATIONS.length, 92);
+  assert.equal(SAUDI_LOCATIONS.length, 105);
   assert.deepEqual(
     SAUDI_LOCATIONS.map((location) => location.value).sort(),
     LOCATION_CATALOG.map((location) => location.value).sort()
   );
+});
+
+test('office_selfie has expanded location coverage', async () => {
+  const { LOCATION_CATALOG } = await import('../core/scene-builder.js');
+  const officeLocations = LOCATION_CATALOG.filter((location) => location.sceneTypes.includes('office_selfie'));
+  assert.ok(officeLocations.length >= 15, `office_selfie location coverage is ${officeLocations.length}; expected at least 15`);
+});
+
+test('LOCATION_CATALOG contains 105 locations', async () => {
+  const { LOCATION_CATALOG } = await import('../core/scene-builder.js');
+  assert.equal(LOCATION_CATALOG.length, 105);
+});
+
+test('new office locations expose their required sceneTypes', async () => {
+  const { LOCATION_CATALOG } = await import('../core/scene-builder.js');
+  const requiredSceneTypes = new Map([
+    ['government_office_hall', ['office_selfie', 'public_office_selfie']],
+    ['administrative_reception', ['office_selfie', 'public_office_selfie']],
+    ['service_counter_area', ['office_selfie', 'public_office_selfie']],
+    ['public_waiting_area', ['office_selfie', 'public_office_selfie']],
+    ['municipal_office', ['office_selfie', 'public_office_selfie', 'desk_work_selfie']],
+    ['government_corridor', ['office_selfie', 'public_office_selfie', 'corridor_hallway_selfie']],
+    ['open_plan_office', ['office_selfie', 'desk_work_selfie']],
+    ['meeting_room_glass', ['office_selfie', 'desk_work_selfie']],
+    ['executive_office', ['office_selfie', 'desk_work_selfie']],
+    ['office_pantry', ['office_selfie', 'interaction_shot']],
+    ['coworking_lounge', ['office_selfie', 'desk_work_selfie']],
+    ['office_parking_outdoor', ['office_selfie', 'outdoor_selfie']],
+    ['hotel_business_center', ['office_selfie', 'desk_work_selfie']]
+  ]);
+
+  for (const [value, sceneTypesForLocation] of requiredSceneTypes) {
+    const location = LOCATION_CATALOG.find((item) => item.value === value);
+    assert.ok(location, `missing LOCATION_CATALOG entry: ${value}`);
+    for (const sceneType of sceneTypesForLocation) {
+      assert.ok(location.sceneTypes.includes(sceneType), `${value} missing sceneType: ${sceneType}`);
+    }
+  }
 });
 
 test('sensor processing remains deterministic for identical image, settings and seed', () => {

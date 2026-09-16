@@ -1,7 +1,9 @@
 import { compilePrompt, createLedger } from './core/prompt-optimizer.js';
-import { LOCATION_CATALOG, CLOTHING_OPTIONS, HOME_CLOTHING, FORMAL_LOOKS, FORMAL_SUITS, HAIR_STYLES, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from './core/scene-builder.js';
+import { LOCATION_CATALOG, CLOTHING_OPTIONS, FORMAL_LOOKS, FORMAL_SUITS, HAIR_STYLES, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from './core/scene-builder.js';
 import {
   EXTRA_CLOTHING_OPTIONS,
+  HOME_CLOTHING,
+  HOME_SELFIE_POSES,
   enrichClothingPrompt
 } from './core/expanded-catalogs.js';
 import {
@@ -72,7 +74,7 @@ const CATALOGS = {
   location: LOCATION_CATALOG,
   clothing: CLOTHING_UI_OPTIONS,
   hairStyle: HAIR_STYLES,
-  pose: SELFIE_POSES,
+  pose: [...SELFIE_POSES, ...HOME_SELFIE_POSES],
   angle: SELFIE_ANGLES,
   lighting: LIGHTING_PROFILES,
   camera: CAMERA_PROFILES,

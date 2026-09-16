@@ -158,7 +158,7 @@ test('car studio is wired to prompt generation, realism validation and local pho
 
 const { LOCATION_CATALOG } = await import('../core/scene-builder.js');
 const { HOME_SCENE_TYPES, EXTRA_SCENE_TYPES } = await import('../core/scene-type-expansion.js');
-const { homeClothingForScene, compatibleOptions, locationsForScene } = await import('../core/scene-compatibility.js');
+const { homeClothingForScene, compatibleOptions, getPoseCameraHint, locationsForScene } = await import('../core/scene-compatibility.js');
 const { randomizationOptionsForScene, buildSeededSceneState, resolveHomeSceneInput } = await import('../app.js');
 
 const bedroomPoseValues = BEDROOM_POSES.map((item) => item.value);
@@ -214,13 +214,37 @@ test('bedroom automatic fields reach generated prompts and explicit fields remai
     const result = generateImagePrompt(input);
     assert.ok(result.validation.valid, result.validation.errors.join('\n'));
     assert.ok(result.realism_validation.valid);
-    for (const field of ['location','clothing','pose','angle','lighting']) {
+    for (const field of ['location','clothing','pose','lighting']) {
       assert.ok(input[field], `${sceneType}.${field} was left automatic`);
       assert.ok(result.prompt.includes(input[field]), `${sceneType}.${field} did not reach output`);
+    }
+    assert.ok(input.angle, `${sceneType}.angle was left automatic`);
+    const poseHint = sceneType.startsWith('bedroom_') ? getPoseCameraHint(input.pose) : null;
+    if (poseHint && sceneType !== 'bedroom_third_person') {
+      assert.equal(result.config.angle_locked_by_pose, true);
+      assert.ok(result.prompt.includes(poseHint), `${sceneType}.pose cameraHint did not reach output`);
+    } else {
+      assert.ok(result.prompt.includes(input.angle), `${sceneType}.angle did not reach output`);
     }
     assert.match(result.prompt, /ROOM ANCHOR/i);
     assert.equal(generateImagePrompt(input).prompt, result.prompt);
   }
+
+  const bedroomResult = generateImagePrompt({
+    sceneType: 'bedroom_selfie',
+    pose: 'bed-lying-side',
+    angle: 'eye_centered'
+  });
+  assert.match(bedroomResult.prompt, /mattress level|beside the face/i);
+  assert.doesNotMatch(bedroomResult.prompt, /eye level.*yaw 0/i);
+
+  const normalResult = generateImagePrompt({
+    sceneType: 'front_selfie',
+    pose: 'standing_relaxed',
+    angle: 'eye_centered'
+  });
+  assert.match(normalResult.prompt, /eye level/i);
+  assert.equal(normalResult.config.angle_locked_by_pose, false);
 
   const explicit = {
     sceneType: 'bedroom_selfie', location: 'my own bedroom', clothing: 'my cotton shirt',

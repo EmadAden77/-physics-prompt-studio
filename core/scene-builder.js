@@ -410,6 +410,49 @@ export const HOME_CLOTHING = [
 { group:'بنطال بيت', value:'lounge-beige', label:'بنطال بيت بيج', prompt:'beige cotton lounge pants with warm neutral tone' }
 ];
 
+const BEDROOM_CAMERA_HINTS = Object.freeze({
+  'bed-lying-back': 'front camera held directly above the face, lens pointing downward, arm extended',
+  'bed-lying-side': 'front camera held beside the face at mattress level, lens roughly parallel to the mattress, one arm extended forward, slight roll',
+  'bed-lying-stomach': 'front camera held slightly above the pillow, lens pointing downward and back at the face, elbows propped',
+  'bed-reclining-headboard': 'front camera held at chest height while reclining, slight upward pitch from below the chin, headboard visible behind',
+  'bed-propped-pillows': 'front camera held at chest height against the pillows, subject looking slightly downward toward the lens',
+  'bed-lying-partial': 'front camera held at chest height while half-lying, slight downward pitch',
+  'bed-lying-diagonal': 'front camera held above the shoulder while lying diagonally, downward pitch',
+  'bed-lying-reading': 'front camera held slightly above the face while lying on the back, phone-bearing arm extended within reach and the book held in the free hand',
+  'bed-lying-back-knees-bent': 'front camera held directly above the face while lying on the back, lens pointing downward, bent knees remaining lower in the frame',
+  'bed-sitting-cross': 'front camera at eye level while sitting cross-legged',
+  'bed-sitting-edge': 'front camera at eye level while seated on the bed edge',
+  'bed-sitting-back-wall': 'front camera at eye level against the wall',
+  'bed-sitting-legs-extended': 'front camera at eye level with legs extended forward',
+  'bed-sitting-hugging-pillow': 'front camera at eye level, pillow visible in the frame lower area',
+  'bed-sitting-sideways': 'front camera at eye level while seated sideways on the bed edge',
+  'sofa-sit-lean-back': 'front camera at eye level while leaning back in the armchair',
+  'sofa-sit-corner': 'front camera at eye level in the armchair corner',
+  'sofa-sit-one-knee': 'front camera at eye level with one knee raised',
+  'sofa-sit-crossed': 'front camera at eye level while sitting cross-legged in the armchair',
+  'armchair-sit-feet-floor': 'front camera at eye level while seated fully in the armchair with both feet on the floor',
+  'bedroom-stand-relaxed': 'front camera at eye level, natural selfie angle',
+  'bedroom-stand-one-hand': 'front camera at eye level',
+  'bedroom-stand-lean-wardrobe': 'front camera at eye level, wardrobe visible behind',
+  'bedroom-stand-lean-wall': 'front camera at eye level, wall visible behind',
+  'bedroom-stand-near-bed': 'front camera at eye level, bed visible behind',
+  'bedroom-stand-window': 'front camera at eye level, window light from one side',
+  'bedroom-laptop-bed': 'front camera held at chest height while seated on the bed, laptop visible in the lower frame',
+  'bedroom-laptop-armchair': 'front camera at chest height, laptop on lap visible in the lower frame',
+  'bedroom-cup-bed': 'front camera at eye level while seated on the bed, cup visible in one hand',
+  'bedroom-tea-sofa': 'front camera at eye level in the armchair, cup visible',
+  'bedroom-book-bed': 'front camera at eye level while seated on the bed, book visible',
+  'bedroom-phone-only': 'front camera at eye level, free hand resting naturally',
+  'bedroom-floor-cross': 'front camera at chest height while seated cross-legged on the floor',
+  'bedroom-floor-back-wall': 'front camera at chest height against the wall',
+  'bedroom-floor-knee-up': 'front camera at chest height while seated on the floor',
+  'bedroom-curtain-touch': 'front camera at eye level beside the window, curtain and side light visible without changing the locked room layout',
+  'bedroom-nightstand-reach': 'front camera at eye level while seated on the bed edge, adjacent nightstand visible in the lower side of frame',
+  'bedroom-mirror-stand-relaxed': 'mirror-view camera at eye level, phone visible in reflection',
+  'bedroom-mirror-adjust': 'mirror-view camera at eye level, phone visible in reflection',
+  'bedroom-mirror-seated': 'mirror-view camera at eye level while seated, phone visible in reflection'
+});
+
 export const BEDROOM_POSES = [
 { group:'استلقاء على السرير', value:'bed-lying-back', label:'مستلقٍ على ظهره على السرير', prompt:'lying flat on his back on the bed, head on the pillow, arm holding the phone above the face, mattress compression visible under shoulders and hips' },
 { group:'استلقاء على السرير', value:'bed-lying-side', label:'مستلقٍ على جانبه على السرير', prompt:'lying on his side on the bed, one arm bent under the pillow, natural body curve following the mattress, visible bedding wrinkles' },
@@ -451,7 +494,7 @@ export const BEDROOM_POSES = [
 { group:'مرآة', value:'bedroom-mirror-stand-relaxed', label:'أمام المرآة واقف', prompt:'standing naturally in front of the bedroom mirror, phone visible in reflection' },
 { group:'مرآة', value:'bedroom-mirror-adjust', label:'أمام المرآة يعدل ملابسه', prompt:'adjusting clothing in front of the bedroom mirror, phone in the other hand' },
 { group:'مرآة', value:'bedroom-mirror-seated', label:'أمام المرآة جالس', prompt:'seated in front of the bedroom mirror on the bed edge, phone visible in reflection' }
-];
+].map((pose) => ({ ...pose, cameraHint: BEDROOM_CAMERA_HINTS[pose.value] }));
 
 export const SELFIE_POSES = simple([
 ['standing_relaxed','واقف باسترخاء','standing naturally with relaxed weight distribution, mild shoulder asymmetry, and no rigid portrait pose'],

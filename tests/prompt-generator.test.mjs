@@ -14,6 +14,10 @@ function headings(prompt) {
   return [...prompt.matchAll(/^\[([^\]]+)\]$/gm)].map((match) => match[1]);
 }
 
+function cameraGeometry(prompt) {
+  return prompt.split('[CAMERA GEOMETRY]\n')[1].split('\n\n[PHYSICAL LIGHTING]')[0];
+}
+
 test('generates a complete prompt without free-form source text', () => {
   const result = generateImagePrompt();
   assert.equal(result.validation.valid, true);
@@ -182,8 +186,8 @@ test('gym context is action-driven and receives fitness-specific imperfections a
 test('camera wording is simpler while physical geometry remains enforced separately', () => {
   const result = generateImagePrompt({ sceneType: 'front_selfie', camera: 'xiaomi15_front' });
   assert.ok(result.prompt.includes('Xiaomi 15 Ultra front camera with a natural wide selfie look'));
-  const cameraGeometry = result.prompt.split('[CAMERA GEOMETRY]\n')[1].split('\n\n[PHYSICAL LIGHTING]')[0];
-  assert.doesNotMatch(cameraGeometry, /21mm-equivalent|f\/\d/i);
+  const geometry = cameraGeometry(result.prompt);
+  assert.doesNotMatch(geometry, /21mm-equivalent|f\/\d/i);
   assert.ok(result.prompt.includes('[CAMERA GEOMETRY]'));
 });
 
@@ -485,4 +489,108 @@ test('bedroom with mirror furniture is not classified as mirror selfie', async (
     location: 'a bedroom with a full-length mirror on the wardrobe door'
   });
   assert.equal(packet.subject.mirror_rules, 'not_applicable');
+});
+
+test('all 40 bedroom poses expose a non-empty cameraHint', async () => {
+  const { BEDROOM_POSES } = await import('../core/scene-builder.js');
+  assert.equal(BEDROOM_POSES.length, 40);
+  for (const pose of BEDROOM_POSES) {
+    assert.equal(typeof pose.cameraHint, 'string', `cameraHint is not a string for ${pose.value}`);
+    assert.ok(pose.cameraHint.trim().length > 0, `missing cameraHint for ${pose.value}`);
+  }
+});
+
+test('bed-lying-side uses mattress-level camera hint', () => {
+  const result = generateImagePrompt({
+    sceneType: 'bedroom_selfie',
+    pose: 'bed-lying-side'
+  });
+  const geometry = cameraGeometry(result.prompt);
+  assert.match(geometry, /mattress level|beside the face/i);
+  assert.doesNotMatch(geometry, /yaw 0°, pitch 0°/i);
+});
+
+test('bed-lying-back uses overhead camera hint', () => {
+  const result = generateImagePrompt({
+    sceneType: 'bedroom_selfie',
+    pose: 'bed-lying-back'
+  });
+  assert.match(cameraGeometry(result.prompt), /above the face|pointing downward/i);
+});
+
+test('standing poses still use eye level', () => {
+  const result = generateImagePrompt({
+    sceneType: 'bedroom_selfie',
+    pose: 'bedroom-stand-relaxed'
+  });
+  assert.match(cameraGeometry(result.prompt), /eye level/i);
+});
+
+test('bedroom camera hint resolves the pose prompt used by the UI, not only the pose value', async () => {
+  const { BEDROOM_POSES } = await import('../core/scene-builder.js');
+  const side = BEDROOM_POSES.find((item) => item.value === 'bed-lying-side');
+  const result = generateImagePrompt({
+    sceneType: 'bedroom_selfie',
+    pose: side.prompt,
+    angle: 'front camera at approximately eye level, yaw 0°, pitch 0°, with a tiny natural handheld roll'
+  });
+  const geometry = cameraGeometry(result.prompt);
+  assert.match(geometry, /mattress level|beside the face/i);
+  assert.doesNotMatch(geometry, /yaw 0°, pitch 0°/i);
+});
+
+test('bedroom third-person capture never receives a front-camera bedroom pose hint', () => {
+  const result = generateImagePrompt({
+    sceneType: 'bedroom_third_person',
+    pose: 'bed-lying-side'
+  });
+  const geometry = cameraGeometry(result.prompt);
+  assert.match(geometry, /third-person smartphone shooting distance/i);
+  assert.doesNotMatch(geometry, /mattress level|beside the face/i);
+});
+
+test('non-bedroom selfie keeps the previous default camera-angle fallback', () => {
+  const result = generateImagePrompt({ sceneType: 'front_selfie' });
+  const geometry = cameraGeometry(result.prompt);
+  assert.match(geometry, /natural eye-level or slightly off-axis camera angle/i);
+  assert.doesNotMatch(geometry, /front camera at eye level with a tiny natural handheld roll/i);
+});
+
+test('pose cameraHint wins over explicit angle in bedroom scenes', () => {
+  const result = generateImagePrompt({
+    sceneType: 'bedroom_selfie',
+    pose: 'bed-lying-back',
+    angle: 'eye_centered'
+  });
+  const geometry = cameraGeometry(result.prompt);
+  assert.match(geometry, /above the face|pointing downward/i);
+  assert.doesNotMatch(geometry, /eye level.*yaw 0/i);
+});
+
+test('explicit angle remains authoritative outside bedroom', () => {
+  const result = generateImagePrompt({
+    sceneType: 'front_selfie',
+    pose: 'standing_relaxed',
+    angle: 'eye_centered'
+  });
+  assert.match(cameraGeometry(result.prompt), /eye level/i);
+  assert.equal(result.config.angle_locked_by_pose, false);
+});
+
+test('pose with cameraHint shows warning in config', () => {
+  const result = generateImagePrompt({
+    sceneType: 'bedroom_selfie',
+    pose: 'bed-lying-side'
+  });
+  assert.equal(result.config.angle_locked_by_pose, true);
+});
+
+test('standing bedroom pose keeps explicit angle authoritative', () => {
+  const result = generateImagePrompt({
+    sceneType: 'bedroom_selfie',
+    pose: 'bedroom-stand-relaxed',
+    angle: 'slightly_low_center'
+  });
+  assert.equal(result.config.angle_locked_by_pose, false);
+  assert.match(cameraGeometry(result.prompt), /slightly below eye level|gentle upward pitch/i);
 });

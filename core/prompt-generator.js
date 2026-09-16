@@ -165,6 +165,10 @@ export function generateImagePrompt(input={}){
   });
   packet.accessories.device=captureDeviceRule(scene.capture);
   const guidance=renderRealismGuidance(packet);
+  const captureLower=scene.capture.toLowerCase();
+  const mirrorSection=/mirror selfie/i.test(captureLower)
+    ? guidance.mirror
+    : 'Mirror rules: not applicable for this capture type.';
 
   let sceneText=`Location: ${location}. Background behavior: ${backgroundRules(background,contextual,saudi)} Maintain believable architecture, furniture, roads, vehicles, landscape, circulation space, object scale and environmental depth appropriate to the selected location.`;
   if(requested.startsWith('bedroom_')){
@@ -193,7 +197,7 @@ export function generateImagePrompt(input={}){
     section('CLOTHING',`${clothing}. Preserve gravity-driven drape, realistic material thickness, seam tension, compression at body/contact points, and non-mirrored natural asymmetry.`),
     section('CONTEXTUAL ACCESSORIES',guidance.accessories), section('POSE & BODY MECHANICS',`${pose}. Body mechanics must respect balance, support, joint limits, body weight, seat or ground contact, and natural asymmetric posture.`),
     section('CAMERA GEOMETRY',geometryRules(scene,camera,framing,angle,input.cameraDistance)), section('PHYSICAL LIGHTING',lightingRules(lighting,input.lightingNotes,realism.value)),
-    section('MIRROR RULES',guidance.mirror), section('PRODUCT INTEGRATION',guidance.product),
+    section('MIRROR RULES',mirrorSection), section('PRODUCT INTEGRATION',guidance.product),
     section('PHYSICAL / MATERIAL REALISM',`${realism.prompt}. Enforce correct human anatomy; realistic neck, shoulder, arm, hand and finger structure; natural weight distribution; correct support and contact deformation; coherent gravity; realistic cloth drape and seam tension; material-specific reflectance; grounded feet or body support; physically consistent reflections; plausible atmospheric depth; and scene-specific scale.`),
     section('SMARTPHONE IMAGE BEHAVIOR','The result must read as an ordinary real smartphone photograph, not a polished commercial portrait, CGI render or cinematic frame. Use broad smartphone focus, restrained computational sharpening, realistic local contrast, modest dynamic range, plausible white balance, subtle edge softness, mild sensor/noise-reduction texture in darker areas, and natural clipping of strong practical lights when appropriate.'),
     section('LENS_PHYSICS','LENS PHYSICS (mandatory): Preserve mild lateral chromatic aberration on high-contrast edges, visible as faint color fringing near frame corners. Preserve mild vignetting consistent with a wide smartphone lens, corners 15-20% darker than center. Preserve 2-3% barrel distortion typical of a 23mm-equivalent smartphone wide-angle lens. Preserve natural lens flare and ghosting only when a bright source is in or near the frame. Do not add artificial or decorative lens effects.'),

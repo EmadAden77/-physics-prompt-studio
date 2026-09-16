@@ -1,5 +1,5 @@
-import { LOCATION_CATALOG, HAIR_STYLES } from './scene-builder.js';
-import { baseSceneTypeFor } from './scene-type-expansion.js';
+import { LOCATION_CATALOG, HAIR_STYLES, HOME_CLOTHING } from './scene-builder.js';
+import { baseSceneTypeFor, sceneMeta, HOME_SCENE_TYPES } from './scene-type-expansion.js';
 
 const GENERAL_LIGHTING = [
   'day_direct_sun','day_open_shade','day_overcast','day_window','golden_hour','blue_sky_noon',
@@ -76,6 +76,22 @@ const PROFILES = {
   military_coffee_selfie: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, pose:['coffee_hand','seated_chair','standing_relaxed'], angle:BASIC_SELFIE_ANGLES, lighting:['night_office_led','day_window','night_cafe_mixed'], camera:FRONT_CAMERAS, framing:['chest_up','waist_up'] }
 };
 
+export function homeClothingForScene(sceneType) {
+  return HOME_CLOTHING.filter((item) => item.sceneTypes.includes(sceneType));
+}
+
+function profileFor(sceneType) {
+  if (HOME_SCENE_TYPES.includes(sceneType)) {
+    const meta = sceneMeta(sceneType);
+    return {
+      pose: meta.pose, angle: meta.angle, lighting: meta.lighting,
+      camera: FRONT_CAMERAS, framing: ['close', 'chest_up'],
+      backgroundActivityAllowed: PRIVATE_BACKGROUND_ACTIVITY
+    };
+  }
+  return PROFILES[sceneType] || PROFILES.front_selfie;
+}
+
 function filterValues(options, allowed) {
   if (!allowed) return [...options];
   const set = new Set(allowed);
@@ -83,6 +99,8 @@ function filterValues(options, allowed) {
 }
 
 export function locationsForScene(sceneType) {
+  const homeLocations = HOME_SCENE_TYPES.includes(sceneType) && sceneMeta(sceneType).locationValues;
+  if (homeLocations) return filterValues(LOCATION_CATALOG, homeLocations);
   const direct = LOCATION_CATALOG.filter((location) => location.sceneTypes.includes(sceneType));
   if (direct.length) return direct;
   const base = baseSceneTypeFor(sceneType);
@@ -99,6 +117,7 @@ function normalizedContext(sceneType, location = '', requestedSceneType = '') {
 }
 
 function isPrivatePersonalContext(sceneType, location = '', requestedSceneType = '') {
+  if (HOME_SCENE_TYPES.includes(requestedSceneType || sceneType)) return true;
   const context = normalizedContext(sceneType, location, requestedSceneType);
   return /bedroom|bathroom|washroom|private[_ -]?room|locker[_ -]?room|home[_ -]?interior|lying[_ -]?bed|reclining[_ -]?bed/.test(context);
 }
@@ -136,6 +155,7 @@ function isPhoneScreenOnlyLighting(lighting = '') {
 }
 
 function isNaturallyDarkPhoneContext(sceneType, location = '', requestedSceneType = '') {
+  if (sceneType === 'night_bed_selfie' || requestedSceneType === 'night_bed_selfie') return true;
   const context = normalizedContext(sceneType, location, requestedSceneType);
   return sceneType === 'inside_car_selfie' || /street[_ -]?night|night[_ -]?(?:street|parking|road|desert|corniche)|parking[_ -]?lot[_ -]?night|phone[_ -]?screen[_ -]?only|dark[_ -]?(?:street|road|parking)|شارع ليلي|موقف ليلي/.test(context);
 }
@@ -155,7 +175,7 @@ function indoorLightingFallback(sceneType, location = '', requestedSceneType = '
 }
 
 export function backgroundActivityAllowedForContext(sceneType, location = '', requestedSceneType = '') {
-  const profile = PROFILES[sceneType] || PROFILES.front_selfie;
+  const profile = profileFor(sceneType);
   if (isQuietOnlyContext(sceneType, location, requestedSceneType)) return [...QUIET_BACKGROUND_ACTIVITY];
   if (isExteriorCarContext(sceneType, location, requestedSceneType)) return [...EXTERIOR_CAR_BACKGROUND_ACTIVITY];
   if (isPrivatePersonalContext(sceneType, location, requestedSceneType)) return [...PRIVATE_BACKGROUND_ACTIVITY];
@@ -192,14 +212,20 @@ export function resolveContextAwareConstraints({ sceneType = 'front_selfie', req
 export function compatibleOptions(sceneType, kind, baseOptions = []) {
   if (kind === 'location') return locationsForScene(sceneType);
   if (kind === 'hairStyle') return hairStylesForScene(sceneType);
-  const profile = PROFILES[sceneType] || PROFILES.front_selfie;
+  if (kind === 'clothing' && HOME_SCENE_TYPES.includes(sceneType)) return homeClothingForScene(sceneType);
+  if (kind === 'clothing') return baseOptions.filter((item) => !item.sceneTypes || item.sceneTypes.includes(sceneType));
+  if (kind === 'pose' && HOME_SCENE_TYPES.includes(sceneType)) {
+    const allowed = sceneMeta(sceneType).pose;
+    return baseOptions.filter((item) => allowed.includes(item.value) && (!item.sceneTypes || item.sceneTypes.includes(sceneType)));
+  }
+  const profile = profileFor(sceneType);
   if (kind === 'pose' && profile.poseCatalog) return [...profile.poseCatalog];
   if (kind === 'angle' && profile.angleCatalog) return [...profile.angleCatalog];
   return filterValues(baseOptions, profile[kind]);
 }
 
 export function compatibilitySnapshot(sceneType, catalogs = {}) {
-  const profile = PROFILES[sceneType] || PROFILES.front_selfie;
+  const profile = profileFor(sceneType);
   return {
     location: compatibleOptions(sceneType, 'location', catalogs.location || []),
     clothing: compatibleOptions(sceneType, 'clothing', catalogs.clothing || []),
@@ -239,7 +265,8 @@ export function validateCompatibilityCatalogs(catalogs = {}) {
     angle: new Set([...MIRROR_ANGLES, ...THIRD_PERSON_ANGLES].map((item) => item.value))
   };
 
-  for (const [sceneType, profile] of Object.entries(PROFILES)) {
+  const profiles = { ...PROFILES, ...Object.fromEntries(HOME_SCENE_TYPES.map((value) => [value, profileFor(value)])) };
+  for (const [sceneType, profile] of Object.entries(profiles)) {
     if (!Array.isArray(profile.backgroundActivityAllowed) || !profile.backgroundActivityAllowed.length) errors.push(`${sceneType}.backgroundActivityAllowed must contain at least one activity value`);
     else for (const value of profile.backgroundActivityAllowed) if (!ALL_BACKGROUND_ACTIVITY.includes(value)) errors.push(`${sceneType}.backgroundActivityAllowed references missing value: ${value}`);
     for (const kind of kinds) {
@@ -259,9 +286,9 @@ export function validateCompatibilityCatalogs(catalogs = {}) {
     } else if (kind === 'hairStyle') {
       HAIR_STYLES.forEach((item) => used.add(item.value));
     } else {
-      const unrestricted = Object.values(PROFILES).some((profile) => !profile[kind] && !(kind === 'pose' && profile.poseCatalog) && !(kind === 'angle' && profile.angleCatalog));
+      const unrestricted = Object.values(profiles).some((profile) => !profile[kind] && !(kind === 'pose' && profile.poseCatalog) && !(kind === 'angle' && profile.angleCatalog));
       if (unrestricted) items.forEach((item) => used.add(item.value));
-      for (const profile of Object.values(PROFILES)) {
+      for (const profile of Object.values(profiles)) {
         for (const value of profile[kind] || []) used.add(value);
         if (kind === 'pose') for (const item of profile.poseCatalog || []) used.add(item.value);
         if (kind === 'angle') for (const item of profile.angleCatalog || []) used.add(item.value);

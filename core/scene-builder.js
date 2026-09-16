@@ -1,3 +1,5 @@
+import { HOME_SCENE_TYPES, sceneMeta } from './scene-type-expansion.js';
+
 export const SAUDI_CULTURAL_DRESS_LOCK = 'CULTURAL CONTEXT — SAUDI: All women who appear in the frame must wear a plain black abaya. Adult women should also wear a black niqab covering everything except the eyes. Do not show exposed hair, uncovered female faces, or Western-style female clothing. Men may wear a white Saudi thobe, a bisht, or ordinary business attire (shirt and trousers). This rule applies to every Saudi location, indoor or outdoor, day or night.';
 
 const grouped = (rows) => rows.map(([group, value, label, prompt]) => ({ group, value, label, prompt }));
@@ -329,6 +331,24 @@ export const FORMAL_LOOKS = simple([
 ['look-steelblue-khaki','قميص أزرق فولاذي + بنطال كاكي','a steel-blue dress shirt with khaki cotton-twill trousers, cool formal-casual pairing with matte finish']
 ]);
 
+export const HOME_CLOTHING = [
+  {"group":"بيجاما","value":"pj-cotton-navy","label":"بيجاما قطنية كحلية","prompt":"a navy cotton pajama set with visible weave, soft folds at the shoulders and knees, natural creases from wear","sceneTypes":["reclining_bed_selfie","lying_bed_selfie","morning_bed_selfie","night_bed_selfie","friday_morning_selfie"]},
+  {"group":"بيجاما","value":"pj-cotton-grey","label":"بيجاما قطنية رمادية","prompt":"a grey cotton pajama set with visible weave and natural compression folds","sceneTypes":["reclining_bed_selfie","lying_bed_selfie","morning_bed_selfie","night_bed_selfie","friday_morning_selfie"]},
+  {"group":"بيجاما","value":"pj-striped-blue","label":"بيجاما مخططة أزرق","prompt":"a striped blue and white cotton pajama set with visible yarn-dyed pattern and natural wear creases","sceneTypes":["reclining_bed_selfie","lying_bed_selfie","morning_bed_selfie","friday_morning_selfie"]},
+  {"group":"بيجاما","value":"pj-silk-charcoal","label":"بيجاما حريرية فحمية","prompt":"a charcoal silk pajama set with subtle sheen on highlight-facing folds, soft drape, and natural lounge wrinkles","sceneTypes":["reclining_bed_selfie","night_bed_selfie"]},
+  {"group":"ثوب نوم","value":"nightthobe-white","label":"ثوب نوم أبيض قطني","prompt":"a white cotton night thobe with visible weave, soft body drape, natural creases from sleep, and relaxed fit","sceneTypes":["reclining_bed_selfie","lying_bed_selfie","morning_bed_selfie","night_bed_selfie","friday_morning_selfie","reading_at_home_selfie","tea_at_home_selfie"]},
+  {"group":"ثوب نوم","value":"nightthobe-grey","label":"ثوب نوم رمادي","prompt":"a grey cotton night thobe with natural drape and comfort creases","sceneTypes":["reclining_bed_selfie","morning_bed_selfie","friday_morning_selfie","home_evening_selfie"]},
+  {"group":"ملابس منزلية","value":"tshirt-shorts-cotton","label":"تيشيرت + شورت قطني","prompt":"a plain cotton t-shirt with comfortable cotton shorts, natural jersey folds at the waist and knees, matte finish","sceneTypes":["sofa_relaxed_selfie","sofa_lying_selfie","floor_seated_selfie","floor_leaning_wall_selfie","reading_at_home_selfie","tea_at_home_selfie","home_evening_selfie","home_couch_blanket_selfie","friday_morning_selfie"]},
+  {"group":"ملابس منزلية","value":"sweatshirt-joggers","label":"سويت شيرت + جوغر","prompt":"a plain sweatshirt with joggers, fleece fabric with soft rounded folds, ribbed cuffs, and natural knee bunching","sceneTypes":["sofa_relaxed_selfie","sofa_lying_selfie","floor_seated_selfie","floor_leaning_wall_selfie","home_evening_selfie","home_couch_blanket_selfie","window_light_home_selfie"]},
+  {"group":"ملابس منزلية","value":"oversized-tshirt-pants","label":"تيشيرت أوفرسايز + بنطال مريح","prompt":"an oversized plain t-shirt with comfortable lounge pants, relaxed fit with natural drape","sceneTypes":["sofa_relaxed_selfie","sofa_lying_selfie","floor_seated_selfie","home_evening_selfie","home_couch_blanket_selfie","reading_at_home_selfie","tea_at_home_selfie"]},
+  {"group":"ملابس منزلية","value":"hoodie-joggers","label":"هودي + جوغر","prompt":"a plain hoodie with joggers, visible fleece texture, hood weight, and natural compression folds at the waist and knees","sceneTypes":["sofa_relaxed_selfie","home_evening_selfie","home_couch_blanket_selfie","window_light_home_selfie","balcony_morning_selfie"]},
+  {"group":"ملابس منزلية","value":"tshirt-jeans-home","label":"تيشيرت + جينز منزلي","prompt":"a plain t-shirt with relaxed-fit denim jeans, visible denim weave, natural knee creasing, and comfortable fit","sceneTypes":["balcony_morning_selfie","home_evening_selfie","tea_at_home_selfie"]},
+  {"group":"روب","value":"bathrobe-navy","label":"روب حمام كحلي","prompt":"a navy bathrobe with visible waffle or terry texture, soft belt at the waist, and natural drape","sceneTypes":["morning_bed_selfie","night_bed_selfie","reclining_bed_selfie"]},
+  {"group":"روب","value":"bathrobe-cream","label":"روب حمام كريمي","prompt":"a cream bathrobe with soft terry texture, natural drape, and visible belt","sceneTypes":["morning_bed_selfie","night_bed_selfie"]},
+  {"group":"ثياب بيت","value":"home-thobe-soft","label":"ثوب بيت خفيف","prompt":"a lightweight home thobe in soft woven cotton, relaxed fit, natural vertical drape, and comfort folds","sceneTypes":["sofa_relaxed_selfie","tea_at_home_selfie","reading_at_home_selfie","home_evening_selfie","window_light_home_selfie","balcony_morning_selfie","friday_morning_selfie"]},
+  {"group":"شرفة","value":"polo-chinos-home","label":"بولو + تشينو منزلي","prompt":"a plain pique polo with comfortable chinos, visible knit texture and matte twill fabric","sceneTypes":["balcony_morning_selfie","window_light_home_selfie"]}
+];
+
 export const SELFIE_POSES = simple([
 ['standing_relaxed','واقف باسترخاء','standing naturally with relaxed weight distribution, mild shoulder asymmetry, and no rigid portrait pose'],
 ['standing_one_hand','واقف واليد الحرة مرتاحة','standing naturally while the free hand rests casually near the thigh, pocket area, or torso without deliberate posing'],
@@ -346,7 +366,28 @@ export const SELFIE_POSES = simple([
 ['hand_on_head','اليد الحرة على الرأس','placing the free hand naturally on the head with anatomically correct elbow elevation, wrist orientation, and hair or headwear contact'],
 ['one_hand_pocket','اليد الحرة في الجيب','placing the free hand casually in a pocket with realistic elbow angle, cloth tension, and pocket deformation'],
 ['close_relaxed','وقفة قريبة وعفوية','a close relaxed selfie pose with natural neck, shoulder, and upper-torso asymmetry and no influencer-style posing']
-]);
+]).concat(simple([
+["reclining_bed", "مستند على رأس السرير", "reclining against the headboard with the back supported by pillows, pelvis on the mattress and one arm holding the phone within reach"],
+["sitting_bed_cross", "متربع على السرير", "sitting cross-legged on the bed, pelvis and legs supported by the mattress, natural knee angles and one hand holding the phone"],
+["seated_bed_edge", "جالس على حافة السرير", "sitting on the bed edge with both feet grounded, thighs supported and mattress compression under the pelvis while holding the phone"],
+["pillow_propped", "مسنود بالمخدات", "semi-reclining on stacked pillows supporting the upper back and head, with pelvis on the mattress and the phone held within arm reach"],
+["lying_back", "مستلقي على الظهر", "lying on the back with head resting on a pillow and shoulders supported by the mattress, holding the phone above the face within arm reach"],
+["lying_side", "مستلقي على الجانب", "lying on the left side with left shoulder and hip supported by the mattress, left cheek resting lightly on a pillow and the right hand holding the phone near face level"],
+["lying_stomach", "مستلقي على البطن", "lying prone with chest and pelvis supported by the mattress, left forearm providing gentle upper-body support and the right hand holding the phone in front of the face without excessive neck extension"],
+["sofa_lean_back", "مستند للخلف على الكنبة", "sitting back on a sofa with lumbar support, pelvis pressing into the cushion and feet supported while one hand holds the phone"],
+["sofa_corner", "جالس في زاوية الكنبة", "sitting in the sofa corner with back and one shoulder supported by cushions, relaxed hips and one arm free to hold the phone"],
+["sofa_one_knee", "على الكنبة مع ركبة مثنية", "sitting on a sofa with one knee comfortably bent on the cushion and the other foot grounded, pelvis supported and phone held independently"],
+["sofa_stretched", "ممدد الرجلين على الكنبة", "reclining along the sofa with back against cushions, legs supported along the seat and phone held within arm reach"],
+["sofa_lying_side", "مستلقي جانبيًا على الكنبة", "lying on the left side along a sofa with left shoulder and hip compressing cushions, head supported by an armrest pillow and right hand holding the phone"],
+["floor_cross_legs", "متربع على الأرض", "sitting cross-legged on the floor with pelvis and legs grounded, natural knee angles and one hand holding the phone"],
+["floor_back_wall", "على الأرض والظهر للجدار", "sitting on the floor with pelvis grounded and back resting against the wall, legs comfortably bent and phone held within reach"],
+["floor_one_knee_up", "على الأرض مع ركبة مرفوعة", "sitting on the floor with pelvis grounded, one knee raised with its foot planted and the other leg folded naturally while holding the phone"],
+["squatting", "قرفصاء متوازنة", "crouching in a balanced squat with both feet planted, knees naturally bent and torso balanced over the feet while one hand holds the phone"]
+]).map((item) => ({
+  ...item,
+  sceneTypes: HOME_SCENE_TYPES.filter((sceneType) => sceneMeta(sceneType).pose.includes(item.value))
+})));
+
 
 export const SELFIE_ANGLES = simple([
 ['eye_centered','مستوى العين — أمامي','front camera at approximately eye level, yaw 0°, pitch 0°, with a tiny natural handheld roll'],

@@ -124,7 +124,7 @@ test('main UI exposes and app reads every scene-builder control', () => {
   const ids = [
     'sceneType','sceneLocation','sceneClothing','hairStyle','scenePose','sceneAngle','sceneLighting','cameraProfile',
     'aspectRatio','expression','backgroundActivity','realismLevel','framing','sceneDescription','cameraDistance',
-    'lightingNotes','customConstraints','identityReference','randomSeed'
+    'lightingNotes','customConstraints','identityReference','seedInput'
   ];
   for (const id of ids) {
     assert.match(html, new RegExp(`id=["']${id}["']`), `HTML missing #${id}`);

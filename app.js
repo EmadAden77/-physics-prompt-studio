@@ -20,7 +20,8 @@ import { compatibilitySnapshot, recommendedDefaults, resolveCompatibleValue } fr
 import { baseSceneTypeFor, narrowOptions, sceneMeta } from './core/scene-type-expansion.js';
 import { enforceSaudiNoLandmarks, mergeSaudiNoLandmarksConstraint } from './core/saudi-location-lock.js';
 
-const $ = (id) => document.getElementById(id);
+const HAS_DOM = typeof document !== 'undefined';
+const $ = (id) => HAS_DOM ? document.getElementById(id) : null;
 const controls = {
   sceneType: $('sceneType'),
   location: $('sceneLocation'),
@@ -40,7 +41,7 @@ const controls = {
   description: $('sceneDescription'),
   customConstraints: $('customConstraints'),
   identityReference: $('identityReference'),
-  randomSeed: $('randomSeed')
+  seedInput: $('seedInput')
 };
 const sourcePrompt = $('sourcePrompt');
 const surface = $('surface');
@@ -73,10 +74,17 @@ const CATALOGS = {
   framing: FRAMING_OPTIONS
 };
 const CLOTHING_PROMPT_BY_VALUE = new Map(CATALOGS.clothing.map((item) => [item.value, item.prompt || '']));
+const RANDOMIZED_FIELDS = Object.freeze([
+  'location','clothing','pose','angle','lighting','camera','framing',
+  'expression','backgroundActivity','realismLevel','aspectRatio','hairStyle'
+]);
+const CORE_VISUAL_FIELDS = Object.freeze(['sceneType','location','clothing','hairStyle','pose','lighting']);
+const SEED_STORAGE_KEY = 'physicsPromptStudioSeed';
 
 let currentMode = 'auto';
 let latestResult = null;
 let generateTimer = null;
+let currentSeed = 42;
 
 function makeOption(item) {
   const option = document.createElement('option');
@@ -149,7 +157,7 @@ function rebuildRequiredSelect(select, options, preferredValue) {
 }
 
 function selectedSceneType() {
-  return controls.sceneType.value || 'front_selfie';
+  return controls.sceneType?.value || 'front_selfie';
 }
 
 function specializedOptions(sceneType, kind, options) {
@@ -161,12 +169,44 @@ function restoreCompatibleSelection(control, previousValue, options, preferredVa
   control.value = resolveCompatibleValue(previousValue, options, preferredValue);
 }
 
-function applySceneCompatibility() {
-  const sceneType = selectedSceneType();
+function showAllOptions(select) {
+  if (!select) return;
+  for (const option of select.options) option.hidden = false;
+  for (const group of select.querySelectorAll?.('optgroup') || []) group.hidden = false;
+}
+
+function sceneCompatibilityData(sceneType) {
   const baseSceneType = baseSceneTypeFor(sceneType);
   const compatibilityType = sceneType === 'supermarket_selfie' ? sceneType : baseSceneType;
   const compatible = compatibilitySnapshot(compatibilityType, CATALOGS);
   const defaults = recommendedDefaults(compatibilityType);
+  const expandedLocations = compatibilityType === 'supermarket_selfie' ? [] : extraLocationsForScene(baseSceneType);
+  const locationCandidates = uniqueByValue([...compatible.location, ...expandedLocations]);
+  return {
+    baseSceneType,
+    compatibilityType,
+    compatible,
+    defaults,
+    options: {
+      location: specializedOptions(sceneType, 'location', locationCandidates),
+      clothing: specializedOptions(sceneType, 'clothing', CATALOGS.clothing),
+      pose: specializedOptions(sceneType, 'pose', compatible.pose),
+      angle: specializedOptions(sceneType, 'angle', compatible.angle),
+      lighting: specializedOptions(sceneType, 'lighting', compatible.lighting),
+      camera: compatible.camera,
+      framing: compatible.framing,
+      expression: EXPRESSIONS,
+      backgroundActivity: BACKGROUND_ACTIVITY.filter((item) => compatible.backgroundActivityAllowed.includes(item.value)),
+      realismLevel: REALISM_LEVELS,
+      aspectRatio: ASPECT_RATIOS,
+      hairStyle: CATALOGS.hairStyle
+    }
+  };
+}
+
+function applySceneCompatibility() {
+  const sceneType = selectedSceneType();
+  const { compatibilityType, compatible, defaults, options } = sceneCompatibilityData(sceneType);
   const previous = {
     location: controls.location.value,
     pose: controls.pose.value,
@@ -174,16 +214,8 @@ function applySceneCompatibility() {
     lighting: controls.lighting.value,
     framing: controls.framing.value
   };
-  const expandedLocations = compatibilityType === 'supermarket_selfie' ? [] : extraLocationsForScene(baseSceneType);
-  const locationCandidates = uniqueByValue([...compatible.location, ...expandedLocations]);
-  const options = {
-    location: specializedOptions(sceneType, 'location', locationCandidates),
-    pose: specializedOptions(sceneType, 'pose', compatible.pose),
-    angle: specializedOptions(sceneType, 'angle', compatible.angle),
-    lighting: specializedOptions(sceneType, 'lighting', compatible.lighting),
-    framing: compatible.framing
-  };
 
+  showAllOptions(controls.clothing);
   rebuildOptionalSelect(controls.location, options.location, 'تلقائي — مكان سعودي واقعي جدًا بدون معالم', true);
   rebuildOptionalSelect(controls.pose, options.pose, 'تلقائي — وضعية متناسقة مع نوع المشهد');
   rebuildOptionalSelect(controls.angle, options.angle, 'تلقائي — زاوية متناسقة مع نوع المشهد');
@@ -196,22 +228,8 @@ function applySceneCompatibility() {
   restoreCompatibleSelection(controls.angle, previous.angle, options.angle, defaults.angle);
   restoreCompatibleSelection(controls.lighting, previous.lighting, options.lighting, defaults.lighting);
   controls.framing.value = resolveCompatibleValue(previous.framing, options.framing, defaults.framing);
+  return compatibilityType;
 }
-
-populateFlat(controls.sceneType, SCENE_TYPES);
-populateGrouped(controls.clothing, CATALOGS.clothing);
-populateGrouped(controls.hairStyle, CATALOGS.hairStyle);
-populateFlat(controls.aspectRatio, ASPECT_RATIOS);
-populateFlat(controls.expression, EXPRESSIONS);
-populateFlat(controls.backgroundActivity, BACKGROUND_ACTIVITY);
-populateFlat(controls.realismLevel, REALISM_LEVELS);
-
-controls.sceneType.value = 'front_selfie';
-controls.aspectRatio.value = '9:16';
-controls.expression.value = 'neutral';
-controls.backgroundActivity.value = 'normal';
-controls.realismLevel.value = 'strict';
-applySceneCompatibility();
 
 function selectedPrompt(select, promptByValue = null) {
   const option = select?.selectedOptions?.[0];
@@ -337,18 +355,55 @@ function setMode(mode) {
   }
 }
 
-function normalizeSeed(value) {
+export function normalizeSeed(value) {
   const numeric = Number(value);
-  return Number.isFinite(numeric) ? Math.trunc(numeric) >>> 0 : 42;
+  if (!Number.isFinite(numeric)) return 42;
+  return Math.min(999999, Math.max(1, Math.trunc(numeric)));
 }
 
-function deterministicHash(seed, key) {
-  let hash = (normalizeSeed(seed) ^ 0x811c9dc5) >>> 0;
-  for (const char of String(key)) {
-    hash ^= char.charCodeAt(0);
-    hash = Math.imul(hash, 0x01000193) >>> 0;
+export function newSeed() {
+  if (!globalThis.crypto?.getRandomValues) throw new Error('crypto.getRandomValues() is required to generate a new seed');
+  const buffer = new Uint32Array(1);
+  globalThis.crypto.getRandomValues(buffer);
+  return (buffer[0] % 999999) + 1;
+}
+
+export function seededRandom(seed) {
+  let state = (normalizeSeed(seed) >>> 0) || 1;
+  return function nextSeededValue() {
+    state = (Math.imul(state, 1103515245) + 12345) >>> 0;
+    return state / 4294967296;
+  };
+}
+
+export function pickRandom(array, rng) {
+  if (!array || array.length === 0) return null;
+  const index = Math.floor(rng() * array.length);
+  return array[index];
+}
+
+function valueRecord(item) {
+  return typeof item === 'string' ? { value: item } : item;
+}
+
+export function randomizationOptionsForScene(sceneType) {
+  return sceneCompatibilityData(sceneType).options;
+}
+
+export function buildSeededSceneState(seed, sceneTypes, optionsForScene = randomizationOptionsForScene) {
+  const normalized = normalizeSeed(seed);
+  const rng = seededRandom(normalized);
+  const scenes = (sceneTypes || []).map(valueRecord).filter((item) => item?.value);
+  const pickedScene = pickRandom(scenes, rng);
+  if (!pickedScene) return Object.freeze({ seed: normalized, sceneType: '' });
+
+  const state = { seed: normalized, sceneType: pickedScene.value };
+  const options = optionsForScene(pickedScene.value) || {};
+  for (const field of RANDOMIZED_FIELDS) {
+    const picked = pickRandom((options[field] || []).map(valueRecord).filter((item) => item?.value), rng);
+    state[field] = picked?.value || '';
   }
-  return hash >>> 0;
+  return Object.freeze(state);
 }
 
 function selectableOptions(select) {
@@ -359,33 +414,76 @@ function selectableOptions(select) {
   });
 }
 
-function deterministicOption(select, seed, key) {
-  const options = selectableOptions(select);
-  if (!options.length) {
-    select.value = '';
-    return;
-  }
-  select.value = options[deterministicHash(seed, key) % options.length].value;
+function captureRandomizedState() {
+  const state = { seed: currentSeed, sceneType: controls.sceneType.value };
+  for (const field of RANDOMIZED_FIELDS) state[field] = controls[field]?.value || '';
+  return state;
 }
 
-async function randomize() {
-  const seed = normalizeSeed(controls.randomSeed.value);
-  deterministicOption(controls.sceneType, seed, 'sceneType');
-  controls.sceneType.dispatchEvent(new Event('change', { bubbles: true }));
-  await Promise.resolve();
+function browserRandomizationEnvironment() {
+  if (!HAS_DOM) throw new Error('Browser randomization requires a DOM');
+  return {
+    sceneTypes: () => selectableOptions(controls.sceneType).map((option) => ({ value: option.value })),
+    optionsForScene: randomizationOptionsForScene,
+    async applyState(planned, seed) {
+      controls.sceneType.value = planned.sceneType;
+      controls.sceneType.dispatchEvent(new Event('change', { bubbles: true }));
+      await Promise.resolve();
 
-  [
-    ['location', controls.location],
-    ['clothing', controls.clothing],
-    ['hairStyle', controls.hairStyle],
-    ['pose', controls.pose],
-    ['angle', controls.angle],
-    ['lighting', controls.lighting],
-    ['expression', controls.expression],
-    ['backgroundActivity', controls.backgroundActivity],
-    ['framing', controls.framing]
-  ].forEach(([key, select]) => deterministicOption(select, seed, key));
-  generateNow();
+      for (const field of RANDOMIZED_FIELDS) {
+        const select = controls[field];
+        if (!select) continue;
+        const visible = selectableOptions(select);
+        const validValues = new Set(visible.map((option) => option.value));
+        if (planned[field] && validValues.has(planned[field])) select.value = planned[field];
+        else if (visible[0]) select.value = visible[0].value;
+      }
+
+      currentSeed = normalizeSeed(seed);
+      controls.seedInput.value = String(currentSeed);
+      globalThis.localStorage?.setItem(SEED_STORAGE_KEY, String(currentSeed));
+
+      for (const field of RANDOMIZED_FIELDS) {
+        const select = controls[field];
+        if (select) select.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      scheduleGenerate();
+      return Object.freeze({ ...captureRandomizedState(), seed: currentSeed });
+    }
+  };
+}
+
+export async function randomizeWithSeed(seed, environment = null) {
+  const env = environment || browserRandomizationEnvironment();
+  const normalized = normalizeSeed(seed);
+  const planned = buildSeededSceneState(normalized, env.sceneTypes(), env.optionsForScene);
+  return env.applyState ? (await env.applyState(planned, normalized)) : planned;
+}
+
+function coreVisualFieldsChanged(before, after) {
+  return CORE_VISUAL_FIELDS.every((field) => before[field] !== after[field]);
+}
+
+async function randomizeNewScene() {
+  const before = captureRandomizedState();
+  const env = browserRandomizationEnvironment();
+  const sceneTypes = env.sceneTypes();
+  let candidateSeed = newSeed();
+  let planned = buildSeededSceneState(candidateSeed, sceneTypes, env.optionsForScene);
+
+  for (let attempt = 0; attempt < 96 && !coreVisualFieldsChanged(before, planned); attempt += 1) {
+    candidateSeed = newSeed();
+    planned = buildSeededSceneState(candidateSeed, sceneTypes, env.optionsForScene);
+  }
+
+  currentSeed = candidateSeed;
+  return randomizeWithSeed(currentSeed, env);
+}
+
+function loadSavedSeed() {
+  const stored = globalThis.localStorage?.getItem(SEED_STORAGE_KEY);
+  currentSeed = normalizeSeed(stored || 42);
+  controls.seedInput.value = String(currentSeed);
 }
 
 function resetAll() {
@@ -408,7 +506,9 @@ function resetAll() {
   controls.description.value = '';
   controls.customConstraints.value = '';
   controls.identityReference.checked = true;
-  controls.randomSeed.value = '42';
+  currentSeed = 42;
+  controls.seedInput.value = '42';
+  globalThis.localStorage?.setItem(SEED_STORAGE_KEY, '42');
   sourcePrompt.value = '';
   surface.value = 'unknown';
   if (currentMode === 'auto') generateNow();
@@ -435,29 +535,52 @@ function download(filename, content, type) {
   URL.revokeObjectURL(url);
 }
 
-copyButton.addEventListener('click', copyPrompt);
-txtButton.addEventListener('click', () => download('physics-prompt-studio.txt', output.value, 'text/plain;charset=utf-8'));
-jsonButton.addEventListener('click', () => latestResult && download('physics-prompt-studio.json', JSON.stringify(latestResult.data, null, 2), 'application/json;charset=utf-8'));
-generateButton.addEventListener('click', generateNow);
-optimizeButton.addEventListener('click', optimizeNow);
-randomButton.addEventListener('click', randomize);
-resetButton.addEventListener('click', resetAll);
-controls.sceneType.addEventListener('change', () => {
-  applySceneCompatibility();
-  scheduleGenerate();
-});
-document.querySelectorAll('[data-mode]').forEach((button) => button.addEventListener('click', () => setMode(button.dataset.mode)));
-document.querySelectorAll('.tab').forEach((button) => button.addEventListener('click', () => {
-  document.querySelectorAll('.tab').forEach((tab) => tab.classList.toggle('active', tab === button));
-  document.querySelectorAll('.tab-panel').forEach((panel) => panel.classList.toggle('active', panel.dataset.panel === button.dataset.tab));
-}));
-Object.values(controls).forEach((control) => {
-  if (!control || control === controls.sceneType || control === controls.randomSeed) return;
-  control.addEventListener('change', scheduleGenerate);
-  control.addEventListener('input', scheduleGenerate);
-});
-sourcePrompt.addEventListener('keydown', (event) => {
-  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') optimizeNow();
-});
+if (HAS_DOM) {
+  populateFlat(controls.sceneType, SCENE_TYPES);
+  populateGrouped(controls.clothing, CATALOGS.clothing);
+  populateGrouped(controls.hairStyle, CATALOGS.hairStyle);
+  populateFlat(controls.aspectRatio, ASPECT_RATIOS);
+  populateFlat(controls.expression, EXPRESSIONS);
+  populateFlat(controls.backgroundActivity, BACKGROUND_ACTIVITY);
+  populateFlat(controls.realismLevel, REALISM_LEVELS);
 
-setMode('auto');
+  controls.sceneType.value = 'front_selfie';
+  controls.aspectRatio.value = '9:16';
+  controls.expression.value = 'neutral';
+  controls.backgroundActivity.value = 'normal';
+  controls.realismLevel.value = 'strict';
+  applySceneCompatibility();
+  loadSavedSeed();
+
+  copyButton.addEventListener('click', copyPrompt);
+  txtButton.addEventListener('click', () => download('physics-prompt-studio.txt', output.value, 'text/plain;charset=utf-8'));
+  jsonButton.addEventListener('click', () => latestResult && download('physics-prompt-studio.json', JSON.stringify(latestResult.data, null, 2), 'application/json;charset=utf-8'));
+  generateButton.addEventListener('click', generateNow);
+  optimizeButton.addEventListener('click', optimizeNow);
+  randomButton.addEventListener('click', randomizeNewScene);
+  resetButton.addEventListener('click', resetAll);
+  controls.seedInput.addEventListener('change', async () => {
+    currentSeed = normalizeSeed(controls.seedInput.value);
+    controls.seedInput.value = String(currentSeed);
+    await randomizeWithSeed(currentSeed);
+  });
+  controls.sceneType.addEventListener('change', () => {
+    applySceneCompatibility();
+    scheduleGenerate();
+  });
+  document.querySelectorAll('[data-mode]').forEach((button) => button.addEventListener('click', () => setMode(button.dataset.mode)));
+  document.querySelectorAll('.tab').forEach((button) => button.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach((tab) => tab.classList.toggle('active', tab === button));
+    document.querySelectorAll('.tab-panel').forEach((panel) => panel.classList.toggle('active', panel.dataset.panel === button.dataset.tab));
+  }));
+  Object.values(controls).forEach((control) => {
+    if (!control || control === controls.sceneType || control === controls.seedInput) return;
+    control.addEventListener('change', scheduleGenerate);
+    control.addEventListener('input', scheduleGenerate);
+  });
+  sourcePrompt.addEventListener('keydown', (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') optimizeNow();
+  });
+
+  setMode('auto');
+}

@@ -32,7 +32,8 @@
         <div class="section-head">
           <div><p class="kicker">01 — AUTO BUILDER</p><h2>كوّن المشهد</h2></div>
           <div class="head-actions">
-            <button id="randomButton" class="ghost" type="button">🎲 مشهد حتمي بالـSeed</button>
+            <button id="randomButton" class="ghost" type="button">🎲 مشهد جديد</button>
+            <label class="seed-field"><span>Seed</span><input id="seedInput" type="number" value="42" min="1" max="999999" step="1"></label>
             <button id="resetButton" class="ghost" type="button">إعادة ضبط</button>
           </div>
         </div>
@@ -59,7 +60,6 @@
             <label class="field span-2"><span>فكرة أو وصف إضافي للمشهد</span><textarea id="sceneDescription" rows="3" placeholder="مثال: مدعو على العشاء، الصورة عفوية وهادئة"></textarea></label>
             <label class="field"><span>مسافة الكاميرا</span><input id="cameraDistance" type="text" placeholder="مثال: 45 cm"></label>
             <label class="field"><span>ملاحظات الإضاءة</span><input id="lightingNotes" type="text" placeholder="مثال: LED من أعلى اليسار"></label>
-            <label class="field"><span>Seed للمشهد العشوائي الحتمي</span><input id="randomSeed" type="number" step="1" value="42"></label>
             <label class="field span-2"><span>قيود خاصة</span><textarea id="customConstraints" rows="3" placeholder="أي شروط إضافية تريد تثبيتها داخل الـPrompt"></textarea></label>
             <label class="toggle span-2"><input id="identityReference" type="checkbox" checked><span><strong>Identity Lock عند إرفاق صورة مرجعية</strong><small>يحافظ على الهوية ولا ينسخ الخلفية أو الوضعية أو الملابس من المرجع.</small></span></label>
           </div>

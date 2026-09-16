@@ -1,5 +1,5 @@
 import { compilePrompt, createLedger } from './core/prompt-optimizer.js';
-import { LOCATION_CATALOG, CLOTHING_OPTIONS, FORMAL_LOOKS, FORMAL_SUITS, HAIR_STYLES, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from './core/scene-builder.js';
+import { LOCATION_CATALOG, CLOTHING_OPTIONS, HOME_CLOTHING, FORMAL_LOOKS, FORMAL_SUITS, HAIR_STYLES, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from './core/scene-builder.js';
 import {
   EXTRA_CLOTHING_OPTIONS,
   enrichClothingPrompt
@@ -14,7 +14,7 @@ import {
   REALISM_LEVELS,
   FRAMING_OPTIONS
 } from './core/prompt-generator.js';
-import { compatibilitySnapshot, locationsForScene, recommendedDefaults, resolveCompatibleValue } from './core/scene-compatibility.js';
+import { compatibilitySnapshot, hasCompatibilityProfile, locationsForScene, recommendedDefaults, resolveCompatibleValue } from './core/scene-compatibility.js';
 import { baseSceneTypeFor, narrowOptions, sceneMeta } from './core/scene-type-expansion.js';
 import { enforceSaudiNoLandmarks, mergeSaudiNoLandmarksConstraint } from './core/saudi-location-lock.js';
 
@@ -64,6 +64,7 @@ const resetButton = $('resetButton');
 const withUiGroup = (options, group) => options.map((item) => ({ ...item, group }));
 const CLOTHING_UI_OPTIONS = [
   ...CLOTHING_OPTIONS,
+  ...HOME_CLOTHING,
   ...withUiGroup(FORMAL_SUITS, 'بدلات رسمية كاملة'),
   ...withUiGroup(FORMAL_LOOKS, 'أطقم كاملة (قميص + بنطال)')
 ];
@@ -171,23 +172,25 @@ function specializedOptions(sceneType, kind, options) {
   return sceneMeta(sceneType) ? narrowOptions(sceneType, kind, options) : options;
 }
 
+function clothingOptionsForScene(sceneType, options) {
+  const linked = options.filter((item) => Array.isArray(item.sceneTypes) && item.sceneTypes.includes(sceneType));
+  if (linked.length) return linked;
+  return options.filter((item) => !Array.isArray(item.sceneTypes));
+}
+
 function restoreCompatibleSelection(control, previousValue, options, preferredValue = '') {
   if (!previousValue) return;
   control.value = resolveCompatibleValue(previousValue, options, preferredValue);
 }
 
-function showAllOptions(select) {
-  if (!select) return;
-  for (const option of select.options) option.hidden = false;
-  for (const group of select.querySelectorAll?.('optgroup') || []) group.hidden = false;
-}
-
 function sceneCompatibilityData(sceneType) {
   const baseSceneType = baseSceneTypeFor(sceneType);
-  const compatibilityType = sceneType === 'supermarket_selfie' ? sceneType : baseSceneType;
+  const directCompatibility = hasCompatibilityProfile(sceneType);
+  const compatibilityType = directCompatibility ? sceneType : baseSceneType;
   const compatible = compatibilitySnapshot(compatibilityType, CATALOGS);
   const defaults = recommendedDefaults(compatibilityType);
   const locationCandidates = locationsForScene(sceneType);
+  const clothingCandidates = clothingOptionsForScene(sceneType, compatible.clothing);
   return {
     baseSceneType,
     compatibilityType,
@@ -195,10 +198,10 @@ function sceneCompatibilityData(sceneType) {
     defaults,
     options: {
       location: locationCandidates,
-      clothing: specializedOptions(sceneType, 'clothing', CATALOGS.clothing),
-      pose: specializedOptions(sceneType, 'pose', compatible.pose),
-      angle: specializedOptions(sceneType, 'angle', compatible.angle),
-      lighting: specializedOptions(sceneType, 'lighting', compatible.lighting),
+      clothing: specializedOptions(sceneType, 'clothing', clothingCandidates),
+      pose: directCompatibility ? compatible.pose : specializedOptions(sceneType, 'pose', compatible.pose),
+      angle: directCompatibility ? compatible.angle : specializedOptions(sceneType, 'angle', compatible.angle),
+      lighting: directCompatibility ? compatible.lighting : specializedOptions(sceneType, 'lighting', compatible.lighting),
       camera: compatible.camera,
       framing: compatible.framing,
       expression: EXPRESSIONS,
@@ -215,14 +218,15 @@ function applySceneCompatibility() {
   const { compatibilityType, compatible, defaults, options } = sceneCompatibilityData(sceneType);
   const previous = {
     location: controls.location.value,
+    clothing: controls.clothing.value,
     pose: controls.pose.value,
     angle: controls.angle.value,
     lighting: controls.lighting.value,
     framing: controls.framing.value
   };
 
-  showAllOptions(controls.clothing);
   rebuildOptionalSelect(controls.location, options.location, 'تلقائي — مكان سعودي واقعي جدًا بدون معالم', true);
+  rebuildOptionalSelect(controls.clothing, options.clothing, 'تلقائي — ملابس متناسقة مع نوع المشهد', true);
   rebuildOptionalSelect(controls.pose, options.pose, 'تلقائي — وضعية متناسقة مع نوع المشهد');
   rebuildOptionalSelect(controls.angle, options.angle, 'تلقائي — زاوية متناسقة مع نوع المشهد');
   rebuildOptionalSelect(controls.lighting, options.lighting, 'تلقائي — إضاءة متناسقة مع نوع المشهد', true);
@@ -230,6 +234,7 @@ function applySceneCompatibility() {
   rebuildRequiredSelect(controls.framing, options.framing, defaults.framing);
 
   restoreCompatibleSelection(controls.location, previous.location, options.location, defaults.location);
+  restoreCompatibleSelection(controls.clothing, previous.clothing, options.clothing);
   restoreCompatibleSelection(controls.pose, previous.pose, options.pose, defaults.pose);
   restoreCompatibleSelection(controls.angle, previous.angle, options.angle, defaults.angle);
   restoreCompatibleSelection(controls.lighting, previous.lighting, options.lighting, defaults.lighting);

@@ -171,6 +171,24 @@ export const CLOTHING_OPTIONS = grouped([
 ['كاجوال','light_jacket','جاكيت خفيف','a simple lightweight casual jacket with realistic shell fabric, zipper structure, cuff tension, and natural folds']
 ]);
 
+export const HOME_CLOTHING = [
+  { group: 'بيجاما', value: 'pj-cotton-navy', label: 'بيجاما قطنية كحلية', prompt: 'a navy cotton pajama set with visible weave, soft folds at the shoulders and knees, natural creases from wear', sceneTypes: ['reclining_bed_selfie', 'lying_bed_selfie', 'morning_bed_selfie', 'night_bed_selfie', 'friday_morning_selfie'] },
+  { group: 'بيجاما', value: 'pj-cotton-grey', label: 'بيجاما قطنية رمادية', prompt: 'a grey cotton pajama set with visible weave and natural compression folds', sceneTypes: ['reclining_bed_selfie', 'lying_bed_selfie', 'morning_bed_selfie', 'night_bed_selfie', 'friday_morning_selfie'] },
+  { group: 'بيجاما', value: 'pj-striped-blue', label: 'بيجاما مخططة أزرق', prompt: 'a striped blue and white cotton pajama set with visible yarn-dyed pattern and natural wear creases', sceneTypes: ['reclining_bed_selfie', 'lying_bed_selfie', 'morning_bed_selfie', 'friday_morning_selfie'] },
+  { group: 'بيجاما', value: 'pj-silk-charcoal', label: 'بيجاما حريرية فحمية', prompt: 'a charcoal silk pajama set with subtle sheen on highlight-facing folds, soft drape, and natural lounge wrinkles', sceneTypes: ['reclining_bed_selfie', 'night_bed_selfie'] },
+  { group: 'ثوب نوم', value: 'nightthobe-white', label: 'ثوب نوم أبيض قطني', prompt: 'a white cotton night thobe with visible weave, soft body drape, natural creases from sleep, and relaxed fit', sceneTypes: ['reclining_bed_selfie', 'lying_bed_selfie', 'morning_bed_selfie', 'night_bed_selfie', 'friday_morning_selfie', 'reading_at_home_selfie', 'tea_at_home_selfie'] },
+  { group: 'ثوب نوم', value: 'nightthobe-grey', label: 'ثوب نوم رمادي', prompt: 'a grey cotton night thobe with natural drape and comfort creases', sceneTypes: ['reclining_bed_selfie', 'morning_bed_selfie', 'friday_morning_selfie', 'home_evening_selfie'] },
+  { group: 'ملابس منزلية', value: 'tshirt-shorts-cotton', label: 'تيشيرت + شورت قطني', prompt: 'a plain cotton t-shirt with comfortable cotton shorts, natural jersey folds at the waist and knees, matte finish', sceneTypes: ['sofa_relaxed_selfie', 'sofa_lying_selfie', 'floor_seated_selfie', 'floor_leaning_wall_selfie', 'reading_at_home_selfie', 'tea_at_home_selfie', 'home_evening_selfie', 'home_couch_blanket_selfie', 'friday_morning_selfie'] },
+  { group: 'ملابس منزلية', value: 'sweatshirt-joggers', label: 'سويت شيرت + جوغر', prompt: 'a plain sweatshirt with joggers, fleece fabric with soft rounded folds, ribbed cuffs, and natural knee bunching', sceneTypes: ['sofa_relaxed_selfie', 'sofa_lying_selfie', 'floor_seated_selfie', 'floor_leaning_wall_selfie', 'home_evening_selfie', 'home_couch_blanket_selfie', 'window_light_home_selfie'] },
+  { group: 'ملابس منزلية', value: 'oversized-tshirt-pants', label: 'تيشيرت أوفرسايز + بنطال مريح', prompt: 'an oversized plain t-shirt with comfortable lounge pants, relaxed fit with natural drape', sceneTypes: ['sofa_relaxed_selfie', 'sofa_lying_selfie', 'floor_seated_selfie', 'home_evening_selfie', 'home_couch_blanket_selfie', 'reading_at_home_selfie', 'tea_at_home_selfie'] },
+  { group: 'ملابس منزلية', value: 'hoodie-joggers', label: 'هودي + جوغر', prompt: 'a plain hoodie with joggers, visible fleece texture, hood weight, and natural compression folds at the waist and knees', sceneTypes: ['sofa_relaxed_selfie', 'home_evening_selfie', 'home_couch_blanket_selfie', 'window_light_home_selfie', 'balcony_morning_selfie'] },
+  { group: 'ملابس منزلية', value: 'tshirt-jeans-home', label: 'تيشيرت + جينز منزلي', prompt: 'a plain t-shirt with relaxed-fit denim jeans, visible denim weave, natural knee creasing, and comfortable fit', sceneTypes: ['balcony_morning_selfie', 'home_evening_selfie', 'tea_at_home_selfie'] },
+  { group: 'روب', value: 'bathrobe-navy', label: 'روب حمام كحلي', prompt: 'a navy bathrobe with visible waffle or terry texture, soft belt at the waist, and natural drape', sceneTypes: ['morning_bed_selfie', 'night_bed_selfie', 'reclining_bed_selfie'] },
+  { group: 'روب', value: 'bathrobe-cream', label: 'روب حمام كريمي', prompt: 'a cream bathrobe with soft terry texture, natural drape, and visible belt', sceneTypes: ['morning_bed_selfie', 'night_bed_selfie'] },
+  { group: 'ثياب بيت', value: 'home-thobe-soft', label: 'ثوب بيت خفيف', prompt: 'a lightweight home thobe in soft woven cotton, relaxed fit, natural vertical drape, and comfort folds', sceneTypes: ['sofa_relaxed_selfie', 'tea_at_home_selfie', 'reading_at_home_selfie', 'home_evening_selfie', 'window_light_home_selfie', 'balcony_morning_selfie', 'friday_morning_selfie'] },
+  { group: 'شرفة', value: 'polo-chinos-home', label: 'بولو + تشينو منزلي', prompt: 'a plain pique polo with comfortable chinos, visible knit texture and matte twill fabric', sceneTypes: ['balcony_morning_selfie', 'window_light_home_selfie'] }
+];
+
 export const FORMAL_SUITS = [
   { group: 'كلاسيكي', value: 'suit-navy-white', label: 'بدلة كحلية + قميص أبيض', prompt: 'a navy two-piece suit with a crisp white dress shirt, wool-blend texture, natural lapel roll, sleeve break, trouser crease, restrained sheen' },
   { group: 'كلاسيكي', value: 'suit-navy-lightblue', label: 'بدلة كحلية + قميص أزرق فاتح', prompt: 'a navy two-piece suit with a light-blue dress shirt, wool-blend texture, matte trouser drape' },
@@ -345,7 +363,23 @@ export const SELFIE_POSES = simple([
 ['adjust_clothing','يعدّل الملابس باليد الحرة','gently adjusting a small section of clothing with the free hand, creating realistic fabric tension and contact folds'],
 ['hand_on_head','اليد الحرة على الرأس','placing the free hand naturally on the head with anatomically correct elbow elevation, wrist orientation, and hair or headwear contact'],
 ['one_hand_pocket','اليد الحرة في الجيب','placing the free hand casually in a pocket with realistic elbow angle, cloth tension, and pocket deformation'],
-['close_relaxed','وقفة قريبة وعفوية','a close relaxed selfie pose with natural neck, shoulder, and upper-torso asymmetry and no influencer-style posing']
+['close_relaxed','وقفة قريبة وعفوية','a close relaxed selfie pose with natural neck, shoulder, and upper-torso asymmetry and no influencer-style posing'],
+['reclining_bed','مستند على السرير','reclining against the bed headboard with visible pillow compression, torso at 45-60 degrees, natural relaxation in the shoulders'],
+['sitting_bed_cross','جالس مربع على السرير','sitting cross-legged on the bed with realistic mattress compression, natural back curve, and visible hip and knee placement'],
+['seated_bed_edge','جالس على حافة السرير','seated on the edge of the bed with feet on the floor, slight forward lean, and natural weight distribution'],
+['pillow_propped','مستند على الوسائد','propped up on multiple pillows with visible pillow compression and the back at a natural angle'],
+['lying_back','مستلقٍ على الظهر','lying flat on the back with the arm holding the phone, realistic weight distribution against the mattress'],
+['lying_side','مستلقٍ على الجانب','lying on the side with one arm supporting the head or holding the phone, natural body curve and contact with the bedding'],
+['lying_stomach','مستلقٍ على البطن','lying on the stomach with elbows propped on the mattress, chest slightly lifted, natural lower-back curve'],
+['sofa_lean_back','متكئ على ظهر الكنبة','leaning back into the sofa with visible cushion compression, natural shoulder relaxation, and one leg bent'],
+['sofa_corner','في زاوية الكنبة','seated in the corner of the sofa with elbow supported by the armrest, natural asymmetric posture'],
+['sofa_one_knee','على الكنبة بركبة مرفوعة','seated on the sofa with one knee raised and foot planted, natural casual posture'],
+['sofa_stretched','ممدد على الكنبة','stretched out on the sofa lengthwise with visible cushion compression and natural body line'],
+['sofa_lying_side','مستلقٍ على الكنبة','lying on the side on the sofa with head supported by the arm or armrest, natural body curve'],
+['floor_cross_legs','جالس مربع على الأرض','sitting cross-legged on the floor with natural hip and knee angles, visible contact with the rug or carpet'],
+['floor_back_wall','مسند ظهره على الجدار','seated on the floor with the back supported against a wall, one leg straight and one bent, natural relaxation'],
+['floor_one_knee_up','على الأرض بركبة مرفوعة','seated on the floor with one knee raised and the arm resting on it, natural casual posture'],
+['squatting','قرفصاء طبيعي','squatting naturally with heels down and knees bent, balanced weight distribution']
 ]);
 
 export const SELFIE_ANGLES = simple([

@@ -62,6 +62,14 @@ test('core catalog counts match the documented production baseline', () => {
   assert.equal(LIGHTING_PROFILES.length, 26, 'LIGHTING_PROFILES count changed');
 });
 
+test('FORMAL_SUITS and HAIR_STYLES are unchanged after bedroom rebuild', async () => {
+  const { FORMAL_SUITS, HAIR_STYLES } = await import('../core/scene-builder.js');
+  assert.equal(FORMAL_SUITS.length, 30);
+  assert.equal(HAIR_STYLES.length, 30);
+  assert.equal(FORMAL_SUITS[0].value, 'suit-navy-white');
+  assert.equal(HAIR_STYLES[0].value, 'hair-back-natural');
+});
+
 test('FORMAL_LOOKS contains the two newly added timeless combinations', async () => {
   const { FORMAL_LOOKS } = await import('../core/scene-builder.js');
   const labels = FORMAL_LOOKS.map((look) => look.label);

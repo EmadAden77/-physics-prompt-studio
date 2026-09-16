@@ -1,11 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { compatibleOptions, compatibilitySnapshot, recommendedDefaults, resolveCompatibleValue, resolveContextAwareConstraints } from '../core/scene-compatibility.js';
-import { SAUDI_LOCATIONS, CLOTHING_OPTIONS, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
-import { CAMERA_PROFILES, FRAMING_OPTIONS } from '../core/prompt-generator.js';
+import { readFile } from 'node:fs/promises';
+import { compatibleOptions, compatibilitySnapshot, locationsForScene, recommendedDefaults, resolveCompatibleValue, resolveContextAwareConstraints } from '../core/scene-compatibility.js';
+import { LOCATION_CATALOG, CLOTHING_OPTIONS, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
+import { CAMERA_PROFILES, FRAMING_OPTIONS, SCENE_TYPES } from '../core/prompt-generator.js';
+import { baseSceneTypeFor } from '../core/scene-type-expansion.js';
 
 const catalogs = {
-  location: SAUDI_LOCATIONS,
+  location: LOCATION_CATALOG,
   clothing: CLOTHING_OPTIONS,
   pose: SELFIE_POSES,
   angle: SELFIE_ANGLES,
@@ -16,6 +18,60 @@ const catalogs = {
 
 const values = (items) => items.map((item) => item.value);
 
+test('LOCATION_CATALOG is single source of truth', () => {
+  assert.equal(LOCATION_CATALOG.length, 92);
+  assert.equal(new Set(LOCATION_CATALOG.map((item) => item.value)).size, 92, 'location values must be unique');
+  for (const loc of LOCATION_CATALOG) {
+    assert.ok(Array.isArray(loc.sceneTypes), `${loc.value}: sceneTypes must be an array`);
+    assert.ok(loc.sceneTypes.length > 0, `${loc.value}: missing sceneTypes`);
+  }
+});
+
+test('no legacy location arrays remain', async () => {
+  const src = await readFile('core/scene-compatibility.js', 'utf8');
+  for (const legacy of ['MAJLIS_LOCATIONS', 'CAR_LOCATIONS', 'OUTDOOR_LOCATIONS', 'WALKING_LOCATIONS', 'SEATED_LOCATIONS', 'MIRROR_LOCATIONS', 'CAFE_LOCATIONS', 'OFFICE_LOCATIONS']) {
+    assert.ok(!src.includes(legacy), `${legacy} still present`);
+  }
+});
+
+test('no keyword location arrays in scene-type-expansion', async () => {
+  const src = await readFile('core/scene-type-expansion.js', 'utf8');
+  assert.ok(!/location:\s*\[/.test(src), 'keyword location arrays still present');
+});
+
+test('variants inherit from baseType when they have no direct location mapping', () => {
+  const variantLocations = locationsForScene('high_angle_selfie');
+  const baseLocations = locationsForScene('front_selfie');
+  assert.deepEqual(values(variantLocations), values(baseLocations));
+});
+
+test('specialized location mappings override broad base inheritance', () => {
+  assert.deepEqual(values(locationsForScene('supermarket_selfie')), ['supermarket_aisle', 'convenience_store', 'grocery_store']);
+  assert.deepEqual(values(locationsForScene('gym_wash_area_selfie')), ['gym_sink_mirror_area']);
+});
+
+test('no leakage between scene families', () => {
+  const carValues = values(locationsForScene('inside_car_selfie'));
+  assert.ok(!carValues.includes('government_office_hall'));
+  assert.ok(!carValues.includes('supermarket_aisle'));
+  assert.ok(!carValues.includes('saudi_office'));
+
+  const officeValues = values(locationsForScene('office_selfie'));
+  assert.ok(!officeValues.includes('desert_roadside'));
+  assert.ok(!officeValues.includes('gulf_beach'));
+  assert.ok(!officeValues.includes('supermarket_aisle'));
+});
+
+test('every location sceneType resolves to a valid base sceneType', () => {
+  const validBaseTypes = new Set(SCENE_TYPES.map((scene) => scene.value));
+  for (const loc of LOCATION_CATALOG) {
+    for (const sceneType of loc.sceneTypes) {
+      const base = baseSceneTypeFor(sceneType);
+      assert.ok(validBaseTypes.has(base), `${loc.value}: invalid base sceneType "${sceneType}" -> "${base}"`);
+    }
+  }
+});
+
 test('inside-car selfie exposes only car-compatible pose, angle and camera choices', () => {
   const snapshot = compatibilitySnapshot('inside_car_selfie', catalogs);
   assert.deepEqual(values(snapshot.pose), ['driver_seat', 'passenger_seat']);
@@ -23,11 +79,14 @@ test('inside-car selfie exposes only car-compatible pose, angle and camera choic
   assert.equal(values(snapshot.camera).includes('smartphone_rear'), false);
   assert.equal(values(snapshot.lighting).includes('car_daylight'), true);
   assert.equal(values(snapshot.lighting).includes('night_majlis_warm'), false);
+  assert.ok(values(snapshot.location).includes('villa_driveway'));
+  assert.ok(values(snapshot.location).includes('covered_parking_shade'));
+  assert.ok(!values(snapshot.location).includes('supermarket_aisle'));
 });
 
-test('majlis selfie only exposes majlis-compatible locations and lighting', () => {
+test('majlis selfie only exposes explicitly mapped majlis locations and lighting', () => {
   const snapshot = compatibilitySnapshot('majlis_selfie', catalogs);
-  assert.deepEqual(values(snapshot.location), ['modern_saudi_majlis', 'traditional_majlis', 'villa_living_room']);
+  assert.deepEqual(values(snapshot.location), ['modern_saudi_majlis', 'traditional_majlis']);
   assert.equal(values(snapshot.lighting).includes('night_majlis_warm'), true);
   assert.equal(values(snapshot.lighting).includes('night_gas_station'), false);
   assert.equal(values(snapshot.lighting).includes('night_phone_screen'), false);
@@ -47,6 +106,9 @@ test('mirror selfie receives mirror-specific pose and angle catalogs', () => {
   assert.equal(values(snapshot.pose).every((value) => value.startsWith('mirror_')), true);
   assert.equal(values(snapshot.angle).every((value) => value.startsWith('mirror_')), true);
   assert.equal(values(snapshot.angle).includes('driver_eye_level'), false);
+  assert.ok(values(snapshot.location).includes('saudi_bedroom_livedin'));
+  assert.ok(values(snapshot.location).includes('gym_sink_mirror_area'));
+  assert.ok(!values(snapshot.location).includes('service_road'));
 });
 
 test('third-person scenes never expose selfie camera geometry', () => {
@@ -59,9 +121,14 @@ test('third-person scenes never expose selfie camera geometry', () => {
   assert.equal(values(fullBody.angle).includes('driver_eye_level'), false);
 });
 
-test('office selfie excludes unrelated locations and car lighting', () => {
+test('office selfie uses all explicit office locations and excludes unrelated locations', () => {
   const snapshot = compatibilitySnapshot('office_selfie', catalogs);
-  assert.deepEqual(values(snapshot.location), ['saudi_office', 'real_estate_office']);
+  const locationValues = values(snapshot.location);
+  for (const expected of ['saudi_office', 'real_estate_office', 'home_office_room', 'coworking_space', 'office_break_room', 'office_corridor', 'meeting_room']) {
+    assert.ok(locationValues.includes(expected), `${expected} should be office-compatible`);
+  }
+  assert.ok(!locationValues.includes('desert_roadside'));
+  assert.ok(!locationValues.includes('supermarket_aisle'));
   assert.equal(values(snapshot.lighting).includes('night_office_led'), true);
   assert.equal(values(snapshot.lighting).includes('night_car_practicals'), false);
   assert.equal(values(snapshot.lighting).includes('night_phone_screen'), false);
@@ -69,9 +136,6 @@ test('office selfie excludes unrelated locations and car lighting', () => {
 
 test('supermarket scene only exposes supermarket-compatible locations', () => {
   const snapshot = compatibilitySnapshot('supermarket_selfie', catalogs);
-  assert.ok(snapshot.location.length >= 3);
-  assert.ok(snapshot.location.every((location) => /supermarket|grocery|convenience|store/i.test(location.value)));
-  assert.ok(!snapshot.location.some((location) => /boulevard|street|corniche/i.test(location.value)));
   assert.deepEqual(values(snapshot.location), ['supermarket_aisle', 'convenience_store', 'grocery_store']);
 });
 

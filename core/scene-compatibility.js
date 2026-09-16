@@ -1,4 +1,4 @@
-import { LOCATION_CATALOG } from './scene-builder.js';
+import { LOCATION_CATALOG, HAIR_STYLES } from './scene-builder.js';
 import { baseSceneTypeFor } from './scene-type-expansion.js';
 
 const GENERAL_LIGHTING = [
@@ -84,6 +84,11 @@ export function locationsForScene(sceneType) {
   if (direct.length) return direct;
   const base = baseSceneTypeFor(sceneType);
   return LOCATION_CATALOG.filter((location) => location.sceneTypes.includes(base));
+}
+
+export function hairStylesForScene(sceneType) {
+  baseSceneTypeFor(sceneType);
+  return [...HAIR_STYLES];
 }
 
 function normalizedContext(sceneType, location = '', requestedSceneType = '') {
@@ -183,6 +188,7 @@ export function resolveContextAwareConstraints({ sceneType = 'front_selfie', req
 
 export function compatibleOptions(sceneType, kind, baseOptions = []) {
   if (kind === 'location') return locationsForScene(sceneType);
+  if (kind === 'hairStyle') return hairStylesForScene(sceneType);
   const profile = PROFILES[sceneType] || PROFILES.front_selfie;
   if (kind === 'pose' && profile.poseCatalog) return [...profile.poseCatalog];
   if (kind === 'angle' && profile.angleCatalog) return [...profile.angleCatalog];
@@ -194,6 +200,7 @@ export function compatibilitySnapshot(sceneType, catalogs = {}) {
   return {
     location: compatibleOptions(sceneType, 'location', catalogs.location || []),
     clothing: compatibleOptions(sceneType, 'clothing', catalogs.clothing || []),
+    hairStyle: compatibleOptions(sceneType, 'hairStyle', catalogs.hairStyle || []),
     pose: compatibleOptions(sceneType, 'pose', catalogs.pose || []),
     angle: compatibleOptions(sceneType, 'angle', catalogs.angle || []),
     lighting: compatibleOptions(sceneType, 'lighting', catalogs.lighting || []),
@@ -223,7 +230,7 @@ export function resolveCompatibleValue(currentValue, options = [], preferredValu
 export function validateCompatibilityCatalogs(catalogs = {}) {
   const errors = [];
   const unused = {};
-  const kinds = ['location','clothing','pose','angle','lighting','camera','framing'];
+  const kinds = ['location','clothing','hairStyle','pose','angle','lighting','camera','framing'];
   const specialValues = {
     pose: new Set([...MIRROR_POSES, ...THIRD_PERSON_POSES].map((item) => item.value)),
     angle: new Set([...MIRROR_ANGLES, ...THIRD_PERSON_ANGLES].map((item) => item.value))
@@ -246,6 +253,8 @@ export function validateCompatibilityCatalogs(catalogs = {}) {
     const used = new Set();
     if (kind === 'location') {
       LOCATION_CATALOG.forEach((item) => used.add(item.value));
+    } else if (kind === 'hairStyle') {
+      HAIR_STYLES.forEach((item) => used.add(item.value));
     } else {
       const unrestricted = Object.values(PROFILES).some((profile) => !profile[kind] && !(kind === 'pose' && profile.poseCatalog) && !(kind === 'angle' && profile.angleCatalog));
       if (unrestricted) items.forEach((item) => used.add(item.value));

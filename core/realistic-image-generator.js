@@ -18,9 +18,26 @@ const SCENARIO_PROFILES = {
   car: {
     template: 'Car Selfie',
     action: 'capture a close personal selfie while seated naturally in a stationary car, with relaxed posture and a small everyday gesture rather than a rigid pose',
-    accessories: { headwear: 'match the selected clothing naturally', jewelry: 'minimal everyday accessories only', device: 'smartphone front camera', prop: 'none by default; small everyday item only if requested' },
+    accessories: { headwear: 'match the selected clothing naturally', jewelry: 'minimal everyday accessories only', device: 'smartphone held in the subject\'s hand', prop: 'none by default; small everyday item only if requested' },
     imperfections: ['slight window reflections', 'minor fabric creasing from the seat', 'subtle cabin shadow noise', 'small handheld framing error'],
     background: ['seat upholstery', 'door trim and window glass', 'a small dashboard or steering-wheel cue when physically visible', 'ordinary exterior parking or street context']
+  },
+  third_person_car_exterior: {
+    template: 'Third-Person Photo Beside a Parked Car',
+    action: 'capture a natural third-person photograph of the subject standing beside a parked vehicle, with relaxed weight distribution and natural hand placement',
+    accessories: { headwear: 'match the selected clothing and outdoor setting', jewelry: 'minimal everyday accessories only', device: 'none held by the subject; photographed by another person', prop: 'the parked vehicle is environmental context, not a hero product' },
+    imperfections: [
+      'sun-lit hard shadow on the ground beside the subject when direct daylight is selected',
+      'minor posture asymmetry',
+      'small framing imperfection',
+      'ordinary parking lot wear, painted markings, oil spot texture'
+    ],
+    background: [
+      'a parked vehicle beside the subject with correct body-to-car spacing',
+      'realistic asphalt or paving with painted parking markings',
+      'ordinary neighboring parked vehicles where contextually appropriate',
+      'physically plausible outdoor depth and daylight or practical-light behavior'
+    ]
   },
   outdoor: {
     template: 'Street/Outdoor Photo',
@@ -44,10 +61,15 @@ function clean(value) {
 
 function detectScenario(input = {}) {
   const sceneType = clean(input.sceneType).toLowerCase();
-  const haystack = [sceneType, input.location, input.description, input.pose].map(clean).join(' ').toLowerCase();
+  const requestedSceneType = clean(input.requestedSceneType).toLowerCase();
+  const capture = clean(input.captureType).toLowerCase();
+  const haystack = [sceneType, requestedSceneType, input.location, input.description, input.pose].map(clean).join(' ').toLowerCase();
+  const thirdPerson = /third-person/.test(capture) || /third[_ -]?person|شخص ثالث/.test(`${sceneType} ${requestedSceneType} ${haystack}`);
+  const carContext = /car|vehicle|driver|passenger|parking|driveway|سيارة|مركبة|موقف|مقعد السائق/.test(haystack);
   if (/gym|fitness|workout|نادي|تمرين/.test(haystack)) return 'gym';
   if (/mirror|مرآة/.test(haystack)) return 'mirror';
-  if (/car|vehicle|driver|passenger|سيارة|مقعد السائق/.test(haystack)) return 'car';
+  if (thirdPerson && carContext) return 'third_person_car_exterior';
+  if (carContext) return 'car';
   if (/outdoor|street|walking|desert|beach|corniche|park|road|شارع|خارجي|مشي|صحراء|شاطئ|كورنيش|حديقة/.test(haystack)) return 'outdoor';
   return 'lifestyle';
 }
@@ -55,6 +77,14 @@ function detectScenario(input = {}) {
 function mirrorRuleFor(scenario) {
   if (scenario !== 'mirror') return DEFAULT_MIRROR_RULE;
   return 'true mirror selfie: preserve physically coherent reflection geometry and phone/hand placement. Any intentional readable text on clothing should appear forward and legible in the final delivered image; achieve this through final image orientation only, never by inventing impossible reflection geometry.';
+}
+
+function deviceForCapture(input, scenario) {
+  const capture = clean(input.captureType).toLowerCase();
+  if (scenario === 'mirror' || /mirror/.test(capture)) return 'smartphone visible in the mirror reflection';
+  if (/third-person/.test(capture)) return 'none held by the subject; photographed by another person';
+  if (/selfie/.test(capture)) return 'smartphone held in the subject\'s hand';
+  return 'no camera device held by the subject unless explicitly required by the scene';
 }
 
 function simpleCameraLanguage(input, scenario) {
@@ -123,7 +153,7 @@ export function buildRealismPacket(input = {}) {
       clothing,
       face: 'preserve natural asymmetry, pores, under-eye texture, uneven pigmentation and identity-defining details; no beauty retouching'
     },
-    accessories: { ...profile.accessories },
+    accessories: { ...profile.accessories, device: deviceForCapture(input, scenario) },
     photography: {
       camera_style: simpleCameraLanguage(input, scenario),
       angle: clean(input.angle) || 'natural eye-level or mildly off-axis angle appropriate to the action',

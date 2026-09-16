@@ -72,6 +72,7 @@ const CATALOGS = {
   camera: CAMERA_PROFILES,
   framing: FRAMING_OPTIONS
 };
+const CLOTHING_PROMPT_BY_VALUE = new Map(CATALOGS.clothing.map((item) => [item.value, item.prompt || '']));
 
 let currentMode = 'auto';
 let latestResult = null;
@@ -212,8 +213,15 @@ controls.backgroundActivity.value = 'normal';
 controls.realismLevel.value = 'strict';
 applySceneCompatibility();
 
-function selectedPrompt(select) {
-  return select?.selectedOptions?.[0]?.dataset.prompt || '';
+function selectedPrompt(select, promptByValue = null) {
+  const option = select?.selectedOptions?.[0];
+  if (!option) return '';
+  const catalogPrompt = promptByValue?.get(option.value) || '';
+  return catalogPrompt || option.dataset.prompt || '';
+}
+
+function selectedClothingPrompt() {
+  return selectedPrompt(controls.clothing, CLOTHING_PROMPT_BY_VALUE);
 }
 
 function autoInput() {
@@ -226,7 +234,7 @@ function autoInput() {
     realismLevel: controls.realismLevel.value,
     framing: controls.framing.value,
     location: enforceSaudiNoLandmarks(enrichLocationPrompt(selectedPrompt(controls.location))),
-    clothing: enrichClothingPrompt(selectedPrompt(controls.clothing)),
+    clothing: enrichClothingPrompt(selectedClothingPrompt()),
     hairStyle: selectedPrompt(controls.hairStyle),
     pose: selectedPrompt(controls.pose),
     angle: selectedPrompt(controls.angle),
@@ -240,7 +248,7 @@ function autoInput() {
 }
 
 function sceneForOptimizer() {
-  const clothingPrompt = enrichClothingPrompt(selectedPrompt(controls.clothing));
+  const clothingPrompt = enrichClothingPrompt(selectedClothingPrompt());
   const hairPrompt = selectedPrompt(controls.hairStyle);
   return {
     location: enforceSaudiNoLandmarks(enrichLocationPrompt(selectedPrompt(controls.location))),

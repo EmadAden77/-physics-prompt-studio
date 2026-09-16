@@ -108,7 +108,7 @@ export const LOCATION_CATALOG = locationCatalog([
 
 // Backward-compatible view for untouched legacy consumers (including car-selfie.js/tests).
 // It is derived from LOCATION_CATALOG and is not a second source of location data.
-export const SAUDI_LOCATIONS = LOCATION_CATALOG.slice(0, 46);
+export const SAUDI_LOCATIONS = LOCATION_CATALOG.map(({ group, value, label, prompt }) => ({ group, value, label, prompt }));
 
 export const CLOTHING_OPTIONS = grouped([
 ['ثياب وتراث سعودي','white_thobe','ثوب أبيض سعودي','a plain well-fitted white Saudi thobe with realistic cotton-poplin weight, natural folds, seam tension, and no artificial gloss'],

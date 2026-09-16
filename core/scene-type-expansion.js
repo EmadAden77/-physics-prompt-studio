@@ -2,7 +2,7 @@ export const EXTRA_SCENE_TYPES = [
   { group:'سيلفي السيارة', value:'inside_car_driver_selfie', label:'سيلفي داخل السيارة — السائق', baseType:'inside_car_selfie', prompt:'a natural driver-seat selfie inside a stationary vehicle', pose:['driver'], angle:['driver'], lighting:['car','parking','street','gas'] },
   { group:'سيلفي السيارة', value:'inside_car_passenger_selfie', label:'سيلفي داخل السيارة — الراكب', baseType:'inside_car_selfie', prompt:'a natural passenger-seat selfie inside a stationary vehicle', pose:['passenger'], angle:['driver','eye'], lighting:['car','parking','street','gas'] },
   { group:'سيلفي السيارة', value:'door_open_car_selfie', label:'سيلفي بجانب السيارة — الباب مفتوح', baseType:'outdoor_selfie', prompt:'a natural selfie beside a parked vehicle with the door open and coherent body-to-door interaction', pose:['door','lean','standing'], angle:['doorway','three_quarter'], lighting:['day','night','parking','gas','golden'] },
-  { group:'سيلفي خارجي', value:'outdoor_leaning_selfie', label:'سيلفي خارجي — استناد خفيف', baseType:'outdoor_selfie', prompt:'a natural outdoor selfie while lightly leaning against a believable surface', pose:['lean'], angle:['three_quarter','eye','high'], lighting:['day','night','golden','shade'] },
+  { group:'سيلفي خارجي', value:'outdoor_leaning_selfie', label:'سيلفي خارجي — استناد خفيف', baseType:'outdoor_selfie', prompt:'a natural selfie while lightly leaning against a believable surface', pose:['lean'], angle:['three_quarter','eye','high'], lighting:['day','night','golden','shade'] },
   { group:'سيلفي مرآة', value:'mirror_bathroom_selfie', label:'سيلفي مرآة — حمام / مغاسل', baseType:'mirror_selfie', prompt:'a realistic bathroom or wash-area mirror selfie with correct reflection geometry', pose:['mirror'], angle:['mirror'], lighting:['window','home','office','mixed'] },
   { group:'سيلفي مرآة', value:'mirror_elevator_selfie', label:'سيلفي مرآة — مصعد', baseType:'mirror_selfie', prompt:'a realistic elevator mirror selfie with coherent reflection lines and practical overhead light', pose:['mirror','standing'], angle:['mirror'], lighting:['office','home','mixed'] },
   { group:'سيلفي مرآة', value:'mirror_gym_locker_selfie', label:'سيلفي مرآة — لوكر النادي', baseType:'mirror_selfie', prompt:'a realistic gym locker-area mirror selfie after or around a workout', clothing:['gym','athletic','sport'], pose:['mirror'], angle:['mirror'], lighting:['office','mixed','home'] },
@@ -46,11 +46,9 @@ export const EXTRA_SCENE_TYPES = [
   { group:'زوايا وتكوين السيلفي', value:'low_angle_selfie', label:'سيلفي من زاوية منخفضة', baseType:'front_selfie', prompt:'a physically reachable low-angle selfie with the phone below eye level, mild upward pitch and coherent chin, neck and ceiling perspective', pose:['standing','seated','close'], angle:['low','close'], lighting:['day','night','window','home','office','mixed'] },
   { group:'زوايا وتكوين السيلفي', value:'high_angle_selfie', label:'سيلفي من زاوية مرتفعة', baseType:'front_selfie', prompt:'a physically reachable slightly high selfie with the phone above eye level, mild downward pitch and no impossible overhead camera position', pose:['standing','seated','close'], angle:['high','eye'], lighting:['day','night','window','home','office','mixed'] },
   { group:'زوايا وتكوين السيلفي', value:'side_three_quarter_selfie', label:'سيلفي جانبي ثلاثة أرباع', baseType:'front_selfie', prompt:'a subject-held three-quarter side selfie with coherent face yaw, shoulder rotation, gaze correction and arm-origin geometry', pose:['standing','seated','lean'], angle:['three_quarter','side','eye'], lighting:['day','night','window','home','office','mixed'] },
-
   { group:'سيلفي غرفة النوم', value:'bedroom_selfie', label:'سيلفي في غرفة النوم', baseType:'front_selfie', prompt:'a selfie in a fixed ordinary Saudi master bedroom with a locked layout: a queen bed with a tufted headboard against the back wall, a tall wooden wardrobe on the left wall with a full-length mirror on its door, a large window with beige curtains on the right wall, a single armchair with a throw blanket in the far right corner, two matching nightstands with small lamps, and a rectangular rug partially under the bed' },
   { group:'سيلفي غرفة النوم', value:'bedroom_mirror_selfie', label:'سيلفي مرآة في غرفة النوم', baseType:'mirror_selfie', prompt:'a mirror selfie in the same fixed ordinary Saudi master bedroom with the same locked layout' },
   { group:'سيلفي غرفة النوم', value:'bedroom_third_person', label:'شخص ثالث في غرفة النوم', baseType:'candid_third_person', prompt:'a candid third-person photograph in the same fixed ordinary Saudi master bedroom with the same locked layout' },
-
   { group:'سيلفي مباني', value:'direct_elevator_selfie', label:'سيلفي مباشر داخل المصعد', baseType:'front_selfie', prompt:'a direct front-camera selfie inside an ordinary elevator with hard practical overhead light, coherent metal reflections and no mirror-viewpoint confusion', pose:['standing','close'], angle:['eye','high','three_quarter'], lighting:['office','home','mixed'] },
   { group:'سيلفي منزل', value:'balcony_selfie', label:'سيلفي شرفة / بلكونة', baseType:'outdoor_selfie', prompt:'a natural selfie on a residential balcony with correct railing scale, background depth, wind interaction and ambient light', pose:['standing','lean','seated'], angle:['eye','three_quarter','high'], lighting:['day','golden','night','shade'] },
   { group:'سيلفي منزل', value:'villa_courtyard_selfie', label:'سيلفي فناء فيلا', baseType:'outdoor_selfie', prompt:'a realistic selfie in an ordinary Saudi villa courtyard with coherent walls, gate, paving, plants and practical exterior lights', pose:['standing','walking','lean'], angle:['eye','three_quarter','high'], lighting:['day','night','golden','home'] },
@@ -108,13 +106,15 @@ export const EXTRA_SCENE_TYPES = [
   }
 ];
 
-export const HOME_SCENE_TYPES = [
-  'bedroom_selfie',
-  'bedroom_mirror_selfie',
-  'bedroom_third_person'
-];
+export const HOME_SCENE_TYPES = ['bedroom_selfie','bedroom_mirror_selfie','bedroom_third_person'];
 
 const byValue = new Map(EXTRA_SCENE_TYPES.map((item) => [item.value, item]));
+const LEGACY_BASE_TYPES = Object.freeze({
+  mirror_bedroom_selfie:'mirror_selfie',
+  reclining_bed_selfie:'seated_selfie',
+  lying_bed_selfie:'front_selfie',
+  floor_seated_selfie:'seated_selfie'
+});
 
 export function expandedSceneTypes(baseTypes = []) {
   const bases = baseTypes.map((item) => ({ ...item, group: item.group || 'الأنواع الأساسية', smartValue: item.value }));
@@ -126,7 +126,7 @@ export function sceneMeta(value) {
 }
 
 export function baseSceneTypeFor(value) {
-  return byValue.get(value)?.baseType || value;
+  return byValue.get(value)?.baseType || LEGACY_BASE_TYPES[value] || value;
 }
 
 function haystack(item) {

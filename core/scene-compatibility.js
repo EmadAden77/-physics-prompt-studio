@@ -1,3 +1,6 @@
+import { LOCATION_CATALOG } from './scene-builder.js';
+import { baseSceneTypeFor } from './scene-type-expansion.js';
+
 const GENERAL_LIGHTING = [
   'day_direct_sun','day_open_shade','day_overcast','day_window','golden_hour','blue_sky_noon',
   'night_led_street','night_parking_led','night_storefront','night_gas_station','night_corniche','night_desert_vehicle',
@@ -19,34 +22,7 @@ const ALL_BACKGROUND_ACTIVITY = ['quiet','normal','lively'];
 const PRIVATE_BACKGROUND_ACTIVITY = ['quiet','normal'];
 const QUIET_BACKGROUND_ACTIVITY = ['quiet'];
 const EXTERIOR_CAR_BACKGROUND_ACTIVITY = ['quiet','normal'];
-
-const MAJLIS_LOCATIONS = ['modern_saudi_majlis','traditional_majlis','villa_living_room'];
-const CAFE_LOCATIONS = ['saudi_cafe','specialty_coffee','casual_restaurant','hotel_lobby','mall_atrium'];
-const OFFICE_LOCATIONS = ['saudi_office','real_estate_office'];
-const SUPERMARKET_LOCATIONS = ['supermarket_aisle','convenience_store','grocery_store'];
 const SUPERMARKET_LIGHTING = ['supermarket_fluorescent','retail_ceiling_led','mixed_retail'];
-const CAR_LOCATIONS = [
-  'villa_driveway','villa_garage','riyadh_residential','riyadh_business','jeddah_residential','jeddah_corniche','khobar_corniche',
-  'dammam_street','taif_hills','abha_mountain_city','tabuk_outskirts','ordinary_saudi_street','night_parking','day_parking',
-  'gas_station','storefront_street','desert_roadside','mountain_viewpoint'
-];
-const OUTDOOR_LOCATIONS = [
-  'villa_driveway','rooftop_terrace','riyadh_residential','riyadh_business','jeddah_residential','jeddah_corniche','khobar_corniche',
-  'dammam_street','makkah_residential','madinah_residential','taif_hills','abha_mountain_city','tabuk_outskirts','ordinary_saudi_street',
-  'night_parking','day_parking','gas_station','storefront_street','boulevard_walkway','desert_roadside','desert_dunes','rocky_desert',
-  'alula_valley','palm_farm','mountain_viewpoint','wadi','red_sea_beach','gulf_beach','public_park'
-];
-const WALKING_LOCATIONS = [
-  'riyadh_residential','riyadh_business','jeddah_residential','jeddah_corniche','khobar_corniche','dammam_street','makkah_residential',
-  'madinah_residential','taif_hills','abha_mountain_city','tabuk_outskirts','mall_atrium','airport_terminal','ordinary_saudi_street',
-  'storefront_street','boulevard_walkway','desert_roadside','desert_dunes','rocky_desert','alula_valley','palm_farm','mountain_viewpoint',
-  'wadi','red_sea_beach','gulf_beach','public_park','rooftop_terrace'
-];
-const SEATED_LOCATIONS = [
-  'modern_saudi_majlis','traditional_majlis','villa_living_room','rooftop_terrace','saudi_cafe','specialty_coffee','casual_restaurant',
-  'saudi_office','real_estate_office','hotel_lobby','mall_atrium','airport_terminal','public_park'
-];
-const MIRROR_LOCATIONS = ['villa_living_room','saudi_office','real_estate_office','hotel_lobby','mall_atrium','barbershop','gym'];
 
 export const MIRROR_POSES = [
   { value:'mirror_standing_relaxed', label:'مرآة — واقف باسترخاء', prompt:'standing naturally for a mirror selfie with the phone-bearing arm positioned consistently with the reflected device and relaxed weight distribution' },
@@ -83,15 +59,15 @@ export const THIRD_PERSON_ANGLES = [
 const PROFILES = {
   front_selfie: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, pose:['standing_relaxed','standing_one_hand','walking_slow','seated_sofa','seated_chair','lean_wall','lean_counter','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES, lighting:GENERAL_LIGHTING, camera:FRONT_CAMERAS, framing:SELFIE_FRAMING },
   standing_selfie: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, pose:['standing_relaxed','standing_one_hand','lean_wall','lean_counter','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES, lighting:GENERAL_LIGHTING, camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
-  seated_selfie: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, location:SEATED_LOCATIONS, pose:['seated_sofa','seated_chair','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'), lighting:INDOOR_GENERAL_LIGHTING.concat('day_open_shade'), camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up','three_quarter'] },
-  walking_selfie: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, location:WALKING_LOCATIONS, pose:['walking_slow'], angle:['eye_centered','eye_three_quarter_left','eye_three_quarter_right','slightly_high_center','slightly_low_center','low_offcenter','high_offcenter','chest_up'], lighting:OUTDOOR_LIGHTING, camera:FRONT_CAMERAS, framing:['chest_up','waist_up'] },
-  inside_car_selfie: { backgroundActivityAllowed:QUIET_BACKGROUND_ACTIVITY, location:CAR_LOCATIONS, pose:['driver_seat','passenger_seat'], angle:['driver_eye_level','driver_slight_high','driver_low'], lighting:CAR_LIGHTING, camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up'] },
-  majlis_selfie: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, location:MAJLIS_LOCATIONS, pose:['seated_sofa','seated_chair','standing_relaxed','standing_one_hand','coffee_hand','adjust_clothing','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'), lighting:['day_window','night_majlis_warm','night_home_warm'], camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
-  cafe_selfie: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, location:CAFE_LOCATIONS, pose:['seated_chair','standing_relaxed','standing_one_hand','lean_counter','coffee_hand','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'), lighting:['day_window','night_cafe_mixed'], camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up','three_quarter'] },
-  office_selfie: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, location:OFFICE_LOCATIONS, pose:['seated_chair','standing_relaxed','standing_one_hand','lean_counter','adjust_clothing','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'), lighting:['day_window','night_office_led'], camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up','three_quarter'] },
-  supermarket_selfie: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, location:SUPERMARKET_LOCATIONS, pose:['walking_slow','standing_relaxed','holding_basket'], angle:BASIC_SELFIE_ANGLES, lighting:SUPERMARKET_LIGHTING, camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
-  outdoor_selfie: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, location:OUTDOOR_LOCATIONS, pose:['standing_relaxed','standing_one_hand','walking_slow','lean_wall','door_open_car','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('doorway_three_quarter'), lighting:OUTDOOR_LIGHTING, camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
-  mirror_selfie: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, location:MIRROR_LOCATIONS, poseCatalog:MIRROR_POSES, angleCatalog:MIRROR_ANGLES, lighting:['day_window','night_home_warm','night_cafe_mixed','night_office_led'], camera:['xiaomi15_front','iphone15pm_front','generic_front','smartphone_rear'], framing:['chest_up','waist_up','three_quarter','full_body'] },
+  seated_selfie: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, pose:['seated_sofa','seated_chair','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'), lighting:INDOOR_GENERAL_LIGHTING.concat('day_open_shade'), camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up','three_quarter'] },
+  walking_selfie: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, pose:['walking_slow'], angle:['eye_centered','eye_three_quarter_left','eye_three_quarter_right','slightly_high_center','slightly_low_center','low_offcenter','high_offcenter','chest_up'], lighting:OUTDOOR_LIGHTING, camera:FRONT_CAMERAS, framing:['chest_up','waist_up'] },
+  inside_car_selfie: { backgroundActivityAllowed:QUIET_BACKGROUND_ACTIVITY, pose:['driver_seat','passenger_seat'], angle:['driver_eye_level','driver_slight_high','driver_low'], lighting:CAR_LIGHTING, camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up'] },
+  majlis_selfie: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, pose:['seated_sofa','seated_chair','standing_relaxed','standing_one_hand','coffee_hand','adjust_clothing','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'), lighting:['day_window','night_majlis_warm','night_home_warm'], camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
+  cafe_selfie: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, pose:['seated_chair','standing_relaxed','standing_one_hand','lean_counter','coffee_hand','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'), lighting:['day_window','night_cafe_mixed'], camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up','three_quarter'] },
+  office_selfie: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, pose:['seated_chair','standing_relaxed','standing_one_hand','lean_counter','adjust_clothing','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('seated_high_three_quarter'), lighting:['day_window','night_office_led'], camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up','three_quarter'] },
+  supermarket_selfie: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, pose:['walking_slow','standing_relaxed','holding_basket'], angle:BASIC_SELFIE_ANGLES, lighting:SUPERMARKET_LIGHTING, camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
+  outdoor_selfie: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, pose:['standing_relaxed','standing_one_hand','walking_slow','lean_wall','door_open_car','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES.concat('doorway_three_quarter'), lighting:OUTDOOR_LIGHTING, camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
+  mirror_selfie: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, poseCatalog:MIRROR_POSES, angleCatalog:MIRROR_ANGLES, lighting:['day_window','night_home_warm','night_cafe_mixed','night_office_led'], camera:['xiaomi15_front','iphone15pm_front','generic_front','smartphone_rear'], framing:['chest_up','waist_up','three_quarter','full_body'] },
   third_person_portrait: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, poseCatalog:THIRD_PERSON_POSES, angleCatalog:THIRD_PERSON_ANGLES, lighting:GENERAL_LIGHTING, camera:['smartphone_rear'], framing:['close','chest_up','waist_up','three_quarter'] },
   full_body_third_person: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, poseCatalog:THIRD_PERSON_POSES.filter((item)=>item.value!=='third_seated_relaxed'), angleCatalog:THIRD_PERSON_ANGLES.filter((item)=>['third_eye_level','third_three_quarter_left','third_three_quarter_right','third_slight_low','third_full_body_eye','third_candid_side'].includes(item.value)), lighting:GENERAL_LIGHTING, camera:['smartphone_rear'], framing:['full_body'] },
   candid_third_person: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, poseCatalog:THIRD_PERSON_POSES, angleCatalog:THIRD_PERSON_ANGLES, lighting:GENERAL_LIGHTING, camera:['smartphone_rear'], framing:['chest_up','waist_up','three_quarter','full_body'] }
@@ -101,6 +77,13 @@ function filterValues(options, allowed) {
   if (!allowed) return [...options];
   const set = new Set(allowed);
   return options.filter((item)=>set.has(item.value));
+}
+
+export function locationsForScene(sceneType) {
+  const direct = LOCATION_CATALOG.filter((location) => location.sceneTypes.includes(sceneType));
+  if (direct.length) return direct;
+  const base = baseSceneTypeFor(sceneType);
+  return LOCATION_CATALOG.filter((location) => location.sceneTypes.includes(base));
 }
 
 function normalizedContext(sceneType, location = '', requestedSceneType = '') {
@@ -199,6 +182,7 @@ export function resolveContextAwareConstraints({ sceneType = 'front_selfie', req
 }
 
 export function compatibleOptions(sceneType, kind, baseOptions = []) {
+  if (kind === 'location') return locationsForScene(sceneType);
   const profile = PROFILES[sceneType] || PROFILES.front_selfie;
   if (kind === 'pose' && profile.poseCatalog) return [...profile.poseCatalog];
   if (kind === 'angle' && profile.angleCatalog) return [...profile.angleCatalog];
@@ -260,12 +244,16 @@ export function validateCompatibilityCatalogs(catalogs = {}) {
   for (const kind of kinds) {
     const items = catalogs[kind] || [];
     const used = new Set();
-    const unrestricted = Object.values(PROFILES).some((profile) => !profile[kind] && !(kind === 'pose' && profile.poseCatalog) && !(kind === 'angle' && profile.angleCatalog));
-    if (unrestricted) items.forEach((item) => used.add(item.value));
-    for (const profile of Object.values(PROFILES)) {
-      for (const value of profile[kind] || []) used.add(value);
-      if (kind === 'pose') for (const item of profile.poseCatalog || []) used.add(item.value);
-      if (kind === 'angle') for (const item of profile.angleCatalog || []) used.add(item.value);
+    if (kind === 'location') {
+      LOCATION_CATALOG.forEach((item) => used.add(item.value));
+    } else {
+      const unrestricted = Object.values(PROFILES).some((profile) => !profile[kind] && !(kind === 'pose' && profile.poseCatalog) && !(kind === 'angle' && profile.angleCatalog));
+      if (unrestricted) items.forEach((item) => used.add(item.value));
+      for (const profile of Object.values(PROFILES)) {
+        for (const value of profile[kind] || []) used.add(value);
+        if (kind === 'pose') for (const item of profile.poseCatalog || []) used.add(item.value);
+        if (kind === 'angle') for (const item of profile.angleCatalog || []) used.add(item.value);
+      }
     }
     unused[kind] = items.map((item) => item.value).filter((value) => !used.has(value));
   }

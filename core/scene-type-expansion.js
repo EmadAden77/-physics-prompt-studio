@@ -75,7 +75,37 @@ export const EXTRA_SCENE_TYPES = [
   { group:'تصوير شخص ثالث', value:'third_person_low_angle_portrait', label:'شخص ثالث — زاوية منخفضة', baseType:'third_person_portrait', prompt:'a restrained low-angle third-person smartphone portrait with correct vertical perspective and no exaggerated heroic or cinematic distortion', pose:['third_standing','third_lean'], angle:['third','low'], lighting:['day','night','golden','mixed'] },
   { group:'سيلفي رياضي', value:'gym_wash_area_selfie', label:'سيلفي عند مغاسل النادي', baseType:'front_selfie', prompt:'a realistic post-workout selfie near the gym wash area with damp hair or face only when physically justified, correct mirrors and ordinary locker-room practical light', clothing:['gym','athletic','sport'], pose:['standing','close','mirror'], angle:['eye','high','mirror'], lighting:['office','mixed'] },
   { group:'سيلفي رحلات', value:'airport_walkway_selfie', label:'سيلفي أثناء المشي في المطار', baseType:'walking_selfie', prompt:'a realistic walking selfie in a public airport concourse with luggage interaction, ordinary passenger flow and no readable private travel documents', pose:['walking','standing'], angle:['eye','high','three_quarter'], lighting:['day','office','mixed'] },
-  { group:'سيلفي أماكن عامة', value:'mall_shopping_selfie', label:'سيلفي تسوق داخل المول', baseType:'walking_selfie', prompt:'a natural mall selfie while casually carrying a shopping bag with plausible grip, ordinary foot traffic and no advertising-style product display', pose:['walking','standing','interaction'], angle:['eye','high','three_quarter'], lighting:['mixed','office'] }
+  { group:'سيلفي أماكن عامة', value:'mall_shopping_selfie', label:'سيلفي تسوق داخل المول', baseType:'walking_selfie', prompt:'a natural mall selfie while casually carrying a shopping bag with plausible grip, ordinary foot traffic and no advertising-style product display', pose:['walking','standing','interaction'], angle:['eye','high','three_quarter'], lighting:['mixed','office'] },
+  {
+    group: 'عسكري — إعاشة',
+    value: 'military_meal_selfie',
+    label: 'سيلفي وقت الأكل العسكري',
+    baseType: 'front_selfie',
+    prompt: 'a casual selfie during a meal break in an ordinary Saudi military administrative setting',
+    pose: ['seated', 'standing', 'coffee'],
+    angle: ['eye', 'seated', 'high', 'three_quarter'],
+    lighting: ['office', 'cafe', 'mixed', 'window']
+  },
+  {
+    group: 'عسكري — إعاشة',
+    value: 'military_meal_third_person',
+    label: 'شخص ثالث — وقت الأكل العسكري',
+    baseType: 'candid_third_person',
+    prompt: 'a candid third-person photograph during a meal break in an ordinary Saudi military administrative setting',
+    pose: ['third_seated', 'third_standing', 'third_interaction'],
+    angle: ['third', 'third_three', 'third_candid'],
+    lighting: ['office', 'cafe', 'mixed', 'window']
+  },
+  {
+    group: 'عسكري — إعاشة',
+    value: 'military_coffee_selfie',
+    label: 'سيلفي شرب القهوة العسكرية',
+    baseType: 'front_selfie',
+    prompt: 'a casual selfie while holding a small cup of Arabic coffee in an ordinary Saudi military setting',
+    pose: ['coffee', 'seated', 'standing'],
+    angle: ['eye', 'seated', 'three_quarter'],
+    lighting: ['office', 'mixed', 'window']
+  }
 ];
 
 const byValue = new Map(EXTRA_SCENE_TYPES.map((item) => [item.value, item]));

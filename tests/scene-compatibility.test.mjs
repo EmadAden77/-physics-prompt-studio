@@ -238,17 +238,17 @@ test('mosques and libraries are quiet-only while car interiors are quiet-only', 
   assert.equal(car.backgroundActivity, 'quiet');
 });
 
-test('phone-screen-only lighting is not allowed in well-lit indoor scene', () => {
+test('phone-screen-only remains allowed in the bedroom studio when explicitly selected as the sole source', () => {
   const resolved = resolveContextAwareConstraints({
-    sceneType: 'mirror_selfie',
-    requestedSceneType: 'bedroom_mirror_selfie',
-    location: 'inside a Saudi bedroom with normal room lamps',
+    sceneType: 'front_selfie',
+    requestedSceneType: 'bedroom_selfie',
+    location: 'inside the fixed Saudi bedroom',
     backgroundActivity: 'quiet',
     lighting: 'phone-screen-only lighting'
   });
-  assert.doesNotMatch(resolved.lighting, /phone-screen-only/i);
-  assert.match(resolved.lighting, /warm practical room lamp|room ceiling light/i);
-  assert.match(resolved.warnings.join(' '), /الإضاءة تغيّرت/);
+  assert.match(resolved.lighting, /phone-screen-only/i);
+  assert.match(resolved.lighting, /No other light sources visible in frame/i);
+  assert.ok(!resolved.warnings.some((warning) => warning.includes('الإضاءة تغيّرت')));
 });
 
 test('phone-screen-only remains allowed in a naturally dark car and excludes other visible sources', () => {

@@ -6,6 +6,7 @@ import { generateImagePrompt } from '../core/prompt-generator.js';
 const GOLDEN_CASES = Object.freeze([
   {
     name: 'front-selfie-saudi-cafe',
+    expected: 'a658c1cd1ab35d3d222cb64512a5bd0e1d030a0dac7a53e40bd34fa4ac208b19',
     input: {
       sceneType: 'front_selfie',
       location: 'inside an ordinary Saudi cafe',
@@ -24,6 +25,7 @@ const GOLDEN_CASES = Object.freeze([
   },
   {
     name: 'inside-car-night-phone-light',
+    expected: '44d9ac999f3416bb87f012ba5970111c53dcf1de98052cadc4016b0c07b7c3f7',
     input: {
       sceneType: 'inside_car_selfie',
       location: 'inside a stationary left-hand-drive car at night in Saudi Arabia',
@@ -41,6 +43,7 @@ const GOLDEN_CASES = Object.freeze([
   },
   {
     name: 'mirror-bedroom-selfie',
+    expected: 'af3a89af610bda6bc3a4aa7c8b55cd3b357420d101360f830f7ddada964f2621',
     input: {
       sceneType: 'mirror_selfie',
       location: 'inside an ordinary Saudi bedroom',
@@ -58,6 +61,7 @@ const GOLDEN_CASES = Object.freeze([
   },
   {
     name: 'third-person-beside-car',
+    expected: 'ecf662b6a72b6c328ede7387e70a56a844f69eaf8b53e72fd8a74c721856cb64',
     input: {
       sceneType: 'third_person_car_adjacent',
       location: 'ordinary Saudi outdoor parking area in daylight',
@@ -75,6 +79,7 @@ const GOLDEN_CASES = Object.freeze([
   },
   {
     name: 'supermarket-lively',
+    expected: '94582dedf392b17917d7ba78b80dd01a92674b09e3673c95ed23a83aec46c2cb',
     input: {
       sceneType: 'supermarket_selfie',
       location: 'inside an ordinary Saudi supermarket',
@@ -96,15 +101,19 @@ function fingerprint(text) {
   return createHash('sha256').update(text, 'utf8').digest('hex');
 }
 
-test('golden prompt candidates are valid and emit stable fingerprints for locking', () => {
+test('golden prompts remain byte-for-byte stable across critical scene families', () => {
   for (const golden of GOLDEN_CASES) {
     const first = generateImagePrompt(golden.input);
     const second = generateImagePrompt(golden.input);
     assert.equal(first.validation.valid, true, `${golden.name}: structural validation failed`);
     assert.equal(first.realism_validation.valid, true, `${golden.name}: realism validation failed`);
     assert.equal(first.prompt, second.prompt, `${golden.name}: prompt is not deterministic`);
+
     const digest = fingerprint(first.prompt);
-    assert.match(digest, /^[a-f0-9]{64}$/);
-    console.log(`GOLDEN_PROMPT ${golden.name} ${digest}`);
+    assert.equal(
+      digest,
+      golden.expected,
+      `${golden.name}: golden prompt changed. Review the generated prompt intentionally before updating this fingerprint.`
+    );
   }
 });

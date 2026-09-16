@@ -19,8 +19,8 @@ const catalogs = {
 const values = (items) => items.map((item) => item.value);
 
 test('LOCATION_CATALOG is single source of truth', () => {
-  assert.equal(LOCATION_CATALOG.length, 92);
-  assert.equal(new Set(LOCATION_CATALOG.map((item) => item.value)).size, 92, 'location values must be unique');
+  assert.equal(LOCATION_CATALOG.length, 105);
+  assert.equal(new Set(LOCATION_CATALOG.map((item) => item.value)).size, 105, 'location values must be unique');
   for (const loc of LOCATION_CATALOG) {
     assert.ok(Array.isArray(loc.sceneTypes), `${loc.value}: sceneTypes must be an array`);
     assert.ok(loc.sceneTypes.length > 0, `${loc.value}: missing sceneTypes`);

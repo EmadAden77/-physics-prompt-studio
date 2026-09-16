@@ -555,3 +555,42 @@ test('non-bedroom selfie keeps the previous default camera-angle fallback', () =
   assert.match(geometry, /natural eye-level or slightly off-axis camera angle/i);
   assert.doesNotMatch(geometry, /front camera at eye level with a tiny natural handheld roll/i);
 });
+
+test('pose cameraHint wins over explicit angle in bedroom scenes', () => {
+  const result = generateImagePrompt({
+    sceneType: 'bedroom_selfie',
+    pose: 'bed-lying-back',
+    angle: 'eye_centered'
+  });
+  const geometry = cameraGeometry(result.prompt);
+  assert.match(geometry, /above the face|pointing downward/i);
+  assert.doesNotMatch(geometry, /eye level.*yaw 0/i);
+});
+
+test('explicit angle remains authoritative outside bedroom', () => {
+  const result = generateImagePrompt({
+    sceneType: 'front_selfie',
+    pose: 'standing_relaxed',
+    angle: 'eye_centered'
+  });
+  assert.match(cameraGeometry(result.prompt), /eye level/i);
+  assert.equal(result.config.angle_locked_by_pose, false);
+});
+
+test('pose with cameraHint shows warning in config', () => {
+  const result = generateImagePrompt({
+    sceneType: 'bedroom_selfie',
+    pose: 'bed-lying-side'
+  });
+  assert.equal(result.config.angle_locked_by_pose, true);
+});
+
+test('standing bedroom pose keeps explicit angle authoritative', () => {
+  const result = generateImagePrompt({
+    sceneType: 'bedroom_selfie',
+    pose: 'bedroom-stand-relaxed',
+    angle: 'slightly_low_center'
+  });
+  assert.equal(result.config.angle_locked_by_pose, false);
+  assert.match(cameraGeometry(result.prompt), /slightly below eye level|gentle upward pitch/i);
+});

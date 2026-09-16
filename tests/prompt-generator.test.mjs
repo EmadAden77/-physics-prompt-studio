@@ -266,12 +266,43 @@ test('generated prompt exposes realism_validation in output object', () => {
   assert.ok(Array.isArray(result.realism_validation.warnings));
 });
 
-test('formal looks contains 120 unique complete outfits', async () => {
+test('formal looks contains 122 unique complete outfits', async () => {
   const { FORMAL_LOOKS } = await import('../core/scene-builder.js');
-  assert.equal(FORMAL_LOOKS.length, 120);
+  assert.equal(FORMAL_LOOKS.length, 122);
   const labels = FORMAL_LOOKS.map((look) => look.label);
-  assert.equal(new Set(labels).size, 120);
+  assert.equal(new Set(labels).size, 122);
   for (const look of FORMAL_LOOKS) assert.ok(look.label.includes(' + بنطال'), `not a complete outfit: ${look.label}`);
+});
+
+test('FORMAL_LOOKS contains the 15 timeless colour combinations', async () => {
+  const { FORMAL_LOOKS } = await import('../core/scene-builder.js');
+  const requiredCombos = [
+    'قميص كحلي + بنطال رمادي',
+    'قميص أزرق فاتح + بنطال كحلي',
+    'قميص أبيض + بنطال بيج',
+    'قميص زيتي + بنطال بني تبغي',
+    'قميص أسود + بنطال فحمي',
+    'قميص بيج + بنطال أبيض',
+    'قميص رمادي + بنطال أسود',
+    'قميص أخضر مريمي + بنطال كريمي',
+    'قميص وردي + بنطال رمادي',
+    'قميص أبيض + بنطال كحلي',
+    'قميص عنابي + بنطال رمادي',
+    'قميص أسود + بنطال بيج',
+    'قميص أزرق فولاذي + بنطال كاكي',
+    'قميص أبيض + بنطال زيتي',
+    'قميص فحمي + بنطال رمادي فاتح'
+  ];
+  const aliases = {
+    'قميص كحلي + بنطال رمادي': 'قميص كحلي + بنطال رمادي متوسط',
+    'قميص رمادي + بنطال أسود': 'قميص رمادي متوسط + بنطال أسود',
+    'قميص وردي + بنطال رمادي': 'قميص وردي فاتح + بنطال رمادي متوسط',
+    'قميص عنابي + بنطال رمادي': 'قميص عنابي + بنطال رمادي متوسط'
+  };
+  const labels = FORMAL_LOOKS.map((look) => look.label);
+  for (const combo of requiredCombos) {
+    assert.ok(labels.includes(combo) || labels.includes(aliases[combo]), `Missing timeless combination: ${combo}`);
+  }
 });
 
 test('no duplicate color pairs', async () => {

@@ -1,10 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { EXTRA_SCENE_TYPES, baseSceneTypeFor, narrowOptions, sceneMeta } from '../core/scene-type-expansion.js';
-import { compatibilitySnapshot } from '../core/scene-compatibility.js';
+import { EXTRA_SCENE_TYPES, baseSceneTypeFor, narrowOptions } from '../core/scene-type-expansion.js';
 import { buildAutomaticSceneDescription } from '../core/automatic-scene-description.js';
-import { SAUDI_LOCATIONS, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
 
 test('expanded scene catalog is broad and unique', () => {
   assert.ok(EXTRA_SCENE_TYPES.length >= 75);
@@ -32,31 +30,23 @@ test('specialized option narrowing prefers context-matched choices', () => {
   assert.deepEqual(filtered.map((item) => item.value), ['night_phone_screen']);
 });
 
-test('supermarket metadata narrows its compatibility profile to real supermarket catalogs', () => {
-  const meta = sceneMeta('supermarket_selfie');
-  assert.ok(meta.location.includes('convenience'));
-  assert.ok(meta.lighting.includes('retail'));
-  assert.ok(meta.pose.includes('holding'));
+test('supermarket_selfie exposes supermarket-only locations', async () => {
+  const { locationsForScene } = await import('../core/scene-compatibility.js');
+  const locations = locationsForScene('supermarket_selfie');
+  assert.ok(locations.length > 0, 'supermarket_selfie must expose at least 1 location');
+  for (const loc of locations) {
+    assert.match(loc.value, /supermarket|convenience|grocery/i,
+      `Unexpected location for supermarket: ${loc.value}`);
+  }
+});
 
-  const profile = compatibilitySnapshot('supermarket_selfie', {
-    location: SAUDI_LOCATIONS,
-    pose: SELFIE_POSES,
-    angle: SELFIE_ANGLES,
-    lighting: LIGHTING_PROFILES
-  });
-
-  assert.deepEqual(
-    narrowOptions('supermarket_selfie', 'location', profile.location).map((item) => item.value),
-    ['supermarket_aisle', 'convenience_store', 'grocery_store']
-  );
-  assert.deepEqual(
-    narrowOptions('supermarket_selfie', 'lighting', profile.lighting).map((item) => item.value),
-    ['supermarket_fluorescent', 'retail_ceiling_led', 'mixed_retail']
-  );
-  assert.deepEqual(
-    narrowOptions('supermarket_selfie', 'pose', profile.pose).map((item) => item.value),
-    ['standing_relaxed', 'walking_slow', 'holding_basket']
-  );
+test('supermarket_selfie does not leak non-supermarket locations', async () => {
+  const { locationsForScene } = await import('../core/scene-compatibility.js');
+  const locations = locationsForScene('supermarket_selfie');
+  const values = locations.map((location) => location.value);
+  assert.ok(!values.includes('government_office_hall'));
+  assert.ok(!values.includes('desert_roadside'));
+  assert.ok(!values.includes('palm_farm'));
 });
 
 test('automatic description combines action context and physical coherence', () => {

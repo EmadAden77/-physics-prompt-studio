@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 import { generateImagePrompt, validateGeneratedPrompt, validateRealism } from '../core/prompt-generator.js';
 import { addSensorNoise, XIAOMI_15_ULTRA_PRESET } from '../core/photo-post-processing.js';
-import { SAUDI_LOCATIONS, CLOTHING_OPTIONS, FORMAL_SUITS, FORMAL_LOOKS, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
+import { CLOTHING_OPTIONS, FORMAL_SUITS, FORMAL_LOOKS, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
 
 const sceneTypes = ['front_selfie', 'inside_car_selfie', 'mirror_selfie', 'third_person_portrait'];
 
@@ -42,7 +42,6 @@ test('end-to-end prompt generation is deterministic and structurally valid', () 
 });
 
 test('core catalog counts match the documented production baseline', () => {
-  assert.equal(SAUDI_LOCATIONS.length, 46, 'SAUDI_LOCATIONS count changed');
   assert.equal(CLOTHING_OPTIONS.length, 25, 'CLOTHING_OPTIONS count changed');
   assert.equal(FORMAL_SUITS.length, 30, 'FORMAL_SUITS count changed');
   assert.equal(FORMAL_LOOKS.length, 120, 'FORMAL_LOOKS count changed');
@@ -59,6 +58,16 @@ test('core catalog counts match the documented production baseline', () => {
   assert.equal(SELFIE_POSES.length, 16, 'SELFIE_POSES count changed');
   assert.equal(SELFIE_ANGLES.length, 16, 'SELFIE_ANGLES count changed');
   assert.equal(LIGHTING_PROFILES.length, 23, 'LIGHTING_PROFILES count changed');
+});
+
+test('SAUDI_LOCATIONS is a derived alias of LOCATION_CATALOG', async () => {
+  const { SAUDI_LOCATIONS, LOCATION_CATALOG } = await import('../core/scene-builder.js');
+  assert.equal(SAUDI_LOCATIONS.length, LOCATION_CATALOG.length);
+  assert.equal(SAUDI_LOCATIONS.length, 92);
+  assert.deepEqual(
+    SAUDI_LOCATIONS.map((location) => location.value).sort(),
+    LOCATION_CATALOG.map((location) => location.value).sort()
+  );
 });
 
 test('sensor processing remains deterministic for identical image, settings and seed', () => {

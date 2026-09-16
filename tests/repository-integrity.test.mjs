@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import {
+  LOCATION_CATALOG,
   SAUDI_LOCATIONS,
   CLOTHING_OPTIONS,
   FORMAL_LOOKS,
@@ -12,7 +13,7 @@ import {
   SELFIE_ANGLES,
   LIGHTING_PROFILES
 } from '../core/scene-builder.js';
-import { EXTRA_SAUDI_LOCATIONS, EXTRA_CLOTHING_OPTIONS } from '../core/expanded-catalogs.js';
+import { EXTRA_CLOTHING_OPTIONS } from '../core/expanded-catalogs.js';
 import { SCENE_TYPES, CAMERA_PROFILES, FRAMING_OPTIONS } from '../core/prompt-generator.js';
 import {
   MIRROR_POSES,
@@ -50,7 +51,7 @@ function haystack(item) {
 }
 
 const combined = {
-  location: [...SAUDI_LOCATIONS, ...EXTRA_SAUDI_LOCATIONS],
+  location: LOCATION_CATALOG,
   clothing: [...CLOTHING_OPTIONS, ...EXTRA_CLOTHING_OPTIONS, ...FORMAL_LOOKS],
   pose: [...SELFIE_POSES, ...MIRROR_POSES, ...THIRD_PERSON_POSES],
   angle: [...SELFIE_ANGLES, ...MIRROR_ANGLES, ...THIRD_PERSON_ANGLES],
@@ -71,8 +72,8 @@ test('audit tree and exact line counts are reproducible', () => {
 
 test('every catalog has unique usable values', () => {
   for (const [name, items] of Object.entries({
+    LOCATION_CATALOG,
     SAUDI_LOCATIONS,
-    EXTRA_SAUDI_LOCATIONS,
     CLOTHING_OPTIONS,
     EXTRA_CLOTHING_OPTIONS,
     FORMAL_LOOKS,
@@ -91,7 +92,7 @@ test('every catalog has unique usable values', () => {
 
 test('compatibility profiles reference only real values and leave no base catalog item orphaned', () => {
   const result = validateCompatibilityCatalogs({
-    location: SAUDI_LOCATIONS,
+    location: LOCATION_CATALOG,
     clothing: [...CLOTHING_OPTIONS, ...FORMAL_LOOKS],
     pose: SELFIE_POSES,
     angle: SELFIE_ANGLES,
@@ -109,7 +110,7 @@ test('every expanded scene maps to a real base type and every declared filter ma
   const baseTypes = new Set(SCENE_TYPES.map((item) => item.value));
   for (const scene of EXTRA_SCENE_TYPES) {
     assert.ok(baseTypes.has(baseSceneTypeFor(scene.value)), `${scene.value} has missing base type ${scene.baseType}`);
-    for (const kind of ['location', 'clothing', 'pose', 'angle', 'lighting']) {
+    for (const kind of ['clothing', 'pose', 'angle', 'lighting']) {
       const words = scene[kind];
       if (!Array.isArray(words) || !words.length) continue;
       const matches = combined[kind].filter((item) => words.some((word) => haystack(item).includes(String(word).toLowerCase())));
@@ -130,10 +131,23 @@ test('main UI exposes and app reads every scene-builder control', () => {
     assert.match(html, new RegExp(`id=["']${id}["']`), `HTML missing #${id}`);
     assert.ok(app.includes(`$('${id}')`), `app.js does not read #${id}`);
   }
+  assert.match(app, /LOCATION_CATALOG/);
   assert.match(app, /HAIR_STYLES/);
   assert.match(app, /FORMAL_LOOKS/);
   assert.match(app, /EXTRA_CLOTHING_OPTIONS/);
-  assert.match(app, /extraLocationsForScene/);
+});
+
+test('unified location catalog remains complete and the legacy alias stays derived', () => {
+  assert.equal(LOCATION_CATALOG.length, 92);
+  assert.equal(SAUDI_LOCATIONS.length, LOCATION_CATALOG.length);
+  for (const location of LOCATION_CATALOG) {
+    assert.ok(Array.isArray(location.sceneTypes));
+    assert.ok(location.sceneTypes.length > 0, `${location.value} has no sceneTypes`);
+  }
+  assert.deepEqual(
+    SAUDI_LOCATIONS.map((item) => item.value).sort(),
+    LOCATION_CATALOG.map((item) => item.value).sort()
+  );
 });
 
 test('production JavaScript contains no nondeterministic clock or random APIs', () => {

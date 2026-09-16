@@ -23,6 +23,18 @@ const PRIVATE_BACKGROUND_ACTIVITY = ['quiet','normal'];
 const QUIET_BACKGROUND_ACTIVITY = ['quiet'];
 const EXTERIOR_CAR_BACKGROUND_ACTIVITY = ['quiet','normal'];
 const SUPERMARKET_LIGHTING = ['supermarket_fluorescent','retail_ceiling_led','mixed_retail'];
+const HOME_RELAXATION_SCENES = new Set([
+  'reclining_bed_selfie','lying_bed_selfie','morning_bed_selfie','night_bed_selfie','sofa_relaxed_selfie',
+  'sofa_lying_selfie','floor_seated_selfie','floor_leaning_wall_selfie','reading_at_home_selfie','tea_at_home_selfie',
+  'friday_morning_selfie','home_evening_selfie','window_light_home_selfie','balcony_morning_selfie','home_couch_blanket_selfie'
+]);
+const HOME_SEATED_ANGLES = [
+  'eye_centered','eye_three_quarter_left','eye_three_quarter_right','slightly_high_center',
+  'slightly_high_three_quarter','high_offcenter','close_face','seated_high_three_quarter'
+];
+const HOME_LYING_ANGLES = ['slightly_high_center','slightly_high_three_quarter','high_offcenter','close_face'];
+const HOME_INDOOR_LIGHTING = ['day_window','night_home_warm'];
+const HOME_BED_LIGHTING = ['day_window','night_home_warm','night_phone_screen'];
 
 export const MIRROR_POSES = [
   { value:'mirror_standing_relaxed', label:'مرآة — واقف باسترخاء', prompt:'standing naturally for a mirror selfie with the phone-bearing arm positioned consistently with the reflected device and relaxed weight distribution' },
@@ -56,6 +68,17 @@ export const THIRD_PERSON_ANGLES = [
   { value:'third_candid_side', label:'شخص ثالث — جانبي عفوي', prompt:'candid third-person side or oblique smartphone viewpoint with natural attention away from camera and believable environmental context' }
 ];
 
+function homeSelfieProfile(pose, { angle = HOME_SEATED_ANGLES, lighting = HOME_INDOOR_LIGHTING, framing = ['close','chest_up','waist_up'] } = {}) {
+  return {
+    backgroundActivityAllowed: PRIVATE_BACKGROUND_ACTIVITY,
+    pose,
+    angle,
+    lighting,
+    camera: FRONT_CAMERAS,
+    framing
+  };
+}
+
 const PROFILES = {
   front_selfie: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, pose:['standing_relaxed','standing_one_hand','walking_slow','seated_sofa','seated_chair','lean_wall','lean_counter','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES, lighting:GENERAL_LIGHTING, camera:FRONT_CAMERAS, framing:SELFIE_FRAMING },
   standing_selfie: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, pose:['standing_relaxed','standing_one_hand','lean_wall','lean_counter','coffee_hand','adjust_clothing','hand_on_head','one_hand_pocket','close_relaxed'], angle:BASIC_SELFIE_ANGLES, lighting:GENERAL_LIGHTING, camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
@@ -73,8 +96,27 @@ const PROFILES = {
   candid_third_person: { backgroundActivityAllowed:ALL_BACKGROUND_ACTIVITY, poseCatalog:THIRD_PERSON_POSES, angleCatalog:THIRD_PERSON_ANGLES, lighting:GENERAL_LIGHTING, camera:['smartphone_rear'], framing:['chest_up','waist_up','three_quarter','full_body'] },
   military_meal_selfie: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, pose:['seated_chair','seated_sofa','coffee_hand','standing_relaxed','standing_one_hand'], angle:BASIC_SELFIE_ANGLES, lighting:['night_office_led','day_window','night_cafe_mixed','night_home_warm'], camera:FRONT_CAMERAS, framing:['chest_up','waist_up','three_quarter'] },
   military_meal_third_person: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, poseCatalog:THIRD_PERSON_POSES, angleCatalog:THIRD_PERSON_ANGLES, lighting:['night_office_led','day_window','night_cafe_mixed','golden_hour'], camera:['smartphone_rear'], framing:['chest_up','waist_up','three_quarter'] },
-  military_coffee_selfie: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, pose:['coffee_hand','seated_chair','standing_relaxed'], angle:BASIC_SELFIE_ANGLES, lighting:['night_office_led','day_window','night_cafe_mixed'], camera:FRONT_CAMERAS, framing:['chest_up','waist_up'] }
+  military_coffee_selfie: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, pose:['coffee_hand','seated_chair','standing_relaxed'], angle:BASIC_SELFIE_ANGLES, lighting:['night_office_led','day_window','night_cafe_mixed'], camera:FRONT_CAMERAS, framing:['chest_up','waist_up'] },
+  reclining_bed_selfie: homeSelfieProfile(['reclining_bed','seated_bed_edge','pillow_propped'], { lighting:HOME_BED_LIGHTING }),
+  lying_bed_selfie: homeSelfieProfile(['lying_back','lying_side','lying_stomach'], { angle:HOME_LYING_ANGLES, lighting:HOME_BED_LIGHTING }),
+  morning_bed_selfie: homeSelfieProfile(['reclining_bed','pillow_propped','sitting_bed_cross'], { lighting:['day_window'] }),
+  night_bed_selfie: homeSelfieProfile(['reclining_bed','pillow_propped','lying_side'], { lighting:['night_home_warm','night_phone_screen'] }),
+  sofa_relaxed_selfie: homeSelfieProfile(['sofa_lean_back','sofa_corner','sofa_one_knee']),
+  sofa_lying_selfie: homeSelfieProfile(['sofa_stretched','sofa_lying_side'], { angle:HOME_LYING_ANGLES }),
+  floor_seated_selfie: homeSelfieProfile(['floor_cross_legs','floor_back_wall','floor_one_knee_up','squatting']),
+  floor_leaning_wall_selfie: homeSelfieProfile(['floor_back_wall','floor_one_knee_up']),
+  reading_at_home_selfie: homeSelfieProfile(['sofa_corner','floor_back_wall','reclining_bed']),
+  tea_at_home_selfie: homeSelfieProfile(['coffee_hand','sofa_corner','seated_bed_edge','floor_cross_legs']),
+  friday_morning_selfie: homeSelfieProfile(['reclining_bed','sofa_corner','floor_cross_legs'], { lighting:['day_window'] }),
+  home_evening_selfie: homeSelfieProfile(['sofa_corner','sofa_lean_back','floor_back_wall'], { lighting:['night_home_warm'] }),
+  window_light_home_selfie: homeSelfieProfile(['sofa_corner','seated_bed_edge','floor_cross_legs'], { lighting:['day_window'] }),
+  balcony_morning_selfie: homeSelfieProfile(['standing_relaxed','lean_wall','seated_chair'], { angle:BASIC_SELFIE_ANGLES, lighting:['day_direct_sun','day_open_shade','day_overcast','golden_hour'], framing:['chest_up','waist_up','three_quarter'] }),
+  home_couch_blanket_selfie: homeSelfieProfile(['sofa_lean_back','sofa_corner','sofa_stretched'])
 };
+
+export function hasCompatibilityProfile(sceneType) {
+  return Object.hasOwn(PROFILES, sceneType);
+}
 
 function filterValues(options, allowed) {
   if (!allowed) return [...options];
@@ -99,6 +141,7 @@ function normalizedContext(sceneType, location = '', requestedSceneType = '') {
 }
 
 function isPrivatePersonalContext(sceneType, location = '', requestedSceneType = '') {
+  if (HOME_RELAXATION_SCENES.has(sceneType) || HOME_RELAXATION_SCENES.has(requestedSceneType)) return true;
   const context = normalizedContext(sceneType, location, requestedSceneType);
   return /bedroom|bathroom|washroom|private[_ -]?room|locker[_ -]?room|home[_ -]?interior|lying[_ -]?bed|reclining[_ -]?bed/.test(context);
 }
@@ -115,7 +158,8 @@ function isExteriorCarContext(sceneType, location = '', requestedSceneType = '')
 
 function contextArabicLabel(sceneType, location = '', requestedSceneType = '') {
   const context = normalizedContext(sceneType, location, requestedSceneType);
-  if (/bedroom|lying[_ -]?bed|reclining[_ -]?bed/.test(context)) return 'غرفة نوم';
+  if (/bedroom|lying[_ -]?bed|reclining[_ -]?bed|morning[_ -]?bed|night[_ -]?bed/.test(context)) return 'غرفة نوم';
+  if (HOME_RELAXATION_SCENES.has(sceneType) || HOME_RELAXATION_SCENES.has(requestedSceneType)) return 'المنزل';
   if (/bathroom|washroom/.test(context)) return 'حمام';
   if (/mosque|masjid/.test(context)) return 'مسجد';
   if (/library|reading[_ -]?room/.test(context)) return 'مكتبة';
@@ -137,6 +181,7 @@ function isPhoneScreenOnlyLighting(lighting = '') {
 
 function isNaturallyDarkPhoneContext(sceneType, location = '', requestedSceneType = '') {
   const context = normalizedContext(sceneType, location, requestedSceneType);
+  if (sceneType === 'night_bed_selfie' || requestedSceneType === 'night_bed_selfie') return true;
   return sceneType === 'inside_car_selfie' || /street[_ -]?night|night[_ -]?(?:street|parking|road|desert|corniche)|parking[_ -]?lot[_ -]?night|phone[_ -]?screen[_ -]?only|dark[_ -]?(?:street|road|parking)|شارع ليلي|موقف ليلي/.test(context);
 }
 

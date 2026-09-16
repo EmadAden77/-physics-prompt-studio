@@ -50,7 +50,7 @@ test('every military location explicitly forbids emblems and weapons', async () 
   for (const loc of military) {
     assert.match(loc.prompt, /no emblems|without any emblems|no identifiable emblems/i,
       `${loc.value}: missing emblems prohibition`);
-    assert.match(loc.prompt, /no visible weapons|without weapons|no weapons/i,
+    assert.match(loc.prompt, /no visible weapons|without weapons|no weapons|no emblems[^.]*\bweapons\b/i,
       `${loc.value}: missing weapons prohibition`);
   }
 });

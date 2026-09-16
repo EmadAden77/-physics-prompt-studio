@@ -25,6 +25,8 @@ const RANDOMIZED_FIELDS = [
   'expression','backgroundActivity','realismLevel','aspectRatio','hairStyle'
 ];
 
+const MATRIX_SEEDS = Object.freeze([1, 42, 999, 50000, 999999]);
+
 function testEnvironment() {
   return {
     sceneTypes: () => SCENES,
@@ -37,6 +39,29 @@ test('same seed produces identical scene state', async () => {
   const state1 = await randomizeWithSeed(42, testEnvironment());
   const state2 = await randomizeWithSeed(42, testEnvironment());
   assert.deepEqual(state1, state2);
+});
+
+test('seed regression matrix stays deterministic and scene-compatible', async () => {
+  const signatures = new Set();
+
+  for (const seed of MATRIX_SEEDS) {
+    const first = await randomizeWithSeed(seed, testEnvironment());
+    const second = await randomizeWithSeed(seed, testEnvironment());
+    assert.deepEqual(first, second, `seed ${seed} changed between identical runs`);
+    assert.equal(first.seed, seed, `seed ${seed} was not preserved`);
+    assert.ok(SCENES.some((scene) => scene.value === first.sceneType), `seed ${seed} selected unknown scene ${first.sceneType}`);
+
+    const compatible = randomizationOptionsForScene(first.sceneType);
+    for (const field of RANDOMIZED_FIELDS) {
+      assert.ok(first[field], `seed ${seed} produced empty ${field}`);
+      const allowed = new Set((compatible[field] || []).map((item) => item.value));
+      assert.ok(allowed.has(first[field]), `seed ${seed}: ${field}=${first[field]} is incompatible with ${first.sceneType}`);
+    }
+
+    signatures.add(JSON.stringify(['sceneType', ...RANDOMIZED_FIELDS].map((field) => first[field])));
+  }
+
+  assert.ok(signatures.size >= 3, `expected matrix diversity across seeds, got only ${signatures.size} unique scene states`);
 });
 
 test('different seeds produce different scenes', async () => {

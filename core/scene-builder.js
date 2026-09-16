@@ -291,7 +291,9 @@ export const FORMAL_LOOKS = simple([
 ['look-117','قميص فحمي + بنطال بني غامق','a charcoal dress shirt with dark-brown tailored trousers'],
 ['look-118','قميص كحلي + بنطال بني غامق','a navy dress shirt with dark-brown tailored trousers'],
 ['look-119','قميص أزرق فاتح + بنطال بني غامق','a light-blue oxford shirt with dark-brown tailored trousers'],
-['look-120','قميص بيج + بنطال بني فاتح','a beige dress shirt with light-brown tailored trousers']
+['look-120','قميص بيج + بنطال بني فاتح','a beige dress shirt with light-brown tailored trousers'],
+['look-beige-white','قميص بيج + بنطال أبيض','a beige linen-blend shirt with white tailored trousers, warm light palette, natural slub texture and matte white trouser drape'],
+['look-steelblue-khaki','قميص أزرق فولاذي + بنطال كاكي','a steel-blue dress shirt with khaki cotton-twill trousers, cool formal-casual pairing with matte finish']
 ]);
 
 export const SELFIE_POSES = simple([

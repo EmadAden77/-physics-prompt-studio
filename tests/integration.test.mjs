@@ -44,7 +44,7 @@ test('end-to-end prompt generation is deterministic and structurally valid', () 
 test('core catalog counts match the documented production baseline', () => {
   assert.equal(CLOTHING_OPTIONS.length, 25, 'CLOTHING_OPTIONS count changed');
   assert.equal(FORMAL_SUITS.length, 30, 'FORMAL_SUITS count changed');
-  assert.equal(FORMAL_LOOKS.length, 120, 'FORMAL_LOOKS count changed');
+  assert.equal(FORMAL_LOOKS.length, 122, 'FORMAL_LOOKS count changed');
   assert.equal(CLOTHING_OPTIONS.length + FORMAL_SUITS.length, 55, 'combined base clothing and formal suits count changed');
 
   const clothingLabels = new Set(CLOTHING_OPTIONS.map((item) => item.label));
@@ -58,6 +58,13 @@ test('core catalog counts match the documented production baseline', () => {
   assert.equal(SELFIE_POSES.length, 16, 'SELFIE_POSES count changed');
   assert.equal(SELFIE_ANGLES.length, 16, 'SELFIE_ANGLES count changed');
   assert.equal(LIGHTING_PROFILES.length, 23, 'LIGHTING_PROFILES count changed');
+});
+
+test('FORMAL_LOOKS contains the two newly added timeless combinations', async () => {
+  const { FORMAL_LOOKS } = await import('../core/scene-builder.js');
+  const labels = FORMAL_LOOKS.map((look) => look.label);
+  assert.ok(labels.includes('قميص بيج + بنطال أبيض'));
+  assert.ok(labels.includes('قميص أزرق فولاذي + بنطال كاكي'));
 });
 
 test('SAUDI_LOCATIONS is a derived alias of LOCATION_CATALOG', async () => {

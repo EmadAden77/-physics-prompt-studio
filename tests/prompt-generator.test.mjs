@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import { generateImagePrompt, validateGeneratedPrompt, validateRealism } from '../core/prompt-generator.js';
 
 const canonical = [
-  'GOAL','ACTION-DRIVEN AUTHENTICITY','CAPTURE TYPE LOCK — CRITICAL','IDENTITY / SUBJECT','SCENE',
+  'GOAL','ACTION-DRIVEN AUTHENTICITY','CAPTURE TYPE LOCK — CRITICAL','IDENTITY / SUBJECT','SCENE','SAUDI CULTURAL DRESS',
   'OBSERVABLE BACKGROUND ELEMENTS','CLOTHING','CONTEXTUAL ACCESSORIES','POSE & BODY MECHANICS','CAMERA GEOMETRY',
   'PHYSICAL LIGHTING','MIRROR RULES','PRODUCT INTEGRATION','PHYSICAL / MATERIAL REALISM','SMARTPHONE IMAGE BEHAVIOR',
-  'LENS_PHYSICS','BIOLOGICAL_MICRO_REALISM','CAMERA_METADATA_HINT','AUTHENTIC IMPERFECTIONS','CONTROLLED PHYSICAL IMPERFECTIONS',
+  'LENS_PHYSICS','BIOLOGICAL_MICRO_REALISM','CAMERA_METADATA_HINT','AUTHENTIC IMPERFECTIONS',
   'USER CONSTRAINTS','NEGATIVE CONSTRAINTS','FINAL VERIFICATION'
 ];
 
@@ -28,7 +28,8 @@ test('generated prompt has exactly the 23 canonical sections in order', () => {
   assert.deepEqual(headings(result.prompt), canonical);
   assert.equal(result.sections.length, 23);
   assert.equal(result.prompt.includes('[HAIR_STYLE_LOCK]'), false);
-  assert.equal(result.prompt.includes('[SAUDI CULTURAL DRESS]'), false);
+  assert.equal(result.prompt.includes('[SAUDI CULTURAL DRESS]'), true);
+  assert.equal(result.prompt.includes('[CONTROLLED PHYSICAL IMPERFECTIONS]'), false);
 });
 
 test('selected scene controls are injected into the generated prompt', () => {
@@ -67,14 +68,14 @@ test('selfie modes lock reachable subject-held geometry', () => {
   const result = generateImagePrompt({ sceneType: 'inside_car_selfie' });
   assert.ok(result.prompt.includes('subject-held smartphone selfie'));
   assert.match(result.prompt, /reachable|arm-reach|arm length/i);
-  assert.ok(result.prompt.includes('no third-person viewpoint'));
+  assert.match(result.prompt, /third-person viewpoint|third-person camera/i);
 });
 
 test('third-person mode does not silently become selfie capture', () => {
   const result = generateImagePrompt({ sceneType: 'third_person_portrait', camera: 'smartphone_rear' });
   assert.ok(result.prompt.includes('third-person smartphone photograph'));
   assert.ok(result.prompt.includes('The subject is not holding the camera'));
-  assert.ok(result.prompt.includes('no selfie arm'));
+  assert.match(result.prompt, /selfie arm/i);
 });
 
 test('identity reference can be disabled', () => {
@@ -118,7 +119,7 @@ test('bedroom lively activity is corrected and no other people appear', () => {
     backgroundActivity: 'lively',
     lighting: 'phone-screen-only lighting'
   });
-  const scene = result.prompt.split('[SCENE]\n')[1].split('\n\n[OBSERVABLE BACKGROUND ELEMENTS]')[0];
+  const scene = result.prompt.split('[SCENE]\n')[1].split('\n\n[SAUDI CULTURAL DRESS]')[0];
   assert.equal(result.config.background_activity, 'normal');
   assert.deepEqual(result.config.background_activity_allowed, ['quiet', 'normal']);
   assert.match(scene, /no other people appear in this frame/i);
@@ -135,7 +136,7 @@ test('lively Saudi retail scene specifies people types and actions', () => {
     backgroundActivity: 'lively',
     lighting: 'broad retail ceiling lighting'
   });
-  const scene = result.prompt.split('[SCENE]\n')[1].split('\n\n[OBSERVABLE BACKGROUND ELEMENTS]')[0];
+  const scene = result.prompt.split('[SCENE]\n')[1].split('\n\n[SAUDI CULTURAL DRESS]')[0];
   assert.match(scene, /5 to 7 background people/i);
   assert.match(scene, /men in white thobes/i);
   assert.match(scene, /women in plain black abayas with black niqabs/i);
@@ -214,7 +215,21 @@ test('realism sections include physical photographic language', () => {
 
 test('negatives include anti-AI-tell bans', () => {
   const result = generateImagePrompt({ sceneType: 'front_selfie' });
-  for (const phrase of ['no plastic skin', 'no perfectly symmetric face', 'no beauty filter', 'no missing corneal reflections']) assert.ok(result.prompt.toLowerCase().includes(phrase), phrase);
+  const negativeSection = result.prompt.split('[NEGATIVE CONSTRAINTS]')[1]?.split('[FINAL VERIFICATION]')[0] || '';
+  for (const phrase of ['plastic skin', 'symmetric face', 'beauty filtering', 'missing corneal reflections']) assert.ok(negativeSection.toLowerCase().includes(phrase), phrase);
+});
+
+test('negative constraints use positive framing without double negatives', () => {
+  const result = generateImagePrompt({ sceneType: 'front_selfie' });
+  const negativeSection = result.prompt.split('[NEGATIVE CONSTRAINTS]')[1]?.split('[FINAL VERIFICATION]')[0] || '';
+  const lines = negativeSection.split(',').map((s) => s.trim()).filter(Boolean);
+  const doubleNegatives = lines.filter((line) => /^no /i.test(line));
+  assert.equal(doubleNegatives.length, 0, `Double negatives found: ${doubleNegatives.join(' | ')}`);
+});
+
+test('cultural dress rules are in a separate section', () => {
+  const result = generateImagePrompt({ sceneType: 'front_selfie' });
+  assert.match(result.prompt, /SAUDI CULTURAL DRESS|cultural context — saudi/i);
 });
 
 test('validateRealism rejects positive banned terms', () => {
@@ -265,23 +280,29 @@ test('no duplicate color pairs', async () => {
   assert.equal(new Set(pairs).size, pairs.length);
 });
 
-test('every Saudi scene enforces cultural dress lock inside the canonical SCENE section', () => {
+test('every Saudi scene enforces cultural dress lock in the dedicated section', () => {
   const result = generateImagePrompt({ sceneType: 'front_selfie', location: 'inside an ordinary Saudi cafe' });
-  const scene = result.prompt.split('[SCENE]\n')[1].split('\n\n[OBSERVABLE BACKGROUND ELEMENTS]')[0];
-  assert.match(scene, /CULTURAL CONTEXT — SAUDI/);
-  assert.match(scene, /black abaya/i);
-  assert.match(scene, /niqab/i);
-  assert.equal(result.prompt.includes('[SAUDI CULTURAL DRESS]'), false);
+  const scene = result.prompt.split('[SCENE]\n')[1].split('\n\n[SAUDI CULTURAL DRESS]')[0];
+  const culture = result.prompt.split('[SAUDI CULTURAL DRESS]\n')[1].split('\n\n[OBSERVABLE BACKGROUND ELEMENTS]')[0];
+  assert.doesNotMatch(scene, /CULTURAL CONTEXT — SAUDI/);
+  assert.match(culture, /CULTURAL CONTEXT — SAUDI/);
+  assert.match(culture, /black abaya/i);
+  assert.match(culture, /black niqab/i);
+  assert.match(culture, /Do not show exposed hair, uncovered female faces, or Western-style female clothing/i);
 });
 
-test('Saudi negative constraints cover uncovered women while non-Saudi scenes do not receive Saudi rules', () => {
+test('Saudi cultural rules stay out of technical negative constraints and non-Saudi scenes do not receive Saudi rules', () => {
   const saudi = generateImagePrompt({ sceneType: 'front_selfie', location: 'saudi_office' });
-  assert.match(saudi.prompt, /no uncovered female faces/i);
-  assert.match(saudi.prompt, /no exposed women's hair/i);
+  const culture = saudi.prompt.split('[SAUDI CULTURAL DRESS]\n')[1].split('\n\n[OBSERVABLE BACKGROUND ELEMENTS]')[0];
+  const negatives = saudi.prompt.split('[NEGATIVE CONSTRAINTS]\n')[1].split('\n\n[FINAL VERIFICATION]')[0];
+  assert.match(culture, /uncovered female faces/i);
+  assert.match(culture, /Western-style female clothing/i);
+  assert.doesNotMatch(negatives, /uncovered female faces|Western-style female clothing|exposed women'?s hair/i);
   const paris = generateImagePrompt({ sceneType: 'front_selfie', location: 'inside a cafe in Paris, France' });
   assert.equal(paris.config.saudi_context, false);
   assert.doesNotMatch(paris.prompt, /CULTURAL CONTEXT — SAUDI/i);
-  assert.doesNotMatch(paris.prompt, /no uncovered female faces in Saudi scenes/i);
+  const parisCulture = paris.prompt.split('[SAUDI CULTURAL DRESS]\n')[1].split('\n\n[OBSERVABLE BACKGROUND ELEMENTS]')[0];
+  assert.match(parisCulture, /Not applicable/i);
 });
 
 test('hair catalog contains 30 styling options across 7 groups', async () => {

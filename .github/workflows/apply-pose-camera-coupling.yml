@@ -1,0 +1,196 @@
+name: Apply pose camera coupling patch
+
+on:
+  push:
+    branches:
+      - automation/apply-pose-camera-coupling
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/pose-camera-coupling
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Apply scoped patch
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          hints = {
+              'bed-lying-back': 'front camera held directly above the face, lens pointing downward, arm extended',
+              'bed-lying-side': 'front camera held beside the face at mattress level, lens roughly parallel to the mattress, one arm extended forward, slight roll',
+              'bed-lying-stomach': 'front camera held slightly above the pillow, lens pointing downward and back at the face, elbows propped',
+              'bed-reclining-headboard': 'front camera held at chest height while reclining, slight upward pitch from below the chin, headboard visible behind',
+              'bed-propped-pillows': 'front camera held at chest height against the pillows, natural eye-level looking down slightly',
+              'bed-lying-partial': 'front camera held at chest height while half-lying, slight downward pitch',
+              'bed-lying-diagonal': 'front camera held above the shoulder while lying diagonally, downward pitch',
+              'bed-lying-reading': 'front camera held slightly above the face while lying on the back, phone visible in one hand, book in the other',
+              'bed-lying-back-knees-bent': 'front camera held directly above the face while lying on the back, lens pointing downward, bent knees remaining lower in the frame',
+              'bed-sitting-cross': 'front camera at eye level while sitting cross-legged',
+              'bed-sitting-edge': 'front camera at eye level while seated on the bed edge',
+              'bed-sitting-back-wall': 'front camera at eye level against the wall',
+              'bed-sitting-legs-extended': 'front camera at eye level with legs extended forward',
+              'bed-sitting-hugging-pillow': 'front camera at eye level, pillow visible in the frame lower area',
+              'bed-sitting-sideways': 'front camera at eye level while seated sideways on the bed edge',
+              'sofa-sit-lean-back': 'front camera at eye level while leaning back in the armchair',
+              'sofa-sit-corner': 'front camera at eye level in the armchair corner',
+              'sofa-sit-one-knee': 'front camera at eye level with one knee raised',
+              'sofa-sit-crossed': 'front camera at eye level while sitting cross-legged in the armchair',
+              'armchair-sit-feet-floor': 'front camera at eye level while seated fully in the armchair with both feet on the floor',
+              'bedroom-stand-relaxed': 'front camera at eye level, natural selfie angle',
+              'bedroom-stand-one-hand': 'front camera at eye level',
+              'bedroom-stand-lean-wardrobe': 'front camera at eye level, wardrobe visible behind',
+              'bedroom-stand-lean-wall': 'front camera at eye level, wall visible behind',
+              'bedroom-stand-near-bed': 'front camera at eye level, bed visible behind',
+              'bedroom-stand-window': 'front camera at eye level, window light from one side',
+              'bedroom-laptop-bed': 'front camera held at chest height while seated on the bed, laptop visible in the lower frame',
+              'bedroom-laptop-armchair': 'front camera at chest height, laptop on lap visible in the lower frame',
+              'bedroom-cup-bed': 'front camera at eye level while seated on the bed, cup visible in one hand',
+              'bedroom-tea-sofa': 'front camera at eye level in the armchair, cup visible',
+              'bedroom-book-bed': 'front camera at eye level while seated on the bed, book visible',
+              'bedroom-phone-only': 'front camera at eye level, free hand resting naturally',
+              'bedroom-floor-cross': 'front camera at chest height while seated cross-legged on the floor',
+              'bedroom-floor-back-wall': 'front camera at chest height against the wall',
+              'bedroom-floor-knee-up': 'front camera at chest height while seated on the floor',
+              'bedroom-curtain-touch': 'front camera at eye level beside the window, curtain and side light visible without changing the locked room layout',
+              'bedroom-nightstand-reach': 'front camera at eye level while seated on the bed edge, adjacent nightstand visible in the lower side of frame',
+              'bedroom-mirror-stand-relaxed': 'mirror-view camera at eye level, phone visible in reflection',
+              'bedroom-mirror-adjust': 'mirror-view camera at eye level, phone visible in reflection',
+              'bedroom-mirror-seated': 'mirror-view camera at eye level while seated, phone visible in reflection',
+          }
+          assert len(hints) == 40
+
+          scene_path = Path('core/scene-builder.js')
+          scene_text = scene_path.read_text()
+          start_token = 'export const BEDROOM_POSES = ['
+          end_token = '\n];\n\nexport const SELFIE_POSES'
+          start = scene_text.index(start_token)
+          end = scene_text.index(end_token, start)
+          block = scene_text[start:end]
+          found = set()
+          rewritten = []
+          for raw_line in block.splitlines(keepends=True):
+              match = re.search(r"value:'([^']+)'", raw_line)
+              if not match or match.group(1) not in hints:
+                  rewritten.append(raw_line)
+                  continue
+              pose_id = match.group(1)
+              found.add(pose_id)
+              if 'cameraHint:' in raw_line:
+                  rewritten.append(raw_line)
+                  continue
+              newline = '\n' if raw_line.endswith('\n') else ''
+              stripped = raw_line.rstrip('\n').rstrip()
+              has_comma = stripped.endswith('},')
+              if has_comma:
+                  stripped = stripped[:-2].rstrip()
+              elif stripped.endswith('}'):
+                  stripped = stripped[:-1].rstrip()
+              else:
+                  raise AssertionError(f'Unexpected BEDROOM_POSES line shape for {pose_id}')
+              hint = hints[pose_id].replace("'", "\\'")
+              rewritten.append(f"{stripped}, cameraHint:'{hint}' }}{',' if has_comma else ''}{newline}")
+          assert found == set(hints), f'Missing pose ids: {sorted(set(hints) - found)}'
+          new_block = ''.join(rewritten)
+          assert new_block.count('cameraHint:') == 40
+          scene_path.write_text(scene_text[:start] + new_block + scene_text[end:])
+
+          generator_path = Path('core/prompt-generator.js')
+          generator = generator_path.read_text()
+          old_import = "import { BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS } from './scene-builder.js';"
+          new_import = "import { BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES } from './scene-builder.js';"
+          assert old_import in generator
+          generator = generator.replace(old_import, new_import, 1)
+
+          old_pose_line = "  const hair=clean(input.hairStyle), pose=clean(input.pose)||scene.prompt, angle=clean(input.angle);"
+          new_pose_lines = """  const hair=clean(input.hairStyle), poseInput=clean(input.pose), angle=clean(input.angle);\n  const selectedBedroomPose=requested.startsWith('bedroom_')\n    ? BEDROOM_POSES.find((item)=>item.value===poseInput || item.prompt===poseInput)\n    : undefined;\n  const pose=selectedBedroomPose?.prompt || poseInput || scene.prompt;\n  const cameraHintText=selectedBedroomPose?.cameraHint || angle || (scene.capture.includes('selfie') ? 'front camera at eye level with a tiny natural handheld roll' : '');"""
+          assert old_pose_line in generator
+          generator = generator.replace(old_pose_line, new_pose_lines, 1)
+
+          old_packet = "    sceneType:scene.value,requestedSceneType:requested,captureType:scene.capture,location,clothing,hairStyle:hair,expression:expression.prompt,angle,lighting,description,"
+          new_packet = "    sceneType:scene.value,requestedSceneType:requested,captureType:scene.capture,location,clothing,hairStyle:hair,expression:expression.prompt,angle:selectedBedroomPose?.cameraHint || angle,lighting,description,"
+          assert old_packet in generator
+          generator = generator.replace(old_packet, new_packet, 1)
+
+          old_geometry = "    section('CAMERA GEOMETRY',geometryRules(scene,camera,framing,angle,input.cameraDistance)), section('PHYSICAL LIGHTING',lightingRules(lighting,input.lightingNotes,realism.value)),"
+          new_geometry = "    section('CAMERA GEOMETRY',geometryRules(scene,camera,framing,cameraHintText,input.cameraDistance)), section('PHYSICAL LIGHTING',lightingRules(lighting,input.lightingNotes,realism.value)),"
+          assert old_geometry in generator
+          generator = generator.replace(old_geometry, new_geometry, 1)
+          generator_path.write_text(generator)
+
+          test_path = Path('tests/prompt-generator.test.mjs')
+          tests = test_path.read_text()
+          addition = r'''
+
+test('bed-lying-side uses mattress-level camera hint', () => {
+  const result = generateImagePrompt({
+    sceneType: 'bedroom_selfie',
+    pose: 'bed-lying-side'
+  });
+  assert.match(result.prompt, /mattress level|beside the face/i);
+});
+
+test('bed-lying-back uses overhead camera hint', () => {
+  const result = generateImagePrompt({
+    sceneType: 'bedroom_selfie',
+    pose: 'bed-lying-back'
+  });
+  assert.match(result.prompt, /above the face|pointing downward/i);
+});
+
+test('standing poses still use eye level', () => {
+  const result = generateImagePrompt({
+    sceneType: 'bedroom_selfie',
+    pose: 'bedroom-stand-relaxed'
+  });
+  assert.match(result.prompt, /eye level/i);
+});
+
+'''
+          marker = "test('bed-lying-side uses mattress-level camera hint'"
+          assert marker not in tests
+          test_path.write_text(tests.rstrip() + addition)
+          PY
+
+          python3 - <<'PY'
+          from pathlib import Path
+          expected = {'core/scene-builder.js', 'core/prompt-generator.js', 'tests/prompt-generator.test.mjs'}
+          import subprocess
+          changed = set(subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines())
+          assert changed == expected, f'Unexpected changed files: {sorted(changed)}'
+          text = Path('core/scene-builder.js').read_text()
+          block = text.split('export const BEDROOM_POSES = [', 1)[1].split('\n];\n\nexport const SELFIE_POSES', 1)[0]
+          assert block.count('cameraHint:') == 40
+          PY
+
+      - name: Run test suite
+        run: npm test
+
+      - name: Commit and push target branch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add core/scene-builder.js core/prompt-generator.js tests/prompt-generator.test.mjs
+          git commit -m "Fix bedroom pose-camera coupling"
+          git push origin HEAD:fix/pose-camera-coupling
+
+      - name: Clean up automation branch
+        if: always()
+        shell: bash
+        run: git push origin --delete automation/apply-pose-camera-coupling || true

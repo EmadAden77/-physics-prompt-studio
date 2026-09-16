@@ -1,5 +1,5 @@
 import { compilePrompt, createLedger } from './core/prompt-optimizer.js';
-import { SAUDI_LOCATIONS, CLOTHING_OPTIONS, FORMAL_LOOKS, HAIR_STYLES, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from './core/scene-builder.js';
+import { SAUDI_LOCATIONS, CLOTHING_OPTIONS, FORMAL_LOOKS, FORMAL_SUITS, HAIR_STYLES, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from './core/scene-builder.js';
 import {
   EXTRA_CLOTHING_OPTIONS,
   extraLocationsForScene,
@@ -63,9 +63,15 @@ const optimizeButton = $('optimizeButton');
 const randomButton = $('randomButton');
 const resetButton = $('resetButton');
 
+const withUiGroup = (options, group) => options.map((item) => ({ ...item, group }));
+const CLOTHING_UI_OPTIONS = [
+  ...CLOTHING_OPTIONS,
+  ...withUiGroup(FORMAL_SUITS, 'بدلات رسمية كاملة'),
+  ...withUiGroup(FORMAL_LOOKS, 'أطقم كاملة (قميص + بنطال)')
+];
 const CATALOGS = {
   location: SAUDI_LOCATIONS,
-  clothing: [...CLOTHING_OPTIONS, ...EXTRA_CLOTHING_OPTIONS, ...FORMAL_LOOKS],
+  clothing: CLOTHING_UI_OPTIONS,
   hairStyle: HAIR_STYLES,
   pose: SELFIE_POSES,
   angle: SELFIE_ANGLES,
@@ -74,6 +80,9 @@ const CATALOGS = {
   framing: FRAMING_OPTIONS
 };
 const CLOTHING_PROMPT_BY_VALUE = new Map(CATALOGS.clothing.map((item) => [item.value, item.prompt || '']));
+for (const item of EXTRA_CLOTHING_OPTIONS) {
+  if (!CLOTHING_PROMPT_BY_VALUE.has(item.value)) CLOTHING_PROMPT_BY_VALUE.set(item.value, item.prompt || '');
+}
 const RANDOMIZED_FIELDS = Object.freeze([
   'location','clothing','pose','angle','lighting','camera','framing',
   'expression','backgroundActivity','realismLevel','aspectRatio','hairStyle'

@@ -280,6 +280,60 @@ test('no duplicate color pairs', async () => {
   assert.equal(new Set(pairs).size, pairs.length);
 });
 
+test('no clothing item duplicates a formal look', async () => {
+  const { CLOTHING_OPTIONS, FORMAL_LOOKS } = await import('../core/scene-builder.js');
+  const clothingLabels = CLOTHING_OPTIONS.map((item) => item.label);
+  const lookLabels = FORMAL_LOOKS.map((item) => item.label);
+  const duplicates = clothingLabels.filter((label) => lookLabels.includes(label));
+  assert.equal(duplicates.length, 0, `Duplicates: ${duplicates.join(', ')}`);
+});
+
+test('base clothing items contain no + outfit separator', async () => {
+  const { CLOTHING_OPTIONS } = await import('../core/scene-builder.js');
+  const withPlus = CLOTHING_OPTIONS.filter((item) => item.label.includes('+'));
+  assert.equal(withPlus.length, 0, `Items with +: ${withPlus.map((item) => item.label).join(', ')}`);
+});
+
+test('CLOTHING_OPTIONS contains only the two base clothing groups', async () => {
+  const { CLOTHING_OPTIONS } = await import('../core/scene-builder.js');
+  const groups = [...new Set(CLOTHING_OPTIONS.map((item) => item.group))].sort();
+  assert.deepEqual(groups, ['ثياب وتراث سعودي', 'كاجوال'].sort());
+});
+
+test('formal suits catalog contains 30 unique suits', async () => {
+  const { FORMAL_SUITS } = await import('../core/scene-builder.js');
+  assert.equal(FORMAL_SUITS.length, 30);
+  const labels = FORMAL_SUITS.map((suit) => suit.label);
+  assert.equal(new Set(labels).size, 30);
+  const values = FORMAL_SUITS.map((suit) => suit.value);
+  assert.equal(new Set(values).size, 30);
+});
+
+test('formal suits are distributed across 5 groups', async () => {
+  const { FORMAL_SUITS } = await import('../core/scene-builder.js');
+  const groups = new Set(FORMAL_SUITS.map((suit) => suit.group));
+  assert.equal(groups.size, 5);
+});
+
+test('formal suits do not duplicate formal looks', async () => {
+  const { FORMAL_SUITS, FORMAL_LOOKS } = await import('../core/scene-builder.js');
+  const suitLabels = FORMAL_SUITS.map((suit) => suit.label);
+  const lookLabels = FORMAL_LOOKS.map((look) => look.label);
+  const duplicates = suitLabels.filter((label) => lookLabels.includes(label));
+  assert.equal(duplicates.length, 0, `Duplicates: ${duplicates.join(', ')}`);
+});
+
+test('clothing UI group order is base, formal suits, then formal looks', async () => {
+  const { CLOTHING_OPTIONS } = await import('../core/scene-builder.js');
+  const baseGroups = [...new Set(CLOTHING_OPTIONS.map((item) => item.group))];
+  assert.deepEqual([...baseGroups, 'بدلات رسمية كاملة', 'أطقم كاملة (قميص + بنطال)'], [
+    'ثياب وتراث سعودي',
+    'كاجوال',
+    'بدلات رسمية كاملة',
+    'أطقم كاملة (قميص + بنطال)'
+  ]);
+});
+
 test('every Saudi scene enforces cultural dress lock in the dedicated section', () => {
   const result = generateImagePrompt({ sceneType: 'front_selfie', location: 'inside an ordinary Saudi cafe' });
   const scene = result.prompt.split('[SCENE]\n')[1].split('\n\n[SAUDI CULTURAL DRESS]')[0];

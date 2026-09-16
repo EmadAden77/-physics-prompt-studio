@@ -6,7 +6,7 @@ const canonical = [
   'GOAL','ACTION-DRIVEN AUTHENTICITY','CAPTURE TYPE LOCK — CRITICAL','IDENTITY / SUBJECT','SCENE','SAUDI CULTURAL DRESS',
   'OBSERVABLE BACKGROUND ELEMENTS','CLOTHING','CONTEXTUAL ACCESSORIES','POSE & BODY MECHANICS','CAMERA GEOMETRY',
   'PHYSICAL LIGHTING','MIRROR RULES','PRODUCT INTEGRATION','PHYSICAL / MATERIAL REALISM','SMARTPHONE IMAGE BEHAVIOR',
-  'LENS_PHYSICS','BIOLOGICAL_MICRO_REALISM','CAMERA_METADATA_HINT','AUTHENTIC IMPERFECTIONS','CONTROLLED PHYSICAL IMPERFECTIONS',
+  'LENS_PHYSICS','BIOLOGICAL_MICRO_REALISM','CAMERA_METADATA_HINT','AUTHENTIC IMPERFECTIONS',
   'USER CONSTRAINTS','NEGATIVE CONSTRAINTS','FINAL VERIFICATION'
 ];
 
@@ -23,12 +23,13 @@ test('generates a complete prompt without free-form source text', () => {
   assert.ok(result.prompt.length > 3000);
 });
 
-test('generated prompt has exactly the 24 canonical sections in order', () => {
+test('generated prompt has exactly the 23 canonical sections in order', () => {
   const result = generateImagePrompt({ sceneType: 'front_selfie' });
   assert.deepEqual(headings(result.prompt), canonical);
-  assert.equal(result.sections.length, 24);
+  assert.equal(result.sections.length, 23);
   assert.equal(result.prompt.includes('[HAIR_STYLE_LOCK]'), false);
   assert.equal(result.prompt.includes('[SAUDI CULTURAL DRESS]'), true);
+  assert.equal(result.prompt.includes('[CONTROLLED PHYSICAL IMPERFECTIONS]'), false);
 });
 
 test('selected scene controls are injected into the generated prompt', () => {

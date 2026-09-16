@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { compatibleOptions, compatibilitySnapshot, locationsForScene, recommendedDefaults, resolveCompatibleValue, resolveContextAwareConstraints } from '../core/scene-compatibility.js';
-import { LOCATION_CATALOG, CLOTHING_OPTIONS, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
+import { LOCATION_CATALOG, SAUDI_LOCATIONS, CLOTHING_OPTIONS, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
 import { CAMERA_PROFILES, FRAMING_OPTIONS, SCENE_TYPES } from '../core/prompt-generator.js';
 import { baseSceneTypeFor } from '../core/scene-type-expansion.js';
 
@@ -25,6 +25,15 @@ test('LOCATION_CATALOG is single source of truth', () => {
     assert.ok(Array.isArray(loc.sceneTypes), `${loc.value}: sceneTypes must be an array`);
     assert.ok(loc.sceneTypes.length > 0, `${loc.value}: missing sceneTypes`);
   }
+});
+
+test('SAUDI_LOCATIONS is a derived alias of LOCATION_CATALOG', () => {
+  assert.equal(SAUDI_LOCATIONS.length, LOCATION_CATALOG.length);
+  assert.deepEqual(
+    SAUDI_LOCATIONS.map((location) => location.value).sort(),
+    LOCATION_CATALOG.map((location) => location.value).sort()
+  );
+  assert.ok(SAUDI_LOCATIONS.every((location) => !Object.hasOwn(location, 'sceneTypes')));
 });
 
 test('no legacy location arrays remain', async () => {

@@ -84,6 +84,20 @@ export function homeClothingForScene(sceneType) {
   return HOME_CLOTHING;
 }
 
+function bedroomPoseFor(poseValueOrPrompt) {
+  return BEDROOM_POSES.find((pose) => pose.value === poseValueOrPrompt || pose.prompt === poseValueOrPrompt);
+}
+
+export function getPoseCameraHint(poseValueOrPrompt) {
+  const pose = bedroomPoseFor(poseValueOrPrompt);
+  if (!pose || pose.group === 'وقوف') return null;
+  return pose.cameraHint || null;
+}
+
+export function poseHasCameraHint(poseValueOrPrompt) {
+  return Boolean(getPoseCameraHint(poseValueOrPrompt));
+}
+
 function profileFor(sceneType) {
   return PROFILES[sceneType] || PROFILES.front_selfie;
 }

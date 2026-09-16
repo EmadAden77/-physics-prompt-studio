@@ -1,9 +1,7 @@
 import { compilePrompt, createLedger } from './core/prompt-optimizer.js';
-import { LOCATION_CATALOG, CLOTHING_OPTIONS, FORMAL_LOOKS, FORMAL_SUITS, HAIR_STYLES, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from './core/scene-builder.js';
+import { LOCATION_CATALOG, CLOTHING_OPTIONS, HOME_CLOTHING, FORMAL_LOOKS, FORMAL_SUITS, HAIR_STYLES, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from './core/scene-builder.js';
 import {
   EXTRA_CLOTHING_OPTIONS,
-  HOME_CLOTHING,
-  HOME_SELFIE_POSES,
   enrichClothingPrompt
 } from './core/expanded-catalogs.js';
 import {
@@ -16,8 +14,8 @@ import {
   REALISM_LEVELS,
   FRAMING_OPTIONS
 } from './core/prompt-generator.js';
-import { compatibilitySnapshot, hasCompatibilityProfile, locationsForScene, recommendedDefaults, resolveCompatibleValue } from './core/scene-compatibility.js';
-import { baseSceneTypeFor, narrowOptions, sceneMeta } from './core/scene-type-expansion.js';
+import { compatibilitySnapshot, locationsForScene, recommendedDefaults, resolveCompatibleValue } from './core/scene-compatibility.js';
+import { baseSceneTypeFor, narrowOptions, sceneMeta, HOME_SCENE_TYPES } from './core/scene-type-expansion.js';
 import { enforceSaudiNoLandmarks, mergeSaudiNoLandmarksConstraint } from './core/saudi-location-lock.js';
 
 const HAS_DOM = typeof document !== 'undefined';
@@ -74,7 +72,7 @@ const CATALOGS = {
   location: LOCATION_CATALOG,
   clothing: CLOTHING_UI_OPTIONS,
   hairStyle: HAIR_STYLES,
-  pose: [...SELFIE_POSES, ...HOME_SELFIE_POSES],
+  pose: SELFIE_POSES,
   angle: SELFIE_ANGLES,
   lighting: LIGHTING_PROFILES,
   camera: CAMERA_PROFILES,
@@ -174,25 +172,29 @@ function specializedOptions(sceneType, kind, options) {
   return sceneMeta(sceneType) ? narrowOptions(sceneType, kind, options) : options;
 }
 
-function clothingOptionsForScene(sceneType, options) {
-  const linked = options.filter((item) => Array.isArray(item.sceneTypes) && item.sceneTypes.includes(sceneType));
-  if (linked.length) return linked;
-  return options.filter((item) => !Array.isArray(item.sceneTypes));
-}
-
 function restoreCompatibleSelection(control, previousValue, options, preferredValue = '') {
   if (!previousValue) return;
   control.value = resolveCompatibleValue(previousValue, options, preferredValue);
 }
 
-function sceneCompatibilityData(sceneType) {
+function showAllOptions(select) {
+  if (!select) return;
+  for (const option of select.options) option.hidden = false;
+  for (const group of select.querySelectorAll?.('optgroup') || []) group.hidden = false;
+}
+
+function sceneCompatibilityData(sceneType, locationValue = '') {
   const baseSceneType = baseSceneTypeFor(sceneType);
-  const directCompatibility = hasCompatibilityProfile(sceneType);
-  const compatibilityType = directCompatibility ? sceneType : baseSceneType;
+  let compatibilityType = sceneType === 'supermarket_selfie' ? sceneType : baseSceneType;
+  if (HOME_SCENE_TYPES.includes(sceneType)) compatibilityType = sceneType;
   const compatible = compatibilitySnapshot(compatibilityType, CATALOGS);
   const defaults = recommendedDefaults(compatibilityType);
   const locationCandidates = locationsForScene(sceneType);
-  const clothingCandidates = clothingOptionsForScene(sceneType, compatible.clothing);
+  let lighting = specializedOptions(sceneType, 'lighting', compatible.lighting);
+  if (sceneType === 'floor_seated_selfie') {
+    const outdoors = ['desert_campsite_simple', 'wadi_picnic_edge'].includes(locationValue);
+    lighting = lighting.filter((item) => outdoors ? item.value === 'day_open_shade' : item.value !== 'day_open_shade');
+  }
   return {
     baseSceneType,
     compatibilityType,
@@ -200,10 +202,10 @@ function sceneCompatibilityData(sceneType) {
     defaults,
     options: {
       location: locationCandidates,
-      clothing: specializedOptions(sceneType, 'clothing', clothingCandidates),
-      pose: directCompatibility ? compatible.pose : specializedOptions(sceneType, 'pose', compatible.pose),
-      angle: directCompatibility ? compatible.angle : specializedOptions(sceneType, 'angle', compatible.angle),
-      lighting: directCompatibility ? compatible.lighting : specializedOptions(sceneType, 'lighting', compatible.lighting),
+      clothing: specializedOptions(sceneType, 'clothing', compatible.clothing),
+      pose: specializedOptions(sceneType, 'pose', compatible.pose),
+      angle: specializedOptions(sceneType, 'angle', compatible.angle),
+      lighting,
       camera: compatible.camera,
       framing: compatible.framing,
       expression: EXPRESSIONS,
@@ -217,26 +219,28 @@ function sceneCompatibilityData(sceneType) {
 
 function applySceneCompatibility() {
   const sceneType = selectedSceneType();
-  const { compatibilityType, compatible, defaults, options } = sceneCompatibilityData(sceneType);
+  const { compatibilityType, compatible, defaults, options } = sceneCompatibilityData(sceneType, controls.location.value);
   const previous = {
     location: controls.location.value,
-    clothing: controls.clothing.value,
     pose: controls.pose.value,
     angle: controls.angle.value,
     lighting: controls.lighting.value,
     framing: controls.framing.value
   };
 
+  const manualClothing = HOME_SCENE_TYPES.includes(sceneType) ? options.clothing
+    : CATALOGS.clothing.filter((item) => !item.sceneTypes);
+  rebuildOptionalSelect(controls.clothing, manualClothing, 'تلقائي — ملابس متناسقة مع المشهد', true);
+  showAllOptions(controls.clothing);
   rebuildOptionalSelect(controls.location, options.location, 'تلقائي — مكان سعودي واقعي جدًا بدون معالم', true);
-  rebuildOptionalSelect(controls.clothing, options.clothing, 'تلقائي — ملابس متناسقة مع نوع المشهد', true);
   rebuildOptionalSelect(controls.pose, options.pose, 'تلقائي — وضعية متناسقة مع نوع المشهد');
   rebuildOptionalSelect(controls.angle, options.angle, 'تلقائي — زاوية متناسقة مع نوع المشهد');
   rebuildOptionalSelect(controls.lighting, options.lighting, 'تلقائي — إضاءة متناسقة مع نوع المشهد', true);
   rebuildRequiredSelect(controls.camera, compatible.camera, defaults.camera);
   rebuildRequiredSelect(controls.framing, options.framing, defaults.framing);
+  rebuildRequiredSelect(controls.backgroundActivity, options.backgroundActivity, 'normal');
 
   restoreCompatibleSelection(controls.location, previous.location, options.location, defaults.location);
-  restoreCompatibleSelection(controls.clothing, previous.clothing, options.clothing);
   restoreCompatibleSelection(controls.pose, previous.pose, options.pose, defaults.pose);
   restoreCompatibleSelection(controls.angle, previous.angle, options.angle, defaults.angle);
   restoreCompatibleSelection(controls.lighting, previous.lighting, options.lighting, defaults.lighting);
@@ -255,8 +259,20 @@ function selectedClothingPrompt() {
   return selectedPrompt(controls.clothing, CLOTHING_PROMPT_BY_VALUE);
 }
 
+// Fill only automatic fields for home scenes; explicit user selections remain authoritative.
+export function resolveHomeSceneInput(input) {
+  if (!HOME_SCENE_TYPES.includes(input.sceneType)) return input;
+  const locationValue = locationsForScene(input.sceneType).find((item) => input.location?.includes(item.prompt))?.value;
+  const options = sceneCompatibilityData(input.sceneType, locationValue).options;
+  const resolved = { ...input };
+  for (const field of ['location', 'clothing', 'pose', 'angle', 'lighting']) {
+    if (!resolved[field]?.trim()) resolved[field] = options[field][0]?.prompt || '';
+  }
+  return resolved;
+}
+
 function autoInput() {
-  return {
+  return resolveHomeSceneInput({
     sceneType: controls.sceneType.value,
     camera: controls.camera.value,
     aspectRatio: controls.aspectRatio.value,
@@ -275,7 +291,7 @@ function autoInput() {
     description: controls.description.value,
     customConstraints: mergeSaudiNoLandmarksConstraint(controls.customConstraints.value),
     identityReference: controls.identityReference.checked
-  };
+  });
 }
 
 function sceneForOptimizer() {
@@ -399,8 +415,8 @@ function valueRecord(item) {
   return typeof item === 'string' ? { value: item } : item;
 }
 
-export function randomizationOptionsForScene(sceneType) {
-  return sceneCompatibilityData(sceneType).options;
+export function randomizationOptionsForScene(sceneType, locationValue = '') {
+  return sceneCompatibilityData(sceneType, locationValue).options;
 }
 
 export function buildSeededSceneState(seed, sceneTypes, optionsForScene = randomizationOptionsForScene) {
@@ -411,10 +427,11 @@ export function buildSeededSceneState(seed, sceneTypes, optionsForScene = random
   if (!pickedScene) return Object.freeze({ seed: normalized, sceneType: '' });
 
   const state = { seed: normalized, sceneType: pickedScene.value };
-  const options = optionsForScene(pickedScene.value) || {};
+  let options = optionsForScene(pickedScene.value) || {};
   for (const field of RANDOMIZED_FIELDS) {
     const picked = pickRandom((options[field] || []).map(valueRecord).filter((item) => item?.value), rng);
     state[field] = picked?.value || '';
+    if (field === 'location' && pickedScene.value === 'floor_seated_selfie') options = optionsForScene(pickedScene.value, state.location) || {};
   }
   return Object.freeze(state);
 }
@@ -576,6 +593,9 @@ if (HAS_DOM) {
     currentSeed = normalizeSeed(controls.seedInput.value);
     controls.seedInput.value = String(currentSeed);
     await randomizeWithSeed(currentSeed);
+  });
+  controls.location.addEventListener('change', () => {
+    if (selectedSceneType() === 'floor_seated_selfie') applySceneCompatibility();
   });
   controls.sceneType.addEventListener('change', () => {
     applySceneCompatibility();

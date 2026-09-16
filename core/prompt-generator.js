@@ -1,7 +1,7 @@
 import { buildRealismPacket, renderRealismGuidance } from './realistic-image-generator.js';
 import { baseSceneTypeFor, sceneMeta } from './scene-type-expansion.js';
 import { resolveContextAwareConstraints } from './scene-compatibility.js';
-import { BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS } from './scene-builder.js';
+import { BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES } from './scene-builder.js';
 
 export const SCENE_TYPES = [
   { value:'front_selfie', label:'سيلفي عادي', capture:'subject-held front-camera smartphone selfie', prompt:'a casual subject-held front-camera smartphone selfie with physically feasible arm-reach geometry', framing:'chest-up to mid-torso framing' },
@@ -148,7 +148,12 @@ export function generateImagePrompt(input={}){
   const framing=pick(FRAMING_OPTIONS,input.framing,DEFAULTS.framing);
   const location=clean(input.location)||'a generic, ordinary Saudi Arabian setting appropriate to the scene, without inventing a specific city or landmark';
   const clothing=clean(input.clothing)||'realistic context-appropriate clothing with believable textile weight, seams, folds and material response';
-  const hair=clean(input.hairStyle), pose=clean(input.pose)||scene.prompt, angle=clean(input.angle);
+  const hair=clean(input.hairStyle), poseInput=clean(input.pose), angle=clean(input.angle);
+  const selectedBedroomPose=requested.startsWith('bedroom_')
+    ? BEDROOM_POSES.find((item)=>item.value===poseInput || item.prompt===poseInput)
+    : undefined;
+  const pose=selectedBedroomPose?.prompt || poseInput || scene.prompt;
+  const cameraHintText=selectedBedroomPose?.cameraHint || angle || (scene.capture.includes('selfie') ? 'front camera at eye level with a tiny natural handheld roll' : '');
   const contextual=resolveContextAwareConstraints({
     sceneType:scene.value,
     requestedSceneType:requested,
@@ -160,7 +165,7 @@ export function generateImagePrompt(input={}){
   const lighting=contextual.lighting;
   const description=clean(input.description)||clean(extra?.prompt), custom=clean(input.customConstraints), identity=input.identityReference!==false, saudi=isSaudi(location);
   const packet=buildRealismPacket({
-    sceneType:scene.value,requestedSceneType:requested,captureType:scene.capture,location,clothing,hairStyle:hair,expression:expression.prompt,angle,lighting,description,
+    sceneType:scene.value,requestedSceneType:requested,captureType:scene.capture,location,clothing,hairStyle:hair,expression:expression.prompt,angle:selectedBedroomPose?.cameraHint || angle,lighting,description,
     aspectRatio:ratio.prompt,pose,backgroundActivity:background.value,backgroundElements:backgroundElements(background,contextual,saudi)
   });
   packet.accessories.device=captureDeviceRule(scene.capture);
@@ -196,7 +201,7 @@ export function generateImagePrompt(input={}){
     section('OBSERVABLE BACKGROUND ELEMENTS',guidance.background),
     section('CLOTHING',`${clothing}. Preserve gravity-driven drape, realistic material thickness, seam tension, compression at body/contact points, and non-mirrored natural asymmetry.`),
     section('CONTEXTUAL ACCESSORIES',guidance.accessories), section('POSE & BODY MECHANICS',`${pose}. Body mechanics must respect balance, support, joint limits, body weight, seat or ground contact, and natural asymmetric posture.`),
-    section('CAMERA GEOMETRY',geometryRules(scene,camera,framing,angle,input.cameraDistance)), section('PHYSICAL LIGHTING',lightingRules(lighting,input.lightingNotes,realism.value)),
+    section('CAMERA GEOMETRY',geometryRules(scene,camera,framing,cameraHintText,input.cameraDistance)), section('PHYSICAL LIGHTING',lightingRules(lighting,input.lightingNotes,realism.value)),
     section('MIRROR RULES',mirrorSection), section('PRODUCT INTEGRATION',guidance.product),
     section('PHYSICAL / MATERIAL REALISM',`${realism.prompt}. Enforce correct human anatomy; realistic neck, shoulder, arm, hand and finger structure; natural weight distribution; correct support and contact deformation; coherent gravity; realistic cloth drape and seam tension; material-specific reflectance; grounded feet or body support; physically consistent reflections; plausible atmospheric depth; and scene-specific scale.`),
     section('SMARTPHONE IMAGE BEHAVIOR','The result must read as an ordinary real smartphone photograph, not a polished commercial portrait, CGI render or cinematic frame. Use broad smartphone focus, restrained computational sharpening, realistic local contrast, modest dynamic range, plausible white balance, subtle edge softness, mild sensor/noise-reduction texture in darker areas, and natural clipping of strong practical lights when appropriate.'),
@@ -214,7 +219,7 @@ export function generateImagePrompt(input={}){
     config:{
       requested_scene_type:requested,scene_type:scene.value,capture_type:scene.capture,camera:camera.value,aspect_ratio:ratio.value,expression:expression.value,
       background_activity:background.value,background_activity_allowed:[...contextual.backgroundActivityAllowed],realism_level:realism.value,framing:framing.value,
-      identity_reference:identity,location,clothing,hair_style:hair,pose,angle,lighting,lighting_notes:clean(input.lightingNotes),description,custom_constraints:custom,
+      identity_reference:identity,location,clothing,hair_style:hair,pose,angle:selectedBedroomPose?.cameraHint || angle,lighting,lighting_notes:clean(input.lightingNotes),description,custom_constraints:custom,
       saudi_context:saudi,context_warnings:[...contextual.warnings]
     },validation,realism_validation:realismCheck
   };

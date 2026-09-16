@@ -450,3 +450,39 @@ test('formal look prompt is preserved verbatim in clothing section', async () =>
   assert.match(clothing, /a navy two-piece suit with a light-blue dress shirt/i);
   assert.doesNotMatch(clothing, /a clean collared shirt with tailored trousers/i);
 });
+
+test('bedroom_selfie does not contain mirror rules', () => {
+  const result = generateImagePrompt({ sceneType: 'bedroom_selfie' });
+  assert.match(result.prompt, /Mirror rules: not applicable/i);
+  assert.doesNotMatch(result.prompt, /true mirror selfie/i);
+  assert.doesNotMatch(result.prompt, /mirror smudges/i);
+  assert.doesNotMatch(result.prompt, /candid mirror moment/i);
+});
+
+test('bedroom_mirror_selfie contains mirror rules', () => {
+  const result = generateImagePrompt({ sceneType: 'bedroom_mirror_selfie' });
+  assert.match(result.prompt, /true mirror selfie/i);
+  const mirrorSection = result.prompt.split('[MIRROR RULES]\n')[1].split('\n\n[PRODUCT INTEGRATION]')[0];
+  assert.doesNotMatch(mirrorSection, /Mirror rules: not applicable/i);
+});
+
+test('detectScenario prioritizes captureType over keyword haystack', async () => {
+  const { buildRealismPacket } = await import('../core/realistic-image-generator.js');
+  const packet = buildRealismPacket({
+    sceneType: 'bedroom_selfie',
+    captureType: 'subject-held front-camera smartphone selfie',
+    description: 'a bedroom with a mirror on the wardrobe door'
+  });
+  assert.notEqual(packet.template_type, 'Mirror Selfie');
+  assert.doesNotMatch(packet.action, /mirror moment/i);
+});
+
+test('bedroom with mirror furniture is not classified as mirror selfie', async () => {
+  const { buildRealismPacket } = await import('../core/realistic-image-generator.js');
+  const packet = buildRealismPacket({
+    sceneType: 'bedroom_selfie',
+    captureType: 'subject-held front-camera smartphone selfie',
+    location: 'a bedroom with a full-length mirror on the wardrobe door'
+  });
+  assert.equal(packet.subject.mirror_rules, 'not_applicable');
+});

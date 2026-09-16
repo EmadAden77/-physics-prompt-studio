@@ -11,9 +11,9 @@ test('prompt studio application files exist', () => {
   }
 });
 
-test('interface exposes automatic generation and optimizer modes', () => {
+test('interface exposes automatic generation and optimizer modes for ChatGPT Images', () => {
   const html = read('index.html');
-  for (const token of ['Auto Prompt Generator', 'توليد تلقائي', 'تحسين Prompt', 'promptOutput', 'sceneType', 'sceneLighting', 'identityReference']) {
+  for (const token of ['ChatGPT Image Prompt Generator', 'CHATGPT IMAGES ONLY', 'توليد تلقائي', 'تحسين Prompt', 'promptOutput', 'sceneType', 'sceneLighting', 'identityReference']) {
     assert.equal(html.includes(token), true, `missing UI token: ${token}`);
   }
 });

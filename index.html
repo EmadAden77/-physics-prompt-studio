@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>Physics Prompt Studio — Auto Prompt Generator</title>
+  <title>Physics Prompt Studio — ChatGPT Image Prompt Generator</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -12,10 +12,11 @@
     <header class="hero">
       <div>
         <p class="eyebrow">Physics Prompt Studio</p>
-        <h1>Auto Prompt Generator</h1>
-        <p class="lede">اختر المشهد. التطبيق يبني Prompt إنجليزي حتميًا مع هندسة الكاميرا والإضاءة الفيزيائية والواقعية والقيود النهائية.</p>
+        <h1>ChatGPT Image Prompt Generator</h1>
+        <p class="lede">ابنِ Prompt إنجليزيًا مخصصًا لـ ChatGPT Images، مع هندسة الكاميرا والإضاءة الفيزيائية والواقعية والقيود النهائية في طلب واحد متماسك.</p>
       </div>
       <div class="hero-badges">
+        <span class="pill">CHATGPT IMAGES ONLY</span>
         <span class="pill">LOCAL ENGINE</span>
         <span class="pill">DETERMINISTIC</span>
         <a class="pill" href="car-selfie.html">CAR STUDIO</a>
@@ -23,8 +24,8 @@
     </header>
 
     <nav class="mode-switch card" aria-label="وضع التطبيق">
-      <button class="mode active" data-mode="auto" type="button"><strong>توليد تلقائي</strong><span>ابنِ Prompt من الاختيارات</span></button>
-      <button class="mode" data-mode="optimize" type="button"><strong>تحسين Prompt</strong><span>نظّم Prompt موجود</span></button>
+      <button class="mode active" data-mode="auto" type="button"><strong>توليد تلقائي</strong><span>ابنِ Prompt جاهزًا لـ ChatGPT Images</span></button>
+      <button class="mode" data-mode="optimize" type="button"><strong>تحسين Prompt</strong><span>نظّم Prompt موجودًا ليتوافق مع ChatGPT</span></button>
     </nav>
 
     <section id="autoPanel">
@@ -65,24 +66,24 @@
           </div>
         </details>
 
-        <div class="actions primary-actions"><button id="generateButton" class="primary" type="button">توليد Prompt الآن</button><span class="live-note">⚡ يتحدث تلقائيًا عند تغيير أي اختيار</span></div>
+        <div class="actions primary-actions"><button id="generateButton" class="primary" type="button">توليد Prompt لـ ChatGPT</button><span class="live-note">⚡ يتحدث تلقائيًا عند تغيير أي اختيار</span></div>
       </section>
     </section>
 
     <section id="optimizerPanel" hidden>
       <section class="card optimizer-card">
-        <div class="section-head"><div><p class="kicker">OPTIMIZER</p><h2>تحسين Prompt موجود</h2></div><span class="pill">يحفظ النص الأصلي</span></div>
+        <div class="section-head"><div><p class="kicker">CHATGPT OPTIMIZER</p><h2>تحسين Prompt موجود لـ ChatGPT</h2></div><span class="pill">CHATGPT IMAGES — FIXED TARGET</span></div>
+        <input id="surface" type="hidden" value="chatgpt">
         <div class="optimizer-grid">
-          <label class="field"><span>Target surface</span><select id="surface"><option value="unknown">غير محدد</option><option value="chatgpt">ChatGPT</option><option value="codex">Codex</option><option value="openai_api">OpenAI API</option><option value="other">Other</option></select></label>
-          <label class="field span-2"><span>Prompt الأصلي</span><textarea id="sourcePrompt" rows="12" spellcheck="false" placeholder="الصق البرومبت الموجود هنا..."></textarea></label>
+          <label class="field span-2"><span>Prompt الأصلي</span><textarea id="sourcePrompt" rows="12" spellcheck="false" placeholder="الصق البرومبت الذي تريد تنظيمه لـ ChatGPT Images..."></textarea></label>
         </div>
-        <div class="actions"><button id="optimizeButton" class="primary" type="button">تحسين Prompt</button><span class="hint">يمكن دمج اختيارات Scene Builder الحالية مع الـPrompt أثناء التحسين.</span></div>
+        <div class="actions"><button id="optimizeButton" class="primary" type="button">تحسين Prompt لـ ChatGPT</button><span class="hint">الوجهة ثابتة: ChatGPT Images. يمكن دمج اختيارات Scene Builder الحالية أثناء التحسين.</span></div>
       </section>
     </section>
 
     <section class="output-grid">
       <article class="card result-card">
-        <div class="section-head"><div><p class="kicker">02 — OUTPUT</p><h2>الـPrompt النهائي</h2></div><span id="statusBadge" class="status idle">IDLE</span></div>
+        <div class="section-head"><div><p class="kicker">02 — CHATGPT OUTPUT</p><h2>الـPrompt النهائي</h2></div><span id="statusBadge" class="status idle">IDLE</span></div>
         <div class="metrics">
           <div class="metric"><span id="metricOneLabel">الوضع</span><strong id="metricOneValue">AUTO</strong></div>
           <div class="metric"><span id="metricTwoLabel">الأقسام</span><strong id="metricTwoValue">0</strong></div>
@@ -100,8 +101,9 @@
     </section>
 
     <section class="card rules-card">
-      <div class="section-head"><div><p class="kicker">ENGINE</p><h2>ما الذي يثبته المحرك تلقائيًا؟</h2></div></div>
+      <div class="section-head"><div><p class="kicker">CHATGPT IMAGE ENGINE</p><h2>ما الذي يثبته المحرك تلقائيًا؟</h2></div></div>
       <div class="rules-grid">
+        <div><strong>ChatGPT Target Lock</strong><span>المخرجات مخصصة لـ ChatGPT Images فقط، بلا صياغات أو معاملات خاصة بمنصات أخرى.</span></div>
         <div><strong>Capture Type Lock</strong><span>السيلفي يبقى سيلفي، وتصوير الشخص الثالث يبقى شخصًا ثالثًا.</span></div>
         <div><strong>Camera Geometry</strong><span>موضع ومسافة ومنظور الكاميرا يجب أن تكون ممكنة فيزيائيًا.</span></div>
         <div><strong>Physical Lighting</strong><span>المصدر الحقيقي وحده يخلق الضوء والظل والانعكاس. ISO وHDR لا يخلقان ضوءًا.</span></div>

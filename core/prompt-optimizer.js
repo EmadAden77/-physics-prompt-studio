@@ -2,6 +2,7 @@ import { normalizeSceneContext, renderSceneContext, sceneConstraintItems } from 
 
 const SECTION_ORDER = ['outcome','relevant_context','must_preserve_constraints','evidence_and_success','output_contract','task_shape_routing','final_verification'];
 const LABELS = { outcome:'Outcome', relevant_context:'Relevant context', must_preserve_constraints:'Must-preserve constraints', evidence_and_success:'Evidence and success', output_contract:'Output contract', task_shape_routing:'Task-shape routing', final_verification:'Final verification' };
+const TARGET_SURFACE = 'chatgpt';
 const PATTERNS = {
   output: /(output|format|deliverable|return|respond|answer|json|table|markdown|code block|صيغة|تنسيق|المخرجات|أرجع|أرسل|اعرض|اكتب\s+النتيجة)/i,
   success: /(success|acceptance|evidence|verify|validation|done when|must pass|نجاح|تحقق|اختبار|قبول|يعتبر.*ناجح|تأكد)/i,
@@ -50,6 +51,7 @@ function validateConstraintSource(packet,item,errors){ if(item.source_kind==='sc
 export function validatePacket(packet){
   const errors=[],warnings=[];
   if(!packet.original_prompt?.length)errors.push('Original prompt is empty.');
+  if(packet.target_surface!==TARGET_SURFACE)errors.push(`Target surface must remain ${TARGET_SURFACE}.`);
   if(packet.sections?.[0]?.name!=='outcome')errors.push('Outcome must be the first canonical section.');
   if(!packet.sections?.find((section)=>section.name==='outcome'&&section.included))errors.push('An included outcome section is required.');
   const ids=new Set(),sourceMappings=new Set();
@@ -70,7 +72,6 @@ export function validatePacket(packet){
 
 export function compilePrompt(sourcePrompt,options={}){
   const originalPrompt=String(sourcePrompt??'');
-  const surface=['codex','chatgpt','openai_api','other','unknown'].includes(options.surface)?options.surface:'unknown';
   const sceneContext=normalizeSceneContext(options.scene);
   const blocks=splitBlocks(originalPrompt);
   const grouped=buildSections(blocks);
@@ -80,9 +81,10 @@ export function compilePrompt(sourcePrompt,options={}){
   const authority=buildAuthority(originalPrompt);
   const compiledText=renderCompiledPrompt(sections);
   const scopeDrift=detectScopeDrift(originalPrompt,sections);
-  const packet={schema_version:'1.1.0',status:'draft',target_surface:surface,original_prompt:originalPrompt,scene_context:sceneContext,sections,must_preserve_constraints:constraintMap.map((item)=>item.id),constraint_map:constraintMap,authority,scope_drift:scopeDrift,assumptions:[],unresolved_decisions:[],compiled_prompt:{text:compiledText},validation:null};
+  const packet={schema_version:'1.2.0',status:'draft',target_surface:TARGET_SURFACE,original_prompt:originalPrompt,scene_context:sceneContext,sections,must_preserve_constraints:constraintMap.map((item)=>item.id),constraint_map:constraintMap,authority,scope_drift:scopeDrift,assumptions:[],unresolved_decisions:[],compiled_prompt:{text:compiledText},validation:null};
   const validation=validatePacket(packet);packet.validation=validation;packet.status=validation.valid?'ready':'invalid';return packet;
 }
 
 export function createLedger(packet){ return{status:packet.status,target_surface:packet.target_surface,scene_context:packet.scene_context,constraints:packet.constraint_map.map((item)=>({id:item.id,source_kind:item.source_kind,mapping:item.mapping,target_section:item.target_section,text:item.source_text})),assumptions:packet.assumptions,unresolved_decisions:packet.unresolved_decisions,scope_drift:packet.scope_drift,authority:packet.authority,validation:packet.validation}; }
 export function sectionOrder(){ return[...SECTION_ORDER]; }
+export function targetSurface(){ return TARGET_SURFACE; }

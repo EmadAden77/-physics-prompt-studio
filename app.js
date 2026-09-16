@@ -1,9 +1,7 @@
 import { compilePrompt, createLedger } from './core/prompt-optimizer.js';
-import { SAUDI_LOCATIONS, CLOTHING_OPTIONS, FORMAL_LOOKS, FORMAL_SUITS, HAIR_STYLES, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from './core/scene-builder.js';
+import { LOCATION_CATALOG, CLOTHING_OPTIONS, FORMAL_LOOKS, FORMAL_SUITS, HAIR_STYLES, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from './core/scene-builder.js';
 import {
   EXTRA_CLOTHING_OPTIONS,
-  extraLocationsForScene,
-  enrichLocationPrompt,
   enrichClothingPrompt
 } from './core/expanded-catalogs.js';
 import {
@@ -16,7 +14,7 @@ import {
   REALISM_LEVELS,
   FRAMING_OPTIONS
 } from './core/prompt-generator.js';
-import { compatibilitySnapshot, recommendedDefaults, resolveCompatibleValue } from './core/scene-compatibility.js';
+import { compatibilitySnapshot, locationsForScene, recommendedDefaults, resolveCompatibleValue } from './core/scene-compatibility.js';
 import { baseSceneTypeFor, narrowOptions, sceneMeta } from './core/scene-type-expansion.js';
 import { enforceSaudiNoLandmarks, mergeSaudiNoLandmarksConstraint } from './core/saudi-location-lock.js';
 
@@ -70,7 +68,7 @@ const CLOTHING_UI_OPTIONS = [
   ...withUiGroup(FORMAL_LOOKS, 'أطقم كاملة (قميص + بنطال)')
 ];
 const CATALOGS = {
-  location: SAUDI_LOCATIONS,
+  location: LOCATION_CATALOG,
   clothing: CLOTHING_UI_OPTIONS,
   hairStyle: HAIR_STYLES,
   pose: SELFIE_POSES,
@@ -189,15 +187,14 @@ function sceneCompatibilityData(sceneType) {
   const compatibilityType = sceneType === 'supermarket_selfie' ? sceneType : baseSceneType;
   const compatible = compatibilitySnapshot(compatibilityType, CATALOGS);
   const defaults = recommendedDefaults(compatibilityType);
-  const expandedLocations = compatibilityType === 'supermarket_selfie' ? [] : extraLocationsForScene(baseSceneType);
-  const locationCandidates = uniqueByValue([...compatible.location, ...expandedLocations]);
+  const locationCandidates = locationsForScene(sceneType);
   return {
     baseSceneType,
     compatibilityType,
     compatible,
     defaults,
     options: {
-      location: specializedOptions(sceneType, 'location', locationCandidates),
+      location: locationCandidates,
       clothing: specializedOptions(sceneType, 'clothing', CATALOGS.clothing),
       pose: specializedOptions(sceneType, 'pose', compatible.pose),
       angle: specializedOptions(sceneType, 'angle', compatible.angle),
@@ -260,7 +257,7 @@ function autoInput() {
     backgroundActivity: controls.backgroundActivity.value,
     realismLevel: controls.realismLevel.value,
     framing: controls.framing.value,
-    location: enforceSaudiNoLandmarks(enrichLocationPrompt(selectedPrompt(controls.location))),
+    location: enforceSaudiNoLandmarks(selectedPrompt(controls.location)),
     clothing: enrichClothingPrompt(selectedClothingPrompt()),
     hairStyle: selectedPrompt(controls.hairStyle),
     pose: selectedPrompt(controls.pose),
@@ -278,7 +275,7 @@ function sceneForOptimizer() {
   const clothingPrompt = enrichClothingPrompt(selectedClothingPrompt());
   const hairPrompt = selectedPrompt(controls.hairStyle);
   return {
-    location: enforceSaudiNoLandmarks(enrichLocationPrompt(selectedPrompt(controls.location))),
+    location: enforceSaudiNoLandmarks(selectedPrompt(controls.location)),
     clothing: [clothingPrompt, hairPrompt ? `Hair styling: ${hairPrompt}` : ''].filter(Boolean).join(' '),
     pose: selectedPrompt(controls.pose),
     angle: selectedPrompt(controls.angle),

@@ -14,7 +14,7 @@ import {
   REALISM_LEVELS,
   FRAMING_OPTIONS
 } from './core/prompt-generator.js';
-import { compatibilitySnapshot, locationsForScene, recommendedDefaults, resolveCompatibleValue } from './core/scene-compatibility.js';
+import { compatibilitySnapshot, getPoseCameraHint, locationsForScene, recommendedDefaults, resolveCompatibleValue } from './core/scene-compatibility.js';
 import { baseSceneTypeFor, narrowOptions, sceneMeta, HOME_SCENE_TYPES } from './core/scene-type-expansion.js';
 import { enforceSaudiNoLandmarks, mergeSaudiNoLandmarksConstraint } from './core/saudi-location-lock.js';
 
@@ -60,6 +60,7 @@ const generateButton = $('generateButton');
 const optimizeButton = $('optimizeButton');
 const randomButton = $('randomButton');
 const resetButton = $('resetButton');
+const cameraAngleHint = $('cameraAngleHint');
 
 const withUiGroup = (options, group) => options.map((item) => ({ ...item, group }));
 const CLOTHING_UI_OPTIONS = [
@@ -245,6 +246,7 @@ function applySceneCompatibility() {
   restoreCompatibleSelection(controls.angle, previous.angle, options.angle, defaults.angle);
   restoreCompatibleSelection(controls.lighting, previous.lighting, options.lighting, defaults.lighting);
   controls.framing.value = resolveCompatibleValue(previous.framing, options.framing, defaults.framing);
+  updatePoseCameraLock();
   return compatibilityType;
 }
 
@@ -257,6 +259,19 @@ function selectedPrompt(select, promptByValue = null) {
 
 function selectedClothingPrompt() {
   return selectedPrompt(controls.clothing, CLOTHING_PROMPT_BY_VALUE);
+}
+
+function updatePoseCameraLock() {
+  if (!controls.angle) return null;
+  const sceneType = selectedSceneType();
+  const poseHint = sceneType.startsWith('bedroom_') ? getPoseCameraHint(controls.pose?.value || selectedPrompt(controls.pose)) : null;
+  const locked = Boolean(poseHint);
+  controls.angle.disabled = locked;
+  if (cameraAngleHint) {
+    cameraAngleHint.hidden = !locked;
+    cameraAngleHint.textContent = locked ? `زاوية الكاميرا محكومة بالوضعية. ${poseHint}` : '';
+  }
+  return poseHint;
 }
 
 // Fill only automatic fields for home scenes; explicit user selections remain authoritative.
@@ -601,13 +616,17 @@ if (HAS_DOM) {
     applySceneCompatibility();
     scheduleGenerate();
   });
+  controls.pose.addEventListener('change', () => {
+    updatePoseCameraLock();
+    scheduleGenerate();
+  });
   document.querySelectorAll('[data-mode]').forEach((button) => button.addEventListener('click', () => setMode(button.dataset.mode)));
   document.querySelectorAll('.tab').forEach((button) => button.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach((tab) => tab.classList.toggle('active', tab === button));
     document.querySelectorAll('.tab-panel').forEach((panel) => panel.classList.toggle('active', panel.dataset.panel === button.dataset.tab));
   }));
   Object.values(controls).forEach((control) => {
-    if (!control || control === controls.sceneType || control === controls.seedInput) return;
+    if (!control || control === controls.sceneType || control === controls.seedInput || control === controls.pose) return;
     control.addEventListener('change', scheduleGenerate);
     control.addEventListener('input', scheduleGenerate);
   });

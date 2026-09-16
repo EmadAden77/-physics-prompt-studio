@@ -1,6 +1,7 @@
 import { buildRealismPacket, renderRealismGuidance } from './realistic-image-generator.js';
 import { baseSceneTypeFor, sceneMeta } from './scene-type-expansion.js';
 import { resolveContextAwareConstraints } from './scene-compatibility.js';
+import { BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS } from './scene-builder.js';
 
 export const SCENE_TYPES = [
   { value:'front_selfie', label:'سيلفي عادي', capture:'subject-held front-camera smartphone selfie', prompt:'a casual subject-held front-camera smartphone selfie with physically feasible arm-reach geometry', framing:'chest-up to mid-torso framing' },
@@ -164,11 +165,29 @@ export function generateImagePrompt(input={}){
   });
   packet.accessories.device=captureDeviceRule(scene.capture);
   const guidance=renderRealismGuidance(packet);
+
+  let sceneText=`Location: ${location}. Background behavior: ${backgroundRules(background,contextual,saudi)} Maintain believable architecture, furniture, roads, vehicles, landscape, circulation space, object scale and environmental depth appropriate to the selected location.`;
+  if(requested.startsWith('bedroom_')){
+    const anchorText=[
+      `ROOM ANCHOR (locked layout): ${BEDROOM_ANCHOR.room}`,
+      `BED: ${BEDROOM_ANCHOR.bed}`,
+      `WARDROBE: ${BEDROOM_ANCHOR.wardrobe}`,
+      `MIRROR: ${BEDROOM_ANCHOR.mirror}`,
+      `ARMCHAIR: ${BEDROOM_ANCHOR.armchair}`,
+      `NIGHTSTAND: ${BEDROOM_ANCHOR.nightstand}`,
+      `WINDOW: ${BEDROOM_ANCHOR.window}`,
+      `RUG: ${BEDROOM_ANCHOR.rug}`,
+      BEDROOM_ANCHOR.fixed_layout_rule
+    ].join(' ');
+    const clutter=BEDROOM_CLUTTER_LEVELS[input.clutterLevel] || BEDROOM_CLUTTER_LEVELS.moderate;
+    sceneText=`${sceneText} ${anchorText} ROOM CLUTTER: ${clutter}`;
+  }
+
   const sections=[
     section('GOAL',`Generate ONE highly photorealistic ${ratio.prompt} image. Capture type: ${scene.capture}. ${description?`User scene intent: ${description}.`:'Keep the moment natural, personal and unstaged.'} The result must look like a genuine smartphone photograph rather than advertising, polished commercial photography, CGI or AI-stylized imagery.`),
     section('ACTION-DRIVEN AUTHENTICITY',guidance.action), section('CAPTURE TYPE LOCK — CRITICAL',captureRules(scene)),
     section('IDENTITY / SUBJECT',`${identityRules(identity,hair)} Expression: ${expression.prompt}. ${packet.subject.face}`),
-    section('SCENE',`Location: ${location}. Background behavior: ${backgroundRules(background,contextual,saudi)} Maintain believable architecture, furniture, roads, vehicles, landscape, circulation space, object scale and environmental depth appropriate to the selected location.`),
+    section('SCENE',sceneText),
     section('SAUDI CULTURAL DRESS',saudi?SAUDI_CULTURAL_DRESS:'Not applicable: the selected scene is outside Saudi context.'),
     section('OBSERVABLE BACKGROUND ELEMENTS',guidance.background),
     section('CLOTHING',`${clothing}. Preserve gravity-driven drape, realistic material thickness, seam tension, compression at body/contact points, and non-mirrored natural asymmetry.`),

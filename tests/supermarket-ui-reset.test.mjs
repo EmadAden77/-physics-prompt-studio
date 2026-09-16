@@ -12,8 +12,10 @@ test('scene change resets incompatible fields before scheduling prompt generatio
   assert.match(app, /controls\.sceneType\.addEventListener\('change',[\s\S]*?applySceneCompatibility\(\);\s*scheduleGenerate\(\);/);
 });
 
-test('supermarket uses its explicit compatibility profile instead of generic front-selfie options', () => {
+test('supermarket uses its explicit compatibility profile and unified location catalog', () => {
   assert.match(app, /sceneType\s*===\s*'supermarket_selfie'\s*\?\s*sceneType\s*:\s*baseSceneType/);
-  assert.match(app, /compatibilityType\s*===\s*'supermarket_selfie'\s*\?\s*\[\]\s*:\s*extraLocationsForScene/);
+  assert.match(app, /LOCATION_CATALOG/);
+  assert.match(app, /locationsForScene\(sceneType\)/);
+  assert.doesNotMatch(app, /extraLocationsForScene/);
   assert.match(app, /narrowOptions\(sceneType, kind, options\)/);
 });

@@ -138,7 +138,7 @@ test('main UI exposes and app reads every scene-builder control', () => {
 });
 
 test('unified location catalog remains complete and the legacy alias stays derived', () => {
-  assert.equal(LOCATION_CATALOG.length, 105);
+  assert.equal(LOCATION_CATALOG.length, 125);
   assert.equal(SAUDI_LOCATIONS.length, LOCATION_CATALOG.length);
   for (const location of LOCATION_CATALOG) {
     assert.ok(Array.isArray(location.sceneTypes));

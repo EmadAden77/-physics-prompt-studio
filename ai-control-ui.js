@@ -14,22 +14,41 @@ function setStatus(text, state = 'idle') {
 
 function controlPrompt(context) {
   return [
-    'You are the local controller for Physics Prompt Studio.',
-    'Return JSON only. Never return JavaScript, HTML, markdown or explanations.',
-    'Your job is to translate the user request into safe application control actions.',
+    'Control Physics Prompt Studio.',
+    'Return exactly ONE JSON object and nothing else.',
     `Allowed fields: ${AI_CONTROL_FIELDS.join(', ')}.`,
-    'Allowed action types: set, generate, randomize, reset.',
-    'Use exact option values from allowedOptions when possible.',
-    'If an exact value is unknown, include a short label that matches the visible option text after sceneType changes.',
-    'Do not invent fields or option values.',
-    'Preserve fields the user did not ask to change.',
-    'Prefer changing sceneType first when the requested scene requires it.',
-    'Do not write the final image prompt yourself. The existing Physics Prompt Studio engine remains authoritative.',
-    'Output schema:',
-    '{"actions":[{"type":"set","field":"sceneType","value":"front_selfie","label":""}],"generate":true,"summary":"short Arabic summary"}',
-    `Current state: ${JSON.stringify(context.state)}`,
-    `Currently visible allowed options: ${JSON.stringify(context.allowed)}`
+    'Allowed actions: set, generate, randomize, reset.',
+    'Change only what the user explicitly requests.',
+    'For select fields, value may be an exact app value OR a short human label. Put the human wording in label when exact value is unknown.',
+    'Do not generate the final image prompt.',
+    'Schema:',
+    '{"actions":[{"type":"set","field":"sceneType","value":"","label":"سيلفي داخل السيارة"}],"generate":true,"summary":""}',
+    `Current state: ${JSON.stringify(context.state)}`
   ].join('\n');
+}
+
+async function getControlPlan(command, context) {
+  const seed = Number(context.state.seed) || 42;
+  const raw = await askLocalQwen([
+    { role: 'system', content: controlPrompt(context) },
+    { role: 'user', content: command }
+  ], { seed });
+
+  try {
+    return { plan: parseQwenJson(raw), raw, repaired: false };
+  } catch {
+    const repairRaw = await askLocalQwen([
+      {
+        role: 'system',
+        content: 'Return exactly ONE valid JSON object only. No markdown, no explanation. Schema: {"actions":[{"type":"set","field":"sceneType","value":"","label":""}],"generate":true,"summary":""}'
+      },
+      {
+        role: 'user',
+        content: `User request: ${command}\nConvert this previous reply into the required JSON object: ${raw.slice(0, 1200)}`
+      }
+    ], { seed });
+    return { plan: parseQwenJson(repairRaw), raw: repairRaw, repaired: true };
+  }
 }
 
 async function runAiCommand() {
@@ -40,20 +59,19 @@ async function runAiCommand() {
   setStatus('Qwen يفكر محليًا…', 'working');
   if (result) result.textContent = '';
 
+  let lastRaw = '';
   try {
     const context = getAppControlContext();
-    const raw = await askLocalQwen([
-      { role: 'system', content: controlPrompt(context) },
-      { role: 'user', content: command }
-    ], { seed: Number(context.state.seed) || 42 });
-
-    const plan = parseQwenJson(raw);
+    const response = await getControlPlan(command, context);
+    lastRaw = response.raw;
+    const plan = response.plan;
     const applied = await applyAiControlPlan(plan);
     const failed = applied.filter((item) => item.applied === false);
 
     if (result) {
       result.textContent = JSON.stringify({
         summary: plan.summary || '',
+        repaired: response.repaired,
         applied,
         rejected: failed
       }, null, 2);
@@ -61,8 +79,8 @@ async function runAiCommand() {
 
     setStatus(failed.length ? `تم مع ${failed.length} خيار مرفوض` : 'Qwen متصل — تم التنفيذ', failed.length ? 'warning' : 'ready');
   } catch (error) {
-    setStatus('Qwen غير متصل', 'error');
-    if (result) result.textContent = `ERROR: ${error?.message || error}`;
+    setStatus('Qwen رد بصيغة غير قابلة للتنفيذ', 'error');
+    if (result) result.textContent = `ERROR: ${error?.message || error}${lastRaw ? `\n\nRAW:\n${lastRaw.slice(0, 1200)}` : ''}`;
   } finally {
     runButton.disabled = false;
   }

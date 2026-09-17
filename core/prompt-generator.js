@@ -1,7 +1,7 @@
 import { buildRealismPacket, renderRealismGuidance } from './realistic-image-generator.js';
 import { baseSceneTypeFor, sceneMeta } from './scene-type-expansion.js';
 import { resolveContextAwareConstraints, getPoseCameraHint, MIRROR_ANGLES, THIRD_PERSON_ANGLES } from './scene-compatibility.js';
-import { BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_POSES, SELFIE_ANGLES, SAUDI_CULTURAL_DRESS_LOCK } from './scene-builder.js';
+import { BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_POSES, SELFIE_ANGLES, SAUDI_CULTURAL_DRESS_LOCK, SAUDI_SIGNAGE_RULE } from './scene-builder.js';
 
 export const SCENE_TYPES = [
   { value:'front_selfie', label:'سيلفي عادي', capture:'subject-held front-camera smartphone selfie', prompt:'a casual subject-held front-camera smartphone selfie with physically feasible arm-reach geometry', framing:'chest-up to mid-torso framing' },
@@ -55,8 +55,9 @@ const DEFAULTS = { sceneType:SCENE_TYPES[0], camera:CAMERA_PROFILES[0], aspectRa
 const CANONICAL_SECTIONS = ['GOAL','ACTION-DRIVEN AUTHENTICITY','CAPTURE TYPE LOCK — CRITICAL','IDENTITY / SUBJECT','SCENE','SAUDI CULTURAL DRESS','OBSERVABLE BACKGROUND ELEMENTS','CLOTHING','CONTEXTUAL ACCESSORIES','POSE & BODY MECHANICS','CAMERA GEOMETRY','PHYSICAL LIGHTING','MIRROR RULES','PRODUCT INTEGRATION','PHYSICAL / MATERIAL REALISM','SMARTPHONE IMAGE BEHAVIOR','LENS_PHYSICS','BIOLOGICAL_MICRO_REALISM','CAMERA_METADATA_HINT','AUTHENTIC IMPERFECTIONS','USER CONSTRAINTS','NEGATIVE CONSTRAINTS','FINAL VERIFICATION'];
 const HAIR_LOCK = 'Hair length, density, hairline shape, and hair thickness remain EXACTLY as in the reference image when a reference image is attached. Only the visible direction, part line, clumping, and strand orientation may change. Do not shorten, lengthen, thin, thicken, or recede the hairline. If no reference image is attached, keep the chosen baseline hair length and density stable and do not invent extra length or density solely to satisfy a hairstyle.';
 const HAIR_DIRECTION_LOCK = "HAIR DIRECTION LOCK: The chosen hairstyle direction (backward / forward / side / center / messy) must be unmistakably visible in the final image. If the selected hairstyle says 'combed backward', no strands may fall forward onto the forehead. If 'parted on the left', the parting line must be clearly visible on the left side. Ignore generic 'natural look' instructions that contradict the selected direction.";
-const SAUDI_CONTEXT = /(?:^|[^a-z])(saudi(?: arabia)?|riyadh|jeddah|khobar|dammam|makkah|madinah|medina|taif|abha|tabuk|alula|qassim|hail|najran|jazan|arabian gulf|red sea)(?:$|[^a-z])/i;
+const SAUDI_CONTEXT = /(?:^|[^a-z])(saudi(?: arabia)?|riyadh|jeddah|khobar|dammam|makkah|madinah|medina|taif|abha|tabuk|alula|qassim|hail|najran|jazan|alahsa|al ahsa|yanbu|arabian gulf|red sea)(?:$|[^a-z])/i;
 const CAPTURE_IMPERFECTIONS = 'Allow capture-level imperfections only: tiny handheld roll, slight off-center crop, minor exposure or white-balance variation, subtle edge softness, restrained shadow sensor noise, and modest highlight clipping when caused by real practical lights.';
+const BACKGROUND_HUMAN_INTEGRITY_RULE = 'Background humans must have distinct identities, intact anatomy with correctly formed limbs and hands, perspective-consistent scale relative to camera distance, real ground contact, correct occlusion by foreground objects, and independent silhouettes. No fused bodies, no cloned faces, no deformed background hands.';
 const ALL_CAMERA_ANGLES = [...SELFIE_ANGLES, ...MIRROR_ANGLES, ...THIRD_PERSON_ANGLES];
 
 function clean(value){ return typeof value === 'string' ? value.trim() : ''; }
@@ -112,7 +113,7 @@ function metadata(camera){
 }
 function negatives(scene){
   const capture = scene.capture.includes('third-person') ? 'selfie arm, implied subject-held camera' : scene.capture.includes('mirror') ? 'direct front-camera viewpoint outside the mirror, duplicate phone or hands' : 'third-person viewpoint, floating external camera, mirror capture unless explicitly selected';
-  return `Avoid: plastic skin, waxy or porcelain skin, face reconstruction, artificial symmetry, malformed hands, extra fingers, duplicated limbs, floating objects, impossible body support, incorrect contact shadows, melted textiles, repeated background people, cloned props, impossible reflections, invisible artificial key lights, fake rim lights, excessive HDR, aggressive orange-teal grading, DSLR-style bokeh, over-sharpening, oversaturated skin, sterile showroom staging, generic static posing, advertisement-style product placement, artificial lens flare, beauty filtering, symmetric face, missing corneal reflections, uniform fabric without weave or fibers. Capture-specific exclusions: ${capture}.`;
+  return `Avoid: plastic skin, waxy or porcelain skin, face reconstruction, artificial symmetry, malformed hands, extra fingers, duplicated limbs, floating objects, impossible body support, incorrect contact shadows, melted textiles, repeated background people, cloned props, impossible reflections, invisible artificial key lights, fake rim lights, excessive HDR, aggressive orange-teal grading, DSLR-style bokeh, over-sharpening, oversaturated skin, sterile showroom staging, generic static posing, advertisement-style product placement, artificial lens flare, beauty filtering, symmetric face, missing corneal reflections, uniform fabric without weave or fibers, deformed background people, fused background bodies, cloned background faces, floating background people, mis-scaled background humans, background people without ground contact, gibberish text, pseudo-Arabic script, garbled signs, English-only signage in Saudi scenes, fictional characters on signs. Capture-specific exclusions: ${capture}.`;
 }
 function verification(scene,ratio,guidance){ return `Before finalizing, verify: capture type unmistakably matches “${scene.capture}”; the camera position is physically possible; anatomy and contacts are coherent; selected location, clothing, hair direction, pose, angle and lighting are visible and mutually compatible; lighting can be traced to plausible physical sources; materials respond differently according to their properties; background scale and requested activity level make sense; composition is ${ratio.prompt}; and the realism checklist is satisfied: ${guidance.consistency.replace(/^Before finalizing, verify:\s*/i,'')} If a secondary aesthetic choice conflicts with physical causality or capture geometry, preserve physical plausibility.`; }
 
@@ -180,6 +181,8 @@ export function generateImagePrompt(input={}){
   });
   packet.accessories.device=captureDeviceRule(scene.capture);
   const guidance=renderRealismGuidance(packet);
+  const hasBackgroundPeople=packet.background.elements.some((item)=>/background people/i.test(item));
+  const backgroundText=hasBackgroundPeople ? `${guidance.background}\n${BACKGROUND_HUMAN_INTEGRITY_RULE}` : guidance.background;
   const actionText=guidance.action.replace(/\s+The subject must look occupied by a real moment, not frozen into a generic pose\.$/,'');
   const accessoriesText=guidance.accessories
     .replace(/^Keep every accessory consistent with the activity and setting:\n/i,'')
@@ -213,8 +216,8 @@ export function generateImagePrompt(input={}){
     section('ACTION-DRIVEN AUTHENTICITY',actionText), section('CAPTURE TYPE LOCK — CRITICAL',captureRules(scene)),
     section('IDENTITY / SUBJECT',`${identityRules(identity,hair)} Expression: ${expression.prompt}. ${packet.subject.face}`),
     section('SCENE',sceneText),
-    section('SAUDI CULTURAL DRESS',saudi?SAUDI_CULTURAL_DRESS_LOCK:'Not applicable: the selected scene is outside Saudi context.'),
-    section('OBSERVABLE BACKGROUND ELEMENTS',guidance.background),
+    section('SAUDI CULTURAL DRESS',saudi?`${SAUDI_CULTURAL_DRESS_LOCK} ${SAUDI_SIGNAGE_RULE}`:'Not applicable: the selected scene is outside Saudi context.'),
+    section('OBSERVABLE BACKGROUND ELEMENTS',backgroundText),
     section('CLOTHING',clothing),
     section('CONTEXTUAL ACCESSORIES',accessoriesText), section('POSE & BODY MECHANICS',`${poseText}Body mechanics must respect balance, support, joint limits, body weight, seat or ground contact, and natural asymmetric posture.`),
     section('CAMERA GEOMETRY',geometryRules(scene,camera,framing,cameraGeometryText,input.cameraDistance)), section('PHYSICAL LIGHTING',lightingRules(lighting,input.lightingNotes,realism.value)),

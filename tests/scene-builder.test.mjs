@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { compilePrompt, validatePacket } from '../core/prompt-optimizer.js';
 import { SAUDI_LOCATIONS, CLOTHING_OPTIONS, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES, normalizeSceneContext } from '../core/scene-builder.js';
+import { generateImagePrompt } from '../core/prompt-generator.js';
 
 test('scene catalog is broad across requested categories', () => {
   assert.ok(SAUDI_LOCATIONS.length >= 40);
@@ -32,4 +33,29 @@ test('scene controls enter relevant context and constraint map once', () => {
 test('empty scene values are discarded', () => {
   const normalized = normalizeSceneContext({ location: ' ', clothing: '', angle: 'eye level' });
   assert.deepEqual(Object.keys(normalized), ['angle']);
+});
+
+test('SAUDI_SIGNAGE_RULE exists and is descriptive', async () => {
+  const { SAUDI_SIGNAGE_RULE } = await import('../core/scene-builder.js');
+  assert.ok(SAUDI_SIGNAGE_RULE.length > 50);
+  assert.match(SAUDI_SIGNAGE_RULE, /Arabic/i);
+  assert.match(SAUDI_SIGNAGE_RULE, /unreadable/i);
+});
+
+test('Saudi scene prompt contains signage rule', () => {
+  for (const location of ['ordinary_saudi_street', 'alahsa_residential', 'yanbu_residential_coastal']) {
+    const result = generateImagePrompt({ location });
+    assert.match(result.prompt, /SIGNAGE REALISM/i, location);
+  }
+});
+
+test('non-Saudi scene does not contain Saudi signage rule', () => {
+  const result = generateImagePrompt({ location: 'an ordinary residential street in Paris, France' });
+  assert.doesNotMatch(result.prompt, /SIGNAGE REALISM/i);
+});
+
+test('negatives include pseudo-text bans', () => {
+  const result = generateImagePrompt({ location: 'supermarket_aisle' });
+  assert.match(result.prompt, /pseudo-Arabic/i);
+  assert.match(result.prompt, /gibberish text/i);
 });

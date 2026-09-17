@@ -127,6 +127,24 @@ test('background activity controls people count without cross-section conflict',
   assert.doesNotMatch(lively.prompt, /3-5 independently behaving background people/i);
 });
 
+test('background human integrity rules are present when people are requested', () => {
+  const result = generateImagePrompt({ backgroundActivity: 'lively' });
+  assert.match(result.prompt, /perspective-consistent scale/i);
+  assert.match(result.prompt, /ground contact/i);
+  assert.match(result.prompt, /distinct identities/i);
+});
+
+test('background human integrity rules are absent when quiet', () => {
+  const result = generateImagePrompt({ backgroundActivity: 'quiet' });
+  assert.doesNotMatch(result.prompt, /perspective-consistent scale/i);
+});
+
+test('negatives include deformed background people bans', () => {
+  const result = generateImagePrompt({ backgroundActivity: 'normal' });
+  assert.match(result.prompt, /deformed background people/i);
+  assert.match(result.prompt, /cloned background faces/i);
+});
+
 test('bedroom lively activity is corrected and no other people appear', () => {
   const result = generateImagePrompt({
     sceneType: 'mirror_bedroom_selfie',

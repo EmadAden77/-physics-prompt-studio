@@ -1,4 +1,4 @@
-import { askLocalQwen, LOCAL_QWEN_CONFIG } from './ai-bridge.js';
+import { askLocalQwen, askLocalQwenStream, LOCAL_QWEN_CONFIG } from './ai-bridge.js';
 
 const QWEN_REALISM_SYSTEM_PROMPT = `You are the Qwen Realistic Image Prompt Engine inside Physics Prompt Studio.
 
@@ -192,34 +192,58 @@ function sanitizeQwenOutput(raw = '') {
     .trim();
 }
 
-async function requestQwen(messages, { seed, timeoutMs }) {
+async function requestQwen(messages, { seed, timeoutMs, onProgress }) {
+  if (typeof onProgress === 'function') {
+    return askLocalQwenStream(messages, {
+      seed,
+      timeoutMs,
+      onToken: (fullText) => onProgress(sanitizeQwenOutput(fullText))
+    });
+  }
   return askLocalQwen(messages, { seed, timeoutMs });
 }
 
 export async function generateQwenImagePrompt(scene = {}, options = {}) {
   const seed = Number.isFinite(options.seed) ? Math.trunc(options.seed) : 42;
   const timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : 180000;
+  const onProgress = typeof options.onProgress === 'function' ? options.onProgress : null;
+  const onPhase = typeof options.onPhase === 'function' ? options.onPhase : null;
   const brief = buildQwenSceneBrief(scene, options.additionalInstructions || '');
 
+  onPhase?.('generating');
   const firstRaw = await requestQwen([
     { role: 'system', content: QWEN_REALISM_SYSTEM_PROMPT },
     { role: 'user', content: brief }
-  ], { seed, timeoutMs });
+  ], {
+    seed,
+    timeoutMs,
+    onProgress: onProgress ? (text) => onProgress(text, 'generating') : null
+  });
 
   const firstOutput = sanitizeQwenOutput(firstRaw);
   const coverage = validateQwenCoverage(firstOutput, scene);
-  if (coverage.ok) return firstOutput;
+  if (coverage.ok) {
+    onPhase?.('complete');
+    return firstOutput;
+  }
 
+  onPhase?.('repairing', coverage.missing);
   const repairRaw = await requestQwen([
     { role: 'system', content: QWEN_REALISM_SYSTEM_PROMPT },
     { role: 'user', content: buildQwenRepairBrief(brief, firstOutput, coverage.missing) }
-  ], { seed, timeoutMs });
+  ], {
+    seed,
+    timeoutMs,
+    onProgress: onProgress ? (text) => onProgress(text, 'repairing') : null
+  });
 
+  onPhase?.('complete');
   return sanitizeQwenOutput(repairRaw);
 }
 
 export const QWEN_PROMPT_ENGINE_CONFIG = Object.freeze({
   model: LOCAL_QWEN_CONFIG.model,
   objective: 'physically plausible natural photographic realism',
-  coverageRepairPasses: 1
+  coverageRepairPasses: 1,
+  streaming: true
 });

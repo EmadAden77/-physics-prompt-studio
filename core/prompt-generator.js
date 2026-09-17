@@ -91,10 +91,10 @@ function backgroundRules(background,contextual,saudi){
   return 'lively but believable background activity with 5 to 7 independently behaving background people, with varied natural actions such as walking and standing and one person interacting with a context-appropriate counter or fixture where present.';
 }
 function backgroundElements(background,contextual,saudi){
-  if (contextual.privateContext || background.value === 'quiet') return ['context-appropriate furniture, fixtures or environmental objects in believable scale', 'no background people; no other people appear in this frame'];
+  if (contextual.privateContext || background.value === 'quiet') return ['context-appropriate furniture, fixtures or environmental objects in believable scale', 'no other people appear in this frame'];
   if (background.value === 'normal') return ['context-appropriate environmental objects and circulation space', '1-2 independently behaving background people kept secondary to the subject'];
   return saudi
-    ? ['context-appropriate environmental objects and circulation space', '5 to 7 background people with natural spacing: men in white thobes and women in plain black abayas with black niqabs', 'varied independent actions including walking, standing, and one person holding a shopping bag; use a counter interaction only where a counter physically exists']
+    ? ['context-appropriate environmental objects and circulation space', '5 to 7 distinct background people with natural spacing: men in white thobes and women in plain black abayas with black niqabs', 'varied independent actions including walking, standing, and one person holding a shopping bag; use a counter interaction only where a counter physically exists']
     : ['context-appropriate environmental objects and circulation space', '5 to 7 distinct independently behaving background people with natural spacing and varied walking, standing, or fixture interaction'];
 }
 function lightingRules(lighting,notes,realismLevel){

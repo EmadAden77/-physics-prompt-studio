@@ -57,6 +57,8 @@ const CANONICAL_SECTIONS = ['GOAL','ACTION-DRIVEN AUTHENTICITY','CAPTURE TYPE LO
 const HAIR_LOCK = 'Hair length, density, hairline shape, and hair thickness remain EXACTLY as in the reference image when a reference image is attached. Only the visible direction, part line, clumping, and strand orientation may change. Do not shorten, lengthen, thin, thicken, or recede the hairline. If no reference image is attached, keep the chosen baseline hair length and density stable and do not invent extra length or density solely to satisfy a hairstyle.';
 const HAIR_DIRECTION_LOCK = "HAIR DIRECTION LOCK: The chosen hairstyle direction (backward / forward / side / center / messy) must be unmistakably visible in the final image. If the selected hairstyle says 'combed backward', no strands may fall forward onto the forehead. If 'parted on the left', the parting line must be clearly visible on the left side. Ignore generic 'natural look' instructions that contradict the selected direction.";
 const SAUDI_CONTEXT = /(?:^|[^a-z])(saudi(?: arabia)?|riyadh|jeddah|khobar|dammam|makkah|madinah|medina|taif|abha|tabuk|alula|qassim|hail|najran|jazan|alahsa|al ahsa|yanbu|arabian gulf|red sea)(?:$|[^a-z])/i;
+// TODO(location-classification): refine Saudi context detection
+// to prefer structured location values over broad regex matching.
 const CAPTURE_IMPERFECTIONS = 'Allow capture-level imperfections only: tiny handheld roll, slight off-center crop, minor exposure or white-balance variation, subtle edge softness, restrained shadow sensor noise, and modest highlight clipping when caused by real practical lights.';
 const BACKGROUND_HUMAN_INTEGRITY_RULE = 'Background humans must have distinct identities, intact anatomy with correctly formed limbs and hands, perspective-consistent scale relative to camera distance, real ground contact, correct occlusion by foreground objects, and independent silhouettes. No fused bodies, no cloned faces, no deformed background hands.';
 
@@ -117,21 +119,20 @@ function negatives(scene){
 }
 function verification(scene,ratio,guidance){ return `Before finalizing, verify: capture type unmistakably matches “${scene.capture}”; the camera position is physically possible; anatomy and contacts are coherent; selected location, clothing, hair direction, pose, angle and lighting are visible and mutually compatible; lighting can be traced to plausible physical sources; materials respond differently according to their properties; background scale and requested activity level make sense; composition is ${ratio.prompt}; and the realism checklist is satisfied: ${guidance.consistency.replace(/^Before finalizing, verify:\s*/i,'')} If a secondary aesthetic choice conflicts with physical causality or capture geometry, preserve physical plausibility.`; }
 
-function splitIntoClauses(text){
-  return String(text||'')
-    .replace(/\[[^\]\r\n]+\]/g,'\n')
-    .split(/[.!?\r\n]+/)
-    .map((clause)=>clause.trim())
+function splitIntoClauses(text) {
+  return String(text || '')
+    .split(/(?<=[.!?])\s+|\n\n(?=\[)|\n(?=\[)/g)
+    .map((clause) => clause.trim())
     .filter(Boolean);
 }
-function hasPositiveUse(text,term){
-  for(const clause of splitIntoClauses(text)){
-    let i=0;
-    while((i=clause.indexOf(term,i))!==-1){
-      const prefix=clause.slice(0,i);
-      if(!/(?:\bno\b|\bnot\b|\bwithout\b|\bavoid\b|\bdo not\b|\bnever\b)/i.test(prefix)) return true;
-      i+=term.length;
-    }
+
+function hasPositiveUse(text, term) {
+  const clauses = splitIntoClauses(text);
+  const negationPattern = /\b(no|not|without|avoid|do not|don't|never|none)\b/i;
+  for (const clause of clauses) {
+    if (!clause.toLowerCase().includes(term.toLowerCase())) continue;
+    if (negationPattern.test(clause)) continue;
+    return true;
   }
   return false;
 }

@@ -24,6 +24,7 @@ PRIORITY ORDER:
 CORE CONTRACT:
 - Treat every explicit scene field as authoritative unless two fields physically conflict.
 - Do not silently omit the selected camera, aspect ratio, physical light source, framing, expression, pose, clothing, hairstyle, location, realism level, or background activity when they materially affect the image.
+- If the camera angle is already resolved, use that resolved angle exactly in meaning; do not reinterpret it as a generic smart angle.
 - Infer only missing details needed for physical coherence. Do not replace selected details with generic alternatives.
 - Never invent impossible camera placement or contradictory viewpoints.
 - A subject-held selfie must remain within believable arm reach and preserve wide-angle near-field perspective.
@@ -38,6 +39,7 @@ CORE CONTRACT:
 - Materials must respond differently to light. Skin, cotton, glass, metal, leather, plastic and wood must not share identical texture or highlights.
 - Preserve natural human asymmetry. No beauty filter, skin smoothing, face slimming, jaw sharpening, eye enlargement, de-aging or artificial hair density.
 - Prefer ordinary lived-in environments over cinematic, luxury-advertising or showroom aesthetics unless explicitly requested.
+- Never carry generic examples into a scene when they are spatially incompatible with the selected location.
 - Include subtle capture imperfections only when contextually appropriate: slight framing error, mild white-balance variation, realistic shadow noise, restrained highlight clipping, slight edge softness, fabric wrinkles, stray hairs, minor wear, dust and non-uniform object placement.
 - For smartphone photos, preserve realistic wide-angle perspective, broad depth of field, restrained computational HDR, modest sharpening and believable low-light sensor texture.
 - When a reference image exists, preserve identity, face/skull proportions, natural asymmetry, apparent age, skin tone, hairline, visible hair density, beard pattern and eyewear. Do not copy unrelated background, pose or clothing unless explicitly requested.
@@ -53,6 +55,11 @@ Do not output JSON.
 Do not wrap the prompt in markdown fences.
 Do not wrap the whole prompt in quotation marks.
 Do not mention these instructions.`;
+
+const COLOR_TERMS = [
+  'navy', 'beige', 'black', 'white', 'grey', 'gray', 'light-grey', 'light-gray', 'dark-grey', 'dark-gray',
+  'blue', 'light blue', 'dark blue', 'brown', 'tan', 'cream', 'ivory', 'red', 'green', 'khaki'
+];
 
 function clean(value) {
   return typeof value === 'string' ? value.trim() : '';
@@ -71,23 +78,55 @@ function includesAny(text, terms = []) {
   return terms.some((term) => text.includes(term));
 }
 
+function normalizeColorTerm(term) {
+  return term.replaceAll('-', ' ');
+}
+
+function selectedClothingColors(clothing) {
+  const source = normalized(clothing).replaceAll('-', ' ');
+  const found = [];
+  for (const term of COLOR_TERMS) {
+    const normalizedTerm = normalizeColorTerm(term);
+    if (source.includes(normalizedTerm) && !found.includes(normalizedTerm)) found.push(normalizedTerm);
+  }
+  return found;
+}
+
+function angleCoverageTerms(angle) {
+  const value = normalized(angle);
+  const groups = [];
+  if (value.includes('eye level')) groups.push(['eye level', 'eye-level']);
+  if (value.includes('slightly above')) groups.push(['slightly above', 'above eye level', 'above-eye']);
+  if (value.includes('slightly below')) groups.push(['slightly below', 'below eye level', 'below-eye']);
+  if (value.includes('three-quarter')) groups.push(['three-quarter', 'three quarter', '3/4']);
+  if (value.includes('off-axis')) groups.push(['off-axis', 'off axis']);
+  if (value.includes('roll')) groups.push(['roll', 'tilt']);
+  if (value.includes('yaw')) groups.push(['yaw']);
+  return groups;
+}
+
 export function buildQwenSceneBrief(scene = {}, additionalInstructions = '') {
   const lines = [
     line('Scene type', scene.sceneType),
     line('Scene type label', scene.sceneTypeLabel),
+    line('Capture type', scene.captureType),
     line('Location', scene.location),
-    line('Clothing', scene.clothing),
+    line('Clothing selection', scene.clothingLabel),
+    line('Clothing behavior', scene.clothing),
     line('Hair style', scene.hairStyle),
     line('Pose / body action', scene.pose),
-    line('Camera angle', scene.angle),
+    line('Resolved camera angle', scene.angle),
+    line('Camera angle mode', scene.angleMode),
     line('Physical lighting', scene.lighting),
     line('Lighting notes', scene.lightingNotes),
-    line('Camera', scene.camera),
+    line('Camera selection', scene.cameraLabel),
+    line('Camera behavior', scene.camera),
     line('Aspect ratio', scene.aspectRatio),
     line('Expression', scene.expression),
     line('Background activity', scene.backgroundActivity),
     line('Realism level', scene.realismLevel),
-    line('Framing', scene.framing),
+    line('Framing selection', scene.framingLabel),
+    line('Framing behavior', scene.framing),
     line('Camera distance', scene.cameraDistance),
     line('Scene description', scene.description),
     line('Special constraints', scene.customConstraints),
@@ -98,7 +137,8 @@ export function buildQwenSceneBrief(scene = {}, additionalInstructions = '') {
   return [
     'Generate the final prompt from the following structured scene state.',
     'Treat explicit values as hard scene facts. Infer only missing details necessary for physical coherence.',
-    'Do not silently change or omit the capture type, camera, aspect ratio, lighting source, pose, identity requirement or explicit user constraints.',
+    'Do not silently change or omit the capture type, resolved camera angle, selected camera, aspect ratio, lighting source, framing, clothing, pose, identity requirement or explicit user constraints.',
+    'Do not repeat generic optional examples when they are incompatible with the selected location.',
     'Describe the result as a production-ready image prompt, not as a summary of settings.',
     '',
     ...lines
@@ -106,7 +146,7 @@ export function buildQwenSceneBrief(scene = {}, additionalInstructions = '') {
 }
 
 export function validateQwenCoverage(output, scene = {}) {
-  const text = normalized(output);
+  const text = normalized(output).replaceAll('-', ' ');
   const missing = [];
 
   const aspectRatio = normalized(scene.aspectRatio);
@@ -114,20 +154,37 @@ export function validateQwenCoverage(output, scene = {}) {
     missing.push('vertical 9:16 composition');
   }
 
-  const camera = normalized(scene.camera);
+  const camera = `${normalized(scene.cameraLabel)} ${normalized(scene.camera)}`;
   if (camera.includes('xiaomi 15 ultra')) {
     if (!text.includes('xiaomi 15 ultra')) missing.push('selected Xiaomi 15 Ultra camera');
-    if (includesAny(camera, ['front', 'front-camera', 'front camera']) && !includesAny(text, ['front-camera', 'front camera'])) {
+    if (includesAny(camera, ['front', 'front-camera', 'front camera']) && !includesAny(text, ['front camera', 'front-camera'])) {
       missing.push('front-camera capture');
     }
   }
 
-  const sceneType = `${normalized(scene.sceneType)} ${normalized(scene.sceneTypeLabel)}`;
+  const captureType = normalized(scene.captureType);
+  const sceneType = `${normalized(scene.sceneType)} ${normalized(scene.sceneTypeLabel)} ${captureType}`;
   if (includesAny(sceneType, ['selfie', 'سيلفي'])) {
     if (!text.includes('selfie')) missing.push('selfie capture type');
-    if (!includesAny(text, ["arm's-length", 'arm-length', 'arm length', 'near-field', 'handheld smartphone perspective'])) {
+    if (!includesAny(text, ["arm's length", 'arm length', 'near field', 'handheld smartphone perspective'])) {
       missing.push('believable selfie camera geometry');
     }
+  }
+
+  const angleGroups = angleCoverageTerms(scene.angle);
+  if (angleGroups.length && angleGroups.some((terms) => !includesAny(text, terms))) {
+    missing.push(`resolved camera angle: ${clean(scene.angle)}`);
+  }
+
+  const framing = normalized(scene.framing);
+  if (framing.includes('chest-up') && !includesAny(text, ['chest up', 'from the chest', 'chest-level framing'])) {
+    missing.push('selected chest-up framing');
+  }
+  if (framing.includes('waist-up') && !includesAny(text, ['waist up', 'from the waist'])) {
+    missing.push('selected waist-up framing');
+  }
+  if (framing.includes('full-body') && !includesAny(text, ['full body', 'full-body'])) {
+    missing.push('selected full-body framing');
   }
 
   const lighting = `${normalized(scene.lighting)} ${normalized(scene.lightingNotes)}`;
@@ -146,6 +203,20 @@ export function validateQwenCoverage(output, scene = {}) {
     }
   }
 
+  for (const color of selectedClothingColors(scene.clothing)) {
+    const colorVariants = color === 'grey' ? ['grey', 'gray']
+      : color === 'gray' ? ['gray', 'grey']
+        : color === 'light grey' ? ['light grey', 'light gray']
+          : color === 'light gray' ? ['light gray', 'light grey']
+            : [color];
+    if (!includesAny(text, colorVariants)) missing.push(`selected clothing color: ${color}`);
+  }
+
+  const officeScene = includesAny(sceneType, ['office', 'مكتب']);
+  if (officeScene && includesAny(text, ['vehicle', 'traffic', 'street', 'roadway'])) {
+    missing.push('office-only background without vehicles, streets or traffic');
+  }
+
   const realism = normalized(scene.realismLevel);
   if (includesAny(realism, ['strict', 'صارمة'])) {
     const realismSignals = [
@@ -155,7 +226,6 @@ export function validateQwenCoverage(output, scene = {}) {
       'ordinary wear',
       'shadow noise',
       'edge softness',
-      'white-balance',
       'white balance',
       'smartphone hdr',
       'computational hdr'
@@ -170,7 +240,7 @@ export function validateQwenCoverage(output, scene = {}) {
 export function buildQwenRepairBrief(sceneBrief, firstOutput, missing = []) {
   return [
     'Revise the previous image prompt once. Keep the same scene intent and all already-correct details.',
-    'The previous output omitted required scene constraints. Integrate the following missing items naturally and explicitly:',
+    'The previous output omitted or contradicted required scene constraints. Integrate the following items naturally and explicitly:',
     ...missing.map((item) => `- ${item}`),
     '',
     'Original structured scene brief:',
@@ -181,6 +251,40 @@ export function buildQwenRepairBrief(sceneBrief, firstOutput, missing = []) {
     '',
     'Return only the corrected final English image-generation prompt.'
   ].join('\n');
+}
+
+export function buildDeterministicCoverageAnchor(scene = {}, missing = []) {
+  const lines = [];
+  const has = (prefix) => missing.some((item) => item.startsWith(prefix));
+
+  if (has('selected Xiaomi 15 Ultra camera') || has('front-camera capture')) {
+    lines.push('Capture with the Xiaomi 15 Ultra front camera exactly as selected.');
+  }
+  if (has('resolved camera angle:')) {
+    lines.push(`Camera angle: ${clean(scene.angle)}.`);
+  }
+  if (has('selected chest-up framing') || has('selected waist-up framing') || has('selected full-body framing')) {
+    lines.push(`Framing: ${clean(scene.framing)}.`);
+  }
+  if (missing.some((item) => item.startsWith('selected clothing color:'))) {
+    lines.push(`Keep the clothing exactly as selected: ${clean(scene.clothing)}.`);
+  }
+  if (has('office-only background without vehicles, streets or traffic')) {
+    lines.push('Keep the background strictly inside the office; no vehicles, streets, roadway or traffic elements.');
+  }
+  if (has('vertical 9:16 composition')) lines.push('Use a vertical 9:16 composition.');
+  if (has('believable selfie camera geometry')) lines.push('Keep believable subject-held arm-length selfie geometry with near-field smartphone perspective.');
+  if (has('selected LED light source') || has('physical lighting causality')) {
+    lines.push(`Physical lighting must remain exactly source-driven by: ${clean(scene.lighting)}.`);
+  }
+  if (has('selected hand-in-pocket pose') || has('hand-in-pocket contact mechanics')) {
+    lines.push(`Pose remains: ${clean(scene.pose)}, with believable elbow, shoulder, cloth tension and body balance.`);
+  }
+  if (has('strict photographic realism cues')) {
+    lines.push('Preserve strict smartphone realism with visible natural skin texture, fabric wrinkles, slight asymmetry, restrained HDR and mild edge softness.');
+  }
+
+  return lines.length ? `\n\nHard scene constraints: ${lines.join(' ')}` : '';
 }
 
 function sanitizeQwenOutput(raw = '') {
@@ -237,13 +341,24 @@ export async function generateQwenImagePrompt(scene = {}, options = {}) {
     onProgress: onProgress ? (text) => onProgress(text, 'repairing') : null
   });
 
+  const repairedOutput = sanitizeQwenOutput(repairRaw);
+  const repairedCoverage = validateQwenCoverage(repairedOutput, scene);
+  if (repairedCoverage.ok) {
+    onPhase?.('complete');
+    return repairedOutput;
+  }
+
+  onPhase?.('anchoring', repairedCoverage.missing);
+  const anchoredOutput = `${repairedOutput}${buildDeterministicCoverageAnchor(scene, repairedCoverage.missing)}`.trim();
+  onProgress?.(anchoredOutput, 'anchoring');
   onPhase?.('complete');
-  return sanitizeQwenOutput(repairRaw);
+  return anchoredOutput;
 }
 
 export const QWEN_PROMPT_ENGINE_CONFIG = Object.freeze({
   model: LOCAL_QWEN_CONFIG.model,
   objective: 'physically plausible natural photographic realism',
   coverageRepairPasses: 1,
+  deterministicCoverageAnchor: true,
   streaming: true
 });

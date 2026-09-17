@@ -127,17 +127,38 @@ async function copyQwenPrompt() {
   setTimeout(() => { copyButton.textContent = previous; }, 1300);
 }
 
+function handleQwenPhase(phase, details = []) {
+  if (phase === 'generating') {
+    setQwenStatus('Qwen يولد الآن…', 'working');
+    return;
+  }
+  if (phase === 'repairing') {
+    setQwenStatus(`Qwen يراجع الواقعية… ${details.length ? `(${details.length})` : ''}`, 'working');
+    return;
+  }
+  if (phase === 'complete') {
+    setQwenStatus(`Qwen جاهز — ${QWEN_PROMPT_ENGINE_CONFIG.model}`, 'ready');
+  }
+}
+
 async function generateWithQwen() {
   if (!generateButton) return;
   generateButton.disabled = true;
   if (copyButton) copyButton.disabled = true;
-  setQwenStatus('Qwen يبني Prompt واقعيًا…', 'working');
+  if (output) output.value = '';
+  setQwenStatus('Qwen يبدأ التوليد…', 'working');
 
   try {
     const seed = Number(byId('seedInput')?.value) || 42;
     const prompt = await generateQwenImagePrompt(sceneState(), {
       seed,
-      additionalInstructions: extraInput?.value || ''
+      additionalInstructions: extraInput?.value || '',
+      onPhase: handleQwenPhase,
+      onProgress: (text) => {
+        if (!output) return;
+        output.value = text;
+        output.scrollTop = output.scrollHeight;
+      }
     });
 
     if (!prompt) throw new Error('Qwen returned an empty prompt');

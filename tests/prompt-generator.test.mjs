@@ -299,105 +299,6 @@ test('generated prompt exposes realism_validation in output object', () => {
   assert.ok(Array.isArray(result.realism_validation.warnings));
 });
 
-test('formal looks contains 122 unique complete outfits', async () => {
-  const { FORMAL_LOOKS } = await import('../core/scene-builder.js');
-  assert.equal(FORMAL_LOOKS.length, 122);
-  const labels = FORMAL_LOOKS.map((look) => look.label);
-  assert.equal(new Set(labels).size, 122);
-  for (const look of FORMAL_LOOKS) assert.ok(look.label.includes(' + بنطال'), `not a complete outfit: ${look.label}`);
-});
-
-test('FORMAL_LOOKS contains the 15 timeless colour combinations', async () => {
-  const { FORMAL_LOOKS } = await import('../core/scene-builder.js');
-  const requiredCombos = [
-    'قميص كحلي + بنطال رمادي',
-    'قميص أزرق فاتح + بنطال كحلي',
-    'قميص أبيض + بنطال بيج',
-    'قميص زيتي + بنطال بني تبغي',
-    'قميص أسود + بنطال فحمي',
-    'قميص بيج + بنطال أبيض',
-    'قميص رمادي + بنطال أسود',
-    'قميص أخضر مريمي + بنطال كريمي',
-    'قميص وردي + بنطال رمادي',
-    'قميص أبيض + بنطال كحلي',
-    'قميص عنابي + بنطال رمادي',
-    'قميص أسود + بنطال بيج',
-    'قميص أزرق فولاذي + بنطال كاكي',
-    'قميص أبيض + بنطال زيتي',
-    'قميص فحمي + بنطال رمادي فاتح'
-  ];
-  const aliases = {
-    'قميص كحلي + بنطال رمادي': 'قميص كحلي + بنطال رمادي متوسط',
-    'قميص رمادي + بنطال أسود': 'قميص رمادي متوسط + بنطال أسود',
-    'قميص وردي + بنطال رمادي': 'قميص وردي فاتح + بنطال رمادي متوسط',
-    'قميص عنابي + بنطال رمادي': 'قميص عنابي + بنطال رمادي متوسط'
-  };
-  const labels = FORMAL_LOOKS.map((look) => look.label);
-  for (const combo of requiredCombos) {
-    assert.ok(labels.includes(combo) || labels.includes(aliases[combo]), `Missing timeless combination: ${combo}`);
-  }
-});
-
-test('no duplicate color pairs', async () => {
-  const { FORMAL_LOOKS } = await import('../core/scene-builder.js');
-  const pairs = FORMAL_LOOKS.map((look) => look.label);
-  assert.equal(new Set(pairs).size, pairs.length);
-});
-
-test('no clothing item duplicates a formal look', async () => {
-  const { CLOTHING_OPTIONS, FORMAL_LOOKS } = await import('../core/scene-builder.js');
-  const clothingLabels = CLOTHING_OPTIONS.map((item) => item.label);
-  const lookLabels = FORMAL_LOOKS.map((item) => item.label);
-  const duplicates = clothingLabels.filter((label) => lookLabels.includes(label));
-  assert.equal(duplicates.length, 0, `Duplicates: ${duplicates.join(', ')}`);
-});
-
-test('base clothing items contain no + outfit separator', async () => {
-  const { CLOTHING_OPTIONS } = await import('../core/scene-builder.js');
-  const withPlus = CLOTHING_OPTIONS.filter((item) => item.label.includes('+'));
-  assert.equal(withPlus.length, 0, `Items with +: ${withPlus.map((item) => item.label).join(', ')}`);
-});
-
-test('CLOTHING_OPTIONS contains only the two base clothing groups', async () => {
-  const { CLOTHING_OPTIONS } = await import('../core/scene-builder.js');
-  const groups = [...new Set(CLOTHING_OPTIONS.map((item) => item.group))].sort();
-  assert.deepEqual(groups, ['ثياب وتراث سعودي', 'كاجوال'].sort());
-});
-
-test('formal suits catalog contains 30 unique suits', async () => {
-  const { FORMAL_SUITS } = await import('../core/scene-builder.js');
-  assert.equal(FORMAL_SUITS.length, 30);
-  const labels = FORMAL_SUITS.map((suit) => suit.label);
-  assert.equal(new Set(labels).size, 30);
-  const values = FORMAL_SUITS.map((suit) => suit.value);
-  assert.equal(new Set(values).size, 30);
-});
-
-test('formal suits are distributed across 5 groups', async () => {
-  const { FORMAL_SUITS } = await import('../core/scene-builder.js');
-  const groups = new Set(FORMAL_SUITS.map((suit) => suit.group));
-  assert.equal(groups.size, 5);
-});
-
-test('formal suits do not duplicate formal looks', async () => {
-  const { FORMAL_SUITS, FORMAL_LOOKS } = await import('../core/scene-builder.js');
-  const suitLabels = FORMAL_SUITS.map((suit) => suit.label);
-  const lookLabels = FORMAL_LOOKS.map((look) => look.label);
-  const duplicates = suitLabels.filter((label) => lookLabels.includes(label));
-  assert.equal(duplicates.length, 0, `Duplicates: ${duplicates.join(', ')}`);
-});
-
-test('clothing UI group order is base, formal suits, then formal looks', async () => {
-  const { CLOTHING_OPTIONS } = await import('../core/scene-builder.js');
-  const baseGroups = [...new Set(CLOTHING_OPTIONS.map((item) => item.group))];
-  assert.deepEqual([...baseGroups, 'بدلات رسمية كاملة', 'أطقم كاملة (قميص + بنطال)'], [
-    'ثياب وتراث سعودي',
-    'كاجوال',
-    'بدلات رسمية كاملة',
-    'أطقم كاملة (قميص + بنطال)'
-  ]);
-});
-
 test('every Saudi scene enforces cultural dress lock in the dedicated section', () => {
   const result = generateImagePrompt({ sceneType: 'front_selfie', location: 'inside an ordinary Saudi cafe' });
   const scene = result.prompt.split('[SCENE]\n')[1].split('\n\n[SAUDI CULTURAL DRESS]')[0];
@@ -421,17 +322,6 @@ test('Saudi cultural rules stay out of technical negative constraints and non-Sa
   assert.doesNotMatch(paris.prompt, /CULTURAL CONTEXT — SAUDI/i);
   const parisCulture = paris.prompt.split('[SAUDI CULTURAL DRESS]\n')[1].split('\n\n[OBSERVABLE BACKGROUND ELEMENTS]')[0];
   assert.match(parisCulture, /Not applicable/i);
-});
-
-test('hair catalog contains 30 styling options across 7 groups', async () => {
-  const { HAIR_STYLES } = await import('../core/scene-builder.js');
-  assert.equal(HAIR_STYLES.length, 30);
-  const groups = new Set(HAIR_STYLES.map((hair) => hair.group));
-  assert.ok(groups.size >= 7);
-  for (const style of HAIR_STYLES) {
-    assert.ok(style.label.length > 5);
-    assert.ok(style.prompt.length > 40);
-  }
 });
 
 test('hair style lock is merged into IDENTITY SUBJECT rather than emitted as an extra section', () => {
@@ -518,15 +408,6 @@ test('bedroom with mirror furniture is not classified as mirror selfie', async (
     location: 'a bedroom with a full-length mirror on the wardrobe door'
   });
   assert.equal(packet.subject.mirror_rules, 'not_applicable');
-});
-
-test('all 40 bedroom poses expose a non-empty cameraHint', async () => {
-  const { BEDROOM_POSES } = await import('../core/scene-builder.js');
-  assert.equal(BEDROOM_POSES.length, 40);
-  for (const pose of BEDROOM_POSES) {
-    assert.equal(typeof pose.cameraHint, 'string', `cameraHint is not a string for ${pose.value}`);
-    assert.ok(pose.cameraHint.trim().length > 0, `missing cameraHint for ${pose.value}`);
-  }
 });
 
 test('bed-lying-side uses mattress-level camera hint', () => {

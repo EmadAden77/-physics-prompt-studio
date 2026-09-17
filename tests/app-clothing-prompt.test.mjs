@@ -26,3 +26,14 @@ test('clothing select is catalog-driven rather than duplicated as static HTML op
   const values = [...match[1].matchAll(/<option\s+value="([^"]*)"/g)].map((entry) => entry[1]);
   assert.deepEqual(values, ['']);
 });
+
+test('clothing UI group order is base, formal suits, then formal looks', async () => {
+  const { CLOTHING_OPTIONS } = await import('../core/scene-builder.js');
+  const baseGroups = [...new Set(CLOTHING_OPTIONS.map((item) => item.group))];
+  assert.deepEqual([...baseGroups, 'بدلات رسمية كاملة', 'أطقم كاملة (قميص + بنطال)'], [
+    'ثياب وتراث سعودي',
+    'كاجوال',
+    'بدلات رسمية كاملة',
+    'أطقم كاملة (قميص + بنطال)'
+  ]);
+});

@@ -287,8 +287,7 @@ function updatePoseCameraLock() {
 // Fill only automatic fields for home scenes; explicit user selections remain authoritative.
 export function resolveHomeSceneInput(input) {
   if (!HOME_SCENE_TYPES.includes(input.sceneType)) return input;
-  const locationValue = locationsForScene(input.sceneType).find((item) => input.location?.includes(item.prompt))?.value;
-  const options = sceneCompatibilityData(input.sceneType, locationValue).options;
+  const options = sceneCompatibilityData(input.sceneType).options;
   const resolved = { ...input };
   for (const field of ['location', 'clothing', 'pose', 'angle', 'lighting']) {
     if (!resolved[field]?.trim()) resolved[field] = options[field][0]?.prompt || '';

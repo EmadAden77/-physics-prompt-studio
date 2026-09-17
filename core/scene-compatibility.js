@@ -23,6 +23,7 @@ const PRIVATE_BACKGROUND_ACTIVITY = ['quiet','normal'];
 const QUIET_BACKGROUND_ACTIVITY = ['quiet'];
 const EXTERIOR_CAR_BACKGROUND_ACTIVITY = ['quiet','normal'];
 const SUPERMARKET_LIGHTING = ['supermarket_fluorescent','retail_ceiling_led','mixed_retail'];
+const HOME_CLOTHING_VALUES = new Set(HOME_CLOTHING.map((item) => item.value));
 
 export const MIRROR_POSES = [
   { value:'mirror_standing_relaxed', label:'مرآة — واقف باسترخاء', prompt:'standing naturally for a mirror selfie with the phone-bearing arm positioned consistently with the reflected device and relaxed weight distribution' },
@@ -82,6 +83,11 @@ const PROFILES = {
 export function homeClothingForScene(sceneType) {
   if (!sceneType.startsWith('bedroom_')) return [];
   return HOME_CLOTHING;
+}
+
+export function clothingForScene(sceneType, baseOptions = []) {
+  if (HOME_SCENE_TYPES.includes(sceneType)) return [...HOME_CLOTHING];
+  return baseOptions.filter((item) => !HOME_CLOTHING_VALUES.has(item.value));
 }
 
 function bedroomPoseFor(poseValueOrPrompt) {
@@ -222,8 +228,11 @@ export function resolveContextAwareConstraints({ sceneType = 'front_selfie', req
 export function compatibleOptions(sceneType, kind, baseOptions = []) {
   if (kind === 'location') return locationsForScene(sceneType);
   if (kind === 'hairStyle') return hairStylesForScene(sceneType);
-  if (kind === 'clothing' && HOME_SCENE_TYPES.includes(sceneType)) return homeClothingForScene(sceneType);
-  if (kind === 'clothing') return baseOptions.filter((item) => !item.sceneTypes || item.sceneTypes.includes(sceneType));
+  if (kind === 'clothing') {
+    const clothing = clothingForScene(sceneType, baseOptions);
+    if (HOME_SCENE_TYPES.includes(sceneType)) return clothing;
+    return clothing.filter((item) => !item.sceneTypes || item.sceneTypes.includes(sceneType));
+  }
   const profile = profileFor(sceneType);
   if (kind === 'pose' && profile.poseCatalog) return [...profile.poseCatalog];
   if (kind === 'angle' && profile.angleCatalog) return [...profile.angleCatalog];

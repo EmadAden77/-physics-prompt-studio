@@ -64,7 +64,7 @@ export function resolveCameraAngle({
   const wantsSmart = clean(angle) === SMART_ANGLE_VALUE;
   const smartAllowed = wantsSmart && !capture.includes('third-person') && !capture.includes('mirror');
   if (smartAllowed) {
-    const smart = smartSelfieAngle(sceneType, seed);
+    const smart = smartSelfieAngle(requested, seed);
     if (smart) return smart;
   }
 

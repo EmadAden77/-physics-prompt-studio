@@ -2,6 +2,7 @@ import { buildRealismPacket, renderRealismGuidance } from './realistic-image-gen
 import { baseSceneTypeFor, sceneMeta } from './scene-type-expansion.js';
 import { resolveContextAwareConstraints, getPoseCameraHint, MIRROR_ANGLES, THIRD_PERSON_ANGLES } from './scene-compatibility.js';
 import { BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_POSES, SELFIE_ANGLES, SAUDI_CULTURAL_DRESS_LOCK, SAUDI_SIGNAGE_RULE } from './scene-builder.js';
+import { resolveSmartAngle } from './camera-angle-resolver.js';
 
 export const SCENE_TYPES = [
   { value:'front_selfie', label:'سيلفي عادي', capture:'subject-held front-camera smartphone selfie', prompt:'a casual subject-held front-camera smartphone selfie with physically feasible arm-reach geometry', framing:'chest-up to mid-torso framing' },
@@ -150,7 +151,9 @@ export function generateImagePrompt(input={}){
   const location=clean(input.location)||'a generic, ordinary Saudi Arabian setting appropriate to the scene, without inventing a specific city or landmark';
   const clothing=clean(input.clothing)||'realistic context-appropriate clothing with believable textile weight, seams, folds and material response';
   const hair=clean(input.hairStyle), poseInput=clean(input.pose), angleInput=clean(input.angle);
-  const angle=ALL_CAMERA_ANGLES.find((item)=>item.value===angleInput || item.prompt===angleInput)?.prompt || angleInput;
+  const explicitAngle=angleInput && angleInput!=='__smart__'
+    ? ALL_CAMERA_ANGLES.find((item)=>item.value===angleInput || item.prompt===angleInput)?.prompt || angleInput
+    : '';
   const bedroomPoseCameraEnabled=requested==='bedroom_selfie' || requested==='bedroom_mirror_selfie';
   const selectedBedroomPose=bedroomPoseCameraEnabled
     ? BEDROOM_POSES.find((item)=>item.value===poseInput || item.prompt===poseInput)
@@ -164,7 +167,11 @@ export function generateImagePrompt(input={}){
   const bedroomFallback=requested==='bedroom_selfie'
     ? 'front camera at eye level with a tiny natural handheld roll'
     : requested==='bedroom_mirror_selfie' ? 'mirror-view camera at eye level, phone visible in reflection' : '';
-  const cameraGeometryText=angleLockedByPose ? poseHint : angle || bedroomFallback;
+  const smartAngleEligible=scene.capture.includes('selfie') && !/mirror selfie/i.test(scene.capture);
+  const smartAngle=!angleLockedByPose && angleInput==='__smart__' && smartAngleEligible
+    ? resolveSmartAngle({ sceneType:scene.value, poseValue:poseInput || pose, framing:framing.value, time:input.time, seed:input.seed ?? 42 })
+    : '';
+  const cameraGeometryText=angleLockedByPose ? poseHint : explicitAngle || smartAngle || bedroomFallback;
   const contextual=resolveContextAwareConstraints({
     sceneType:scene.value,
     requestedSceneType:requested,

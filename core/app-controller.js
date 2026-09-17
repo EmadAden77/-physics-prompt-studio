@@ -82,7 +82,9 @@ export function getAppControlContext() {
     const control = el(id);
     if (!control) continue;
     state[field] = control.type === 'checkbox' ? control.checked : control.value;
-    if (control.tagName === 'SELECT') allowed[field] = optionRecords(control);
+    if (control.tagName === 'SELECT') {
+      allowed[field] = optionRecords(control).map(({ value, label }) => ({ value, label }));
+    }
   }
 
   return Object.freeze({ state, allowed });

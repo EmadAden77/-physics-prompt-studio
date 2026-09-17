@@ -120,10 +120,10 @@ test('background activity controls people count without cross-section conflict',
   const quiet = generateImagePrompt({ sceneType: 'front_selfie', backgroundActivity: 'quiet' });
   const normal = generateImagePrompt({ sceneType: 'front_selfie', backgroundActivity: 'normal' });
   const lively = generateImagePrompt({ sceneType: 'front_selfie', backgroundActivity: 'lively' });
-  assert.match(quiet.prompt, /no background people/i);
+  assert.match(quiet.prompt, /no other people appear in this frame/i);
   assert.doesNotMatch(quiet.prompt, /1-2 independently behaving background people/i);
   assert.match(normal.prompt, /1-2 independently behaving background people/i);
-  assert.match(lively.prompt, /5 to 7 background people/i);
+  assert.match(lively.prompt, /5 to 7 distinct background people/i);
   assert.doesNotMatch(lively.prompt, /3-5 independently behaving background people/i);
 });
 

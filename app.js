@@ -14,7 +14,7 @@ import {
   REALISM_LEVELS,
   FRAMING_OPTIONS
 } from './core/prompt-generator.js';
-import { clothingForScene, compatibilitySnapshot, getPoseCameraHint, locationsForScene, recommendedDefaults, resolveCompatibleValue } from './core/scene-compatibility.js';
+import { compatibilitySnapshot, getPoseCameraHint, locationsForScene, recommendedDefaults, resolveCompatibleValue } from './core/scene-compatibility.js';
 import { baseSceneTypeFor, narrowOptions, sceneMeta, HOME_SCENE_TYPES } from './core/scene-type-expansion.js';
 import { enforceSaudiNoLandmarks, mergeSaudiNoLandmarksConstraint } from './core/saudi-location-lock.js';
 
@@ -63,15 +63,15 @@ const resetButton = $('resetButton');
 const cameraAngleHint = $('cameraAngleHint');
 
 const withUiGroup = (options, group) => options.map((item) => ({ ...item, group }));
-const CLOTHING_UI_OPTIONS = [
+const GENERAL_CLOTHING_OPTIONS = [
   ...CLOTHING_OPTIONS,
-  ...HOME_CLOTHING,
   ...withUiGroup(FORMAL_SUITS, 'بدلات رسمية كاملة'),
   ...withUiGroup(FORMAL_LOOKS, 'أطقم كاملة (قميص + بنطال)')
 ];
 const CATALOGS = {
   location: LOCATION_CATALOG,
-  clothing: CLOTHING_UI_OPTIONS,
+  generalClothing: GENERAL_CLOTHING_OPTIONS,
+  bedroomClothing: HOME_CLOTHING,
   hairStyle: HAIR_STYLES,
   pose: SELFIE_POSES,
   angle: SELFIE_ANGLES,
@@ -79,7 +79,9 @@ const CATALOGS = {
   camera: CAMERA_PROFILES,
   framing: FRAMING_OPTIONS
 };
-const CLOTHING_PROMPT_BY_VALUE = new Map(CATALOGS.clothing.map((item) => [item.value, item.prompt || '']));
+const CLOTHING_PROMPT_BY_VALUE = new Map(
+  [...CATALOGS.generalClothing, ...CATALOGS.bedroomClothing].map((item) => [item.value, item.prompt || ''])
+);
 for (const item of EXTRA_CLOTHING_OPTIONS) {
   if (!CLOTHING_PROMPT_BY_VALUE.has(item.value)) CLOTHING_PROMPT_BY_VALUE.set(item.value, item.prompt || '');
 }
@@ -164,9 +166,10 @@ function rebuildRequiredSelect(select, options, preferredValue) {
   const unique = uniqueByValue(options);
   select.replaceChildren();
   populateFlat(select, unique);
-  const preserved = previous && unique.some((item) => item.value === previous) ? previous : null;
-  const preferred = unique.some((item) => item.value === preferredValue) ? preferredValue : null;
-  select.value = preserved || preferred || unique[0]?.value || '';
+  select.value = resolveCompatibleValue(previous, unique, preferredValue, {
+    required: true,
+    fieldName: select.id || 'required-select'
+  });
 }
 
 function selectedSceneType() {
@@ -192,7 +195,8 @@ function sceneCompatibilityData(sceneType, locationValue = '') {
   const baseSceneType = baseSceneTypeFor(sceneType);
   let compatibilityType = sceneType === 'supermarket_selfie' ? sceneType : baseSceneType;
   if (HOME_SCENE_TYPES.includes(sceneType)) compatibilityType = sceneType;
-  const compatible = compatibilitySnapshot(compatibilityType, CATALOGS);
+  const clothingCatalog = HOME_SCENE_TYPES.includes(sceneType) ? CATALOGS.bedroomClothing : CATALOGS.generalClothing;
+  const compatible = compatibilitySnapshot(compatibilityType, { ...CATALOGS, clothing: clothingCatalog });
   const defaults = recommendedDefaults(compatibilityType);
   const locationCandidates = locationsForScene(sceneType);
   let lighting = specializedOptions(sceneType, 'lighting', compatible.lighting);
@@ -233,8 +237,7 @@ function applySceneCompatibility() {
     framing: controls.framing.value
   };
 
-  const manualClothing = clothingForScene(sceneType, CATALOGS.clothing);
-  rebuildOptionalSelect(controls.clothing, manualClothing, 'تلقائي — ملابس متناسقة مع المشهد', true);
+  rebuildOptionalSelect(controls.clothing, options.clothing, 'تلقائي — ملابس متناسقة مع المشهد', true);
   showAllOptions(controls.clothing);
   rebuildOptionalSelect(controls.location, options.location, 'تلقائي — مكان سعودي واقعي جدًا بدون معالم', true);
   rebuildOptionalSelect(controls.pose, options.pose, 'تلقائي — وضعية متناسقة مع نوع المشهد');
@@ -249,7 +252,10 @@ function applySceneCompatibility() {
   if (previous.angle === 'smart') controls.angle.value = 'smart';
   else restoreCompatibleSelection(controls.angle, previous.angle, options.angle, defaults.angle);
   restoreCompatibleSelection(controls.lighting, previous.lighting, options.lighting, defaults.lighting);
-  controls.framing.value = resolveCompatibleValue(previous.framing, options.framing, defaults.framing);
+  controls.framing.value = resolveCompatibleValue(previous.framing, options.framing, defaults.framing, {
+    required: true,
+    fieldName: 'framing'
+  });
   updatePoseCameraLock();
   return compatibilityType;
 }
@@ -592,7 +598,7 @@ function download(filename, content, type) {
 
 if (HAS_DOM) {
   populateFlat(controls.sceneType, SCENE_TYPES);
-  populateGrouped(controls.clothing, clothingForScene('front_selfie', CATALOGS.clothing));
+  populateGrouped(controls.clothing, CATALOGS.generalClothing);
   populateGrouped(controls.hairStyle, CATALOGS.hairStyle);
   populateFlat(controls.aspectRatio, ASPECT_RATIOS);
   populateFlat(controls.expression, EXPRESSIONS);

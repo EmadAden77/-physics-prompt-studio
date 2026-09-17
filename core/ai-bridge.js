@@ -12,7 +12,7 @@ function normalizeMessage(message) {
 export async function askLocalQwen(messages, options = {}) {
   const url = options.url || DEFAULT_OLLAMA_URL;
   const model = options.model || DEFAULT_MODEL;
-  const timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : 45000;
+  const timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : 120000;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -25,9 +25,11 @@ export async function askLocalQwen(messages, options = {}) {
         messages: (messages || []).map(normalizeMessage).filter(Boolean),
         stream: false,
         format: 'json',
+        keep_alive: '10m',
         options: {
           temperature: 0.1,
-          seed: Number.isFinite(options.seed) ? Math.trunc(options.seed) : 42
+          seed: Number.isFinite(options.seed) ? Math.trunc(options.seed) : 42,
+          num_predict: 256
         }
       }),
       signal: controller.signal

@@ -56,7 +56,7 @@ const CANONICAL_SECTIONS = ['GOAL','ACTION-DRIVEN AUTHENTICITY','CAPTURE TYPE LO
 const HAIR_LOCK = 'Hair length, density, hairline shape, and hair thickness remain EXACTLY as in the reference image when a reference image is attached. Only the visible direction, part line, clumping, and strand orientation may change. Do not shorten, lengthen, thin, thicken, or recede the hairline. If no reference image is attached, keep the chosen baseline hair length and density stable and do not invent extra length or density solely to satisfy a hairstyle.';
 const HAIR_DIRECTION_LOCK = "HAIR DIRECTION LOCK: The chosen hairstyle direction (backward / forward / side / center / messy) must be unmistakably visible in the final image. If the selected hairstyle says 'combed backward', no strands may fall forward onto the forehead. If 'parted on the left', the parting line must be clearly visible on the left side. Ignore generic 'natural look' instructions that contradict the selected direction.";
 const SAUDI_CONTEXT = /(?:^|[^a-z])(saudi(?: arabia)?|riyadh|jeddah|khobar|dammam|makkah|madinah|medina|taif|abha|tabuk|alula|qassim|hail|najran|jazan|arabian gulf|red sea)(?:$|[^a-z])/i;
-const CAPTURE_IMPERFECTIONS = 'Allow capture-level imperfections only: tiny handheld roll, slight off-center crop, minor exposure or white-balance variation, subtle edge softness, restrained shadow sensor noise, and modest highlight clipping when caused by real practical lights. Do not duplicate biological, clothing, or environmental imperfections already specified elsewhere.';
+const CAPTURE_IMPERFECTIONS = 'Allow capture-level imperfections only: tiny handheld roll, slight off-center crop, minor exposure or white-balance variation, subtle edge softness, restrained shadow sensor noise, and modest highlight clipping when caused by real practical lights.';
 const ALL_CAMERA_ANGLES = [...SELFIE_ANGLES, ...MIRROR_ANGLES, ...THIRD_PERSON_ANGLES];
 
 function clean(value){ return typeof value === 'string' ? value.trim() : ''; }
@@ -181,7 +181,9 @@ export function generateImagePrompt(input={}){
   packet.accessories.device=captureDeviceRule(scene.capture);
   const guidance=renderRealismGuidance(packet);
   const actionText=guidance.action.replace(/\s+The subject must look occupied by a real moment, not frozen into a generic pose\.$/,'');
-  const accessoriesText=guidance.accessories.replace(/\n- device:[^\n]*/i,'');
+  const accessoriesText=guidance.accessories
+    .replace(/^Keep every accessory consistent with the activity and setting:\n/i,'')
+    .replace(/\n- device:[^\n]*/i,'');
   const productText=/^No product is featured\./i.test(guidance.product) ? 'No product is featured.' : guidance.product;
   const captureLower=scene.capture.toLowerCase();
   const mirrorSection=/mirror selfie/i.test(captureLower)
@@ -207,7 +209,7 @@ export function generateImagePrompt(input={}){
 
   const poseText=pose ? `${pose}. ` : '';
   const sections=[
-    section('GOAL',`Generate ONE highly photorealistic ${ratio.prompt} image. Capture type: ${scene.capture}. ${description?`User scene intent: ${description}.`:'Keep the moment natural, personal and unstaged.'} The result must look like a genuine smartphone photograph rather than advertising, polished commercial photography, CGI or AI-stylized imagery.`),
+    section('GOAL',`Generate ONE highly photorealistic ${ratio.prompt} image. ${description?`User scene intent: ${description}. `:''}The result must look like a genuine smartphone photograph rather than advertising, polished commercial photography, CGI or AI-stylized imagery.`),
     section('ACTION-DRIVEN AUTHENTICITY',actionText), section('CAPTURE TYPE LOCK — CRITICAL',captureRules(scene)),
     section('IDENTITY / SUBJECT',`${identityRules(identity,hair)} Expression: ${expression.prompt}. ${packet.subject.face}`),
     section('SCENE',sceneText),

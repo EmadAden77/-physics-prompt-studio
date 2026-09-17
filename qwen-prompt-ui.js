@@ -1,4 +1,7 @@
 import { generateQwenImagePrompt, QWEN_PROMPT_ENGINE_CONFIG } from './core/qwen-prompt-engine.js';
+import { resolveCameraAngle } from './core/camera-angle-resolver.js';
+import { SCENE_TYPES } from './core/prompt-generator.js';
+import { baseSceneTypeFor } from './core/scene-type-expansion.js';
 
 const byId = (id) => document.getElementById(id);
 
@@ -73,7 +76,14 @@ function bestText(record) {
   return record.prompt || record.label || record.value || '';
 }
 
-function sceneState() {
+function captureTypeForScene(sceneTypeValue) {
+  const baseType = baseSceneTypeFor(sceneTypeValue || 'front_selfie') || sceneTypeValue || 'front_selfie';
+  return SCENE_TYPES.find((item) => item.value === baseType)?.capture
+    || SCENE_TYPES.find((item) => item.value === sceneTypeValue)?.capture
+    || '';
+}
+
+function sceneState(seed = 42) {
   const sceneType = selectedRecord('sceneType');
   const location = selectedRecord('sceneLocation');
   const clothing = selectedRecord('sceneClothing');
@@ -87,23 +97,38 @@ function sceneState() {
   const background = selectedRecord('backgroundActivity');
   const realism = selectedRecord('realismLevel');
   const framing = selectedRecord('framing');
+  const captureType = captureTypeForScene(sceneType.value);
+  const baseSceneType = baseSceneTypeFor(sceneType.value || 'front_selfie') || sceneType.value || 'front_selfie';
+  const resolvedAngle = resolveCameraAngle({
+    sceneType: baseSceneType,
+    requestedSceneType: sceneType.value,
+    captureType,
+    pose: pose.value || bestText(pose),
+    angle: angle.value || bestText(angle),
+    seed
+  });
 
   return {
     sceneType: sceneType.value,
     sceneTypeLabel: sceneType.label,
+    captureType,
     location: bestText(location),
     clothing: bestText(clothing),
+    clothingLabel: clothing.label,
     hairStyle: bestText(hair),
     pose: bestText(pose),
-    angle: bestText(angle),
+    angle: resolvedAngle || bestText(angle),
+    angleMode: angle.value,
     lighting: bestText(lighting),
     lightingNotes: byId('lightingNotes')?.value || '',
     camera: bestText(camera),
+    cameraLabel: camera.label,
     aspectRatio: bestText(aspectRatio),
     expression: bestText(expression),
     backgroundActivity: bestText(background),
     realismLevel: bestText(realism),
     framing: bestText(framing),
+    framingLabel: framing.label,
     cameraDistance: byId('cameraDistance')?.value || '',
     description: byId('sceneDescription')?.value || '',
     customConstraints: byId('customConstraints')?.value || '',
@@ -136,6 +161,10 @@ function handleQwenPhase(phase, details = []) {
     setQwenStatus(`Qwen يراجع الواقعية… ${details.length ? `(${details.length})` : ''}`, 'working');
     return;
   }
+  if (phase === 'anchoring') {
+    setQwenStatus('Qwen يثبت القيود الصريحة…', 'working');
+    return;
+  }
   if (phase === 'complete') {
     setQwenStatus(`Qwen جاهز — ${QWEN_PROMPT_ENGINE_CONFIG.model}`, 'ready');
   }
@@ -150,7 +179,7 @@ async function generateWithQwen() {
 
   try {
     const seed = Number(byId('seedInput')?.value) || 42;
-    const prompt = await generateQwenImagePrompt(sceneState(), {
+    const prompt = await generateQwenImagePrompt(sceneState(seed), {
       seed,
       additionalInstructions: extraInput?.value || '',
       onPhase: handleQwenPhase,

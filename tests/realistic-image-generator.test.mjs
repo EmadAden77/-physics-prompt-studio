@@ -35,3 +35,34 @@ test('rendered guidance exposes observable background items and consistency chec
   assert.match(guidance.background, /Observable background elements/i);
   assert.match(guidance.consistency, /action-driven rather than static/i);
 });
+
+test('outdoor selfie in parking is not classified as car interior', async () => {
+  const { buildRealismPacket } = await import('../core/realistic-image-generator.js');
+  const packet = buildRealismPacket({
+    sceneType: 'outdoor_selfie',
+    captureType: 'subject-held front-camera smartphone selfie',
+    location: 'night_parking'
+  });
+  assert.notEqual(packet.template_type, 'Car Selfie');
+  assert.doesNotMatch(packet.action, /seated.*car/i);
+});
+
+test('explicit inside_car_selfie is still classified as car', async () => {
+  const { buildRealismPacket } = await import('../core/realistic-image-generator.js');
+  const packet = buildRealismPacket({
+    sceneType: 'inside_car_selfie',
+    captureType: 'subject-held front-camera smartphone selfie',
+    location: 'night_parking'
+  });
+  assert.equal(packet.template_type, 'Car Selfie');
+});
+
+test('villa driveway outdoor selfie is not car interior', async () => {
+  const { buildRealismPacket } = await import('../core/realistic-image-generator.js');
+  const packet = buildRealismPacket({
+    sceneType: 'outdoor_selfie',
+    captureType: 'subject-held front-camera smartphone selfie',
+    location: 'villa_driveway'
+  });
+  assert.notEqual(packet.template_type, 'Car Selfie');
+});

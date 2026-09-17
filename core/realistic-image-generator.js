@@ -63,24 +63,30 @@ function detectScenario(input = {}) {
   const sceneType = clean(input.sceneType).toLowerCase();
   const requestedSceneType = clean(input.requestedSceneType).toLowerCase();
   const capture = clean(input.captureType).toLowerCase();
+  const explicitSceneType = `${sceneType} ${requestedSceneType}`;
   const haystack = [sceneType, requestedSceneType, input.location, input.description, input.pose].map(clean).join(' ').toLowerCase();
 
   if (/mirror selfie/i.test(capture)) return 'mirror';
+  if (/inside_car_selfie|car_group_selfie/.test(explicitSceneType)) return 'car';
+
   if (/third-person/i.test(capture)) {
-    const carContext = /car|vehicle|driver|passenger|parking|driveway|سيارة|مركبة|موقف|مقعد السائق/.test(haystack);
+    if (/third_person_car_adjacent/.test(explicitSceneType)) return 'third_person_car_exterior';
+    const explicitOutdoor = /outdoor|street|parking|driveway|desert|beach|corniche|road/.test(explicitSceneType);
+    if (explicitOutdoor) return 'lifestyle';
+    const carContext = /car|vehicle|driver|passenger|سيارة|مركبة|مقعد السائق/.test(haystack);
     return carContext ? 'third_person_car_exterior' : 'lifestyle';
   }
 
-  const explicitSceneType = `${sceneType} ${requestedSceneType}`;
   if (/gym|fitness|workout|نادي|تمرين/.test(explicitSceneType)) return 'gym';
   if (/mirror_selfie/i.test(explicitSceneType)) return 'mirror';
+  if (/outdoor_selfie|walking_selfie|street|parking|driveway|desert|beach|corniche|road/.test(explicitSceneType)) return 'outdoor';
 
   if (/gym|fitness|workout|نادي|تمرين/.test(haystack)) return 'gym';
 
-  const carContext = /car|vehicle|driver|passenger|parking|driveway|سيارة|مركبة|موقف|مقعد السائق/.test(haystack);
+  const carContext = /car|vehicle|driver|passenger|سيارة|مركبة|مقعد السائق/.test(haystack);
   if (carContext) return 'car';
 
-  if (/outdoor|street|walking|desert|beach|corniche|park|road|شارع|خارجي|مشي|صحراء|شاطئ|كورنيش|حديقة/.test(haystack)) return 'outdoor';
+  if (/outdoor|street|walking|desert|beach|corniche|park|parking|driveway|road|شارع|خارجي|مشي|صحراء|شاطئ|كورنيش|حديقة|موقف/.test(haystack)) return 'outdoor';
 
   return 'lifestyle';
 }

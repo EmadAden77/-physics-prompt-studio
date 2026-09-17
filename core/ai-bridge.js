@@ -24,12 +24,9 @@ export async function askLocalQwen(messages, options = {}) {
         model,
         messages: (messages || []).map(normalizeMessage).filter(Boolean),
         stream: false,
-        format: 'json',
-        keep_alive: '10m',
         options: {
           temperature: 0.1,
-          seed: Number.isFinite(options.seed) ? Math.trunc(options.seed) : 42,
-          num_predict: 256
+          seed: Number.isFinite(options.seed) ? Math.trunc(options.seed) : 42
         }
       }),
       signal: controller.signal

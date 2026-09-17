@@ -352,3 +352,55 @@ test('non-bedroom prompts do not contain the bedroom anchor', () => {
   assert.doesNotMatch(result.prompt, /ROOM ANCHOR/i);
   assert.doesNotMatch(result.prompt, /This is a locked room layout/i);
 });
+
+test('office_selfie does NOT expose any HOME_CLOTHING item', async () => {
+  const { FORMAL_SUITS, FORMAL_LOOKS } = await import('../core/scene-builder.js');
+  const allClothing = [...CLOTHING_OPTIONS, ...HOME_CLOTHING, ...FORMAL_SUITS, ...FORMAL_LOOKS];
+  const options = compatibleOptions('office_selfie', 'clothing', allClothing);
+  const homeClothingValues = new Set(HOME_CLOTHING.map((item) => item.value));
+  const leaked = options.filter((item) => homeClothingValues.has(item.value));
+  assert.equal(leaked.length, 0, `Leaked: ${leaked.map((item) => item.value).join(', ')}`);
+});
+
+test('front_selfie does NOT expose any HOME_CLOTHING item', async () => {
+  const { FORMAL_SUITS, FORMAL_LOOKS } = await import('../core/scene-builder.js');
+  const allClothing = [...CLOTHING_OPTIONS, ...HOME_CLOTHING, ...FORMAL_SUITS, ...FORMAL_LOOKS];
+  const options = compatibleOptions('front_selfie', 'clothing', allClothing);
+  const homeClothingValues = new Set(HOME_CLOTHING.map((item) => item.value));
+  const leaked = options.filter((item) => homeClothingValues.has(item.value));
+  assert.equal(leaked.length, 0);
+});
+
+test('inside_car_selfie does NOT expose any HOME_CLOTHING item', async () => {
+  const { FORMAL_SUITS, FORMAL_LOOKS } = await import('../core/scene-builder.js');
+  const allClothing = [...CLOTHING_OPTIONS, ...HOME_CLOTHING, ...FORMAL_SUITS, ...FORMAL_LOOKS];
+  const options = compatibleOptions('inside_car_selfie', 'clothing', allClothing);
+  const homeClothingValues = new Set(HOME_CLOTHING.map((item) => item.value));
+  const leaked = options.filter((item) => homeClothingValues.has(item.value));
+  assert.equal(leaked.length, 0);
+});
+
+test('bedroom_selfie exposes exactly 58 HOME_CLOTHING items', () => {
+  const options = compatibleOptions('bedroom_selfie', 'clothing', []);
+  assert.equal(options.length, HOME_CLOTHING.length);
+  assert.equal(options.length, 58);
+});
+
+test('bedroom mirror and third-person scenes expose exactly 58 HOME_CLOTHING items', () => {
+  for (const scene of ['bedroom_mirror_selfie', 'bedroom_third_person']) {
+    const options = compatibleOptions(scene, 'clothing', []);
+    assert.equal(options.length, HOME_CLOTHING.length, `${scene} clothing count changed`);
+    assert.deepEqual(values(options), values(HOME_CLOTHING), `${scene} clothing catalog differs from HOME_CLOTHING`);
+  }
+});
+
+test('non-bedroom scenes expose no tee-white / tee-black / shorts-* items', async () => {
+  const { FORMAL_SUITS, FORMAL_LOOKS } = await import('../core/scene-builder.js');
+  const allClothing = [...CLOTHING_OPTIONS, ...HOME_CLOTHING, ...FORMAL_SUITS, ...FORMAL_LOOKS];
+  const forbidden = /^tee-|^shorts-|^set-|^pj-|^robe-|^lounge-|^nightthobe-/;
+  for (const scene of ['office_selfie', 'cafe_selfie', 'front_selfie', 'outdoor_selfie', 'inside_car_selfie']) {
+    const options = compatibleOptions(scene, 'clothing', allClothing);
+    const leaked = options.filter((item) => forbidden.test(item.value));
+    assert.equal(leaked.length, 0, `${scene} leaked: ${leaked.map((item) => item.value).join(', ')}`);
+  }
+});

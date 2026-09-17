@@ -89,6 +89,7 @@ const RANDOMIZED_FIELDS = Object.freeze([
 ]);
 const CORE_VISUAL_FIELDS = Object.freeze(['sceneType','location','clothing','hairStyle','pose','lighting']);
 const SEED_STORAGE_KEY = 'physicsPromptStudioSeed';
+const SMART_ANGLE_OPTION = Object.freeze({ value:'__smart__', label:'تلقائي ذكي — يتكيف مع الوضعية', prompt:'__smart__' });
 
 let currentMode = 'auto';
 let latestResult = null;
@@ -145,14 +146,17 @@ function populateFlat(select, options) {
 function rebuildOptionalSelect(select, options, placeholder, grouped = false) {
   const previous = select.value;
   const unique = uniqueByValue(options);
+  const smartAngle = select === controls.angle;
   select.replaceChildren();
   const auto = document.createElement('option');
-  auto.value = '';
-  auto.textContent = placeholder;
+  auto.value = smartAngle ? SMART_ANGLE_OPTION.value : '';
+  auto.textContent = smartAngle ? SMART_ANGLE_OPTION.label : placeholder;
+  auto.dataset.prompt = smartAngle ? SMART_ANGLE_OPTION.prompt : '';
   select.append(auto);
   if (grouped) populateGrouped(select, unique);
   else populateFlat(select, unique);
-  select.value = previous && unique.some((item) => item.value === previous) ? previous : '';
+  const previousValid = previous && (previous === auto.value || unique.some((item) => item.value === previous));
+  select.value = previousValid ? previous : auto.value;
 }
 
 function rebuildRequiredSelect(select, options, preferredValue) {
@@ -234,7 +238,7 @@ function applySceneCompatibility() {
   showAllOptions(controls.clothing);
   rebuildOptionalSelect(controls.location, options.location, 'تلقائي — مكان سعودي واقعي جدًا بدون معالم', true);
   rebuildOptionalSelect(controls.pose, options.pose, 'تلقائي — وضعية متناسقة مع نوع المشهد');
-  rebuildOptionalSelect(controls.angle, options.angle, 'تلقائي — زاوية متناسقة مع نوع المشهد');
+  rebuildOptionalSelect(controls.angle, options.angle, 'تلقائي ذكي — يتكيف مع الوضعية');
   rebuildOptionalSelect(controls.lighting, options.lighting, 'تلقائي — إضاءة متناسقة مع نوع المشهد', true);
   rebuildRequiredSelect(controls.camera, compatible.camera, defaults.camera);
   rebuildRequiredSelect(controls.framing, options.framing, defaults.framing);
@@ -242,7 +246,7 @@ function applySceneCompatibility() {
 
   restoreCompatibleSelection(controls.location, previous.location, options.location, defaults.location);
   restoreCompatibleSelection(controls.pose, previous.pose, options.pose, defaults.pose);
-  restoreCompatibleSelection(controls.angle, previous.angle, options.angle, defaults.angle);
+  if (previous.angle && previous.angle !== SMART_ANGLE_OPTION.value) restoreCompatibleSelection(controls.angle, previous.angle, options.angle, defaults.angle);
   restoreCompatibleSelection(controls.lighting, previous.lighting, options.lighting, defaults.lighting);
   controls.framing.value = resolveCompatibleValue(previous.framing, options.framing, defaults.framing);
   updatePoseCameraLock();
@@ -298,24 +302,26 @@ function autoInput() {
     clothing: enrichClothingPrompt(selectedClothingPrompt()),
     hairStyle: selectedPrompt(controls.hairStyle),
     pose: selectedPrompt(controls.pose),
-    angle: selectedPrompt(controls.angle),
+    angle: controls.angle.value === SMART_ANGLE_OPTION.value ? SMART_ANGLE_OPTION.value : selectedPrompt(controls.angle),
     lighting: selectedPrompt(controls.lighting),
     lightingNotes: controls.lightingNotes.value,
     cameraDistance: controls.cameraDistance.value,
     description: controls.description.value,
     customConstraints: mergeSaudiNoLandmarksConstraint(controls.customConstraints.value),
-    identityReference: controls.identityReference.checked
+    identityReference: controls.identityReference.checked,
+    seed: currentSeed
   });
 }
 
 function sceneForOptimizer() {
   const clothingPrompt = enrichClothingPrompt(selectedClothingPrompt());
   const hairPrompt = selectedPrompt(controls.hairStyle);
+  const anglePrompt = selectedPrompt(controls.angle);
   return {
     location: enforceSaudiNoLandmarks(selectedPrompt(controls.location)),
     clothing: [clothingPrompt, hairPrompt ? `Hair styling: ${hairPrompt}` : ''].filter(Boolean).join(' '),
     pose: selectedPrompt(controls.pose),
-    angle: selectedPrompt(controls.angle),
+    angle: anglePrompt === SMART_ANGLE_OPTION.value ? '' : anglePrompt,
     lighting: selectedPrompt(controls.lighting),
     lighting_notes: controls.lightingNotes.value.trim()
   };
@@ -430,7 +436,8 @@ function valueRecord(item) {
 }
 
 export function randomizationOptionsForScene(sceneType, locationValue = '') {
-  return sceneCompatibilityData(sceneType, locationValue).options;
+  const options = sceneCompatibilityData(sceneType, locationValue).options;
+  return { ...options, angle: [SMART_ANGLE_OPTION] };
 }
 
 export function buildSeededSceneState(seed, sceneTypes, optionsForScene = randomizationOptionsForScene) {
@@ -537,7 +544,7 @@ function resetAll() {
   controls.clothing.value = '';
   controls.hairStyle.value = '';
   controls.pose.value = '';
-  controls.angle.value = '';
+  controls.angle.value = SMART_ANGLE_OPTION.value;
   controls.lighting.value = '';
   controls.lightingNotes.value = '';
   controls.camera.value = 'xiaomi15_front';

@@ -1,7 +1,7 @@
 import { buildRealismPacket, renderRealismGuidance } from './realistic-image-generator.js';
 import { baseSceneTypeFor, sceneMeta } from './scene-type-expansion.js';
 import { resolveContextAwareConstraints, getPoseCameraHint, MIRROR_ANGLES, THIRD_PERSON_ANGLES } from './scene-compatibility.js';
-import { BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_ANGLES } from './scene-builder.js';
+import { BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_ANGLES, SAUDI_CULTURAL_DRESS_LOCK } from './scene-builder.js';
 
 export const SCENE_TYPES = [
   { value:'front_selfie', label:'سيلفي عادي', capture:'subject-held front-camera smartphone selfie', prompt:'a casual subject-held front-camera smartphone selfie with physically feasible arm-reach geometry', framing:'chest-up to mid-torso framing' },
@@ -56,7 +56,6 @@ const CANONICAL_SECTIONS = ['GOAL','ACTION-DRIVEN AUTHENTICITY','CAPTURE TYPE LO
 const HAIR_LOCK = 'Hair length, density, hairline shape, and hair thickness remain EXACTLY as in the reference image when a reference image is attached. Only the visible direction, part line, clumping, and strand orientation may change. Do not shorten, lengthen, thin, thicken, or recede the hairline. If no reference image is attached, keep the chosen baseline hair length and density stable and do not invent extra length or density solely to satisfy a hairstyle.';
 const HAIR_DIRECTION_LOCK = "HAIR DIRECTION LOCK: The chosen hairstyle direction (backward / forward / side / center / messy) must be unmistakably visible in the final image. If the selected hairstyle says 'combed backward', no strands may fall forward onto the forehead. If 'parted on the left', the parting line must be clearly visible on the left side. Ignore generic 'natural look' instructions that contradict the selected direction.";
 const SAUDI_CONTEXT = /(?:^|[^a-z])(saudi(?: arabia)?|riyadh|jeddah|khobar|dammam|makkah|madinah|medina|taif|abha|tabuk|alula|qassim|hail|najran|jazan|arabian gulf|red sea)(?:$|[^a-z])/i;
-const SAUDI_CULTURAL_DRESS = 'CULTURAL CONTEXT — SAUDI: All women who appear in the frame must wear a plain black abaya. Adult women should also wear a black niqab covering everything except the eyes. Do not show exposed hair, uncovered female faces, or Western-style female clothing. Men may wear a white Saudi thobe, a bisht, or ordinary business attire.';
 const CAPTURE_IMPERFECTIONS = 'Allow capture-level imperfections only: tiny handheld roll, slight off-center crop, minor exposure or white-balance variation, subtle edge softness, restrained shadow sensor noise, and modest highlight clipping when caused by real practical lights. Do not duplicate biological, clothing, or environmental imperfections already specified elsewhere.';
 const ALL_CAMERA_ANGLES = [...SELFIE_ANGLES, ...MIRROR_ANGLES, ...THIRD_PERSON_ANGLES];
 
@@ -205,7 +204,7 @@ export function generateImagePrompt(input={}){
     section('ACTION-DRIVEN AUTHENTICITY',guidance.action), section('CAPTURE TYPE LOCK — CRITICAL',captureRules(scene)),
     section('IDENTITY / SUBJECT',`${identityRules(identity,hair)} Expression: ${expression.prompt}. ${packet.subject.face}`),
     section('SCENE',sceneText),
-    section('SAUDI CULTURAL DRESS',saudi?SAUDI_CULTURAL_DRESS:'Not applicable: the selected scene is outside Saudi context.'),
+    section('SAUDI CULTURAL DRESS',saudi?SAUDI_CULTURAL_DRESS_LOCK:'Not applicable: the selected scene is outside Saudi context.'),
     section('OBSERVABLE BACKGROUND ELEMENTS',guidance.background),
     section('CLOTHING',`${clothing}. Preserve gravity-driven drape, realistic material thickness, seam tension, compression at body/contact points, and non-mirrored natural asymmetry.`),
     section('CONTEXTUAL ACCESSORIES',guidance.accessories), section('POSE & BODY MECHANICS',`${pose}. Body mechanics must respect balance, support, joint limits, body weight, seat or ground contact, and natural asymmetric posture.`),

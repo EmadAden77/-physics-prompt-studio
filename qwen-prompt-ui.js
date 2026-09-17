@@ -5,15 +5,58 @@ const byId = (id) => document.getElementById(id);
 const generateButton = byId('qwenGeneratePrompt');
 const extraInput = byId('qwenPromptInstructions');
 const status = byId('qwenPromptStatus');
-const output = byId('promptOutput');
-const mainStatus = byId('statusBadge');
-const metricOneLabel = byId('metricOneLabel');
-const metricOneValue = byId('metricOneValue');
-const metricTwoLabel = byId('metricTwoLabel');
-const metricTwoValue = byId('metricTwoValue');
-const metricThreeLabel = byId('metricThreeLabel');
-const metricThreeValue = byId('metricThreeValue');
-const copyButton = byId('copyButton');
+
+function ensureQwenOutputUi() {
+  const existingOutput = byId('qwenPromptOutput');
+  if (existingOutput) {
+    return {
+      output: existingOutput,
+      copyButton: byId('qwenCopyPrompt')
+    };
+  }
+
+  const section = byId('qwenPromptEngineTitle')?.closest('section');
+  if (!section) return { output: null, copyButton: null };
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'advanced-grid';
+  wrapper.style.marginTop = '1rem';
+
+  const label = document.createElement('label');
+  label.className = 'field span-2';
+
+  const title = document.createElement('span');
+  title.textContent = 'Prompt الناتج من Qwen';
+
+  const output = document.createElement('textarea');
+  output.id = 'qwenPromptOutput';
+  output.className = 'prompt-output';
+  output.rows = 18;
+  output.readOnly = true;
+  output.placeholder = 'سيظهر هنا Prompt الذي يولده Qwen، مستقلًا عن نتيجة Physics Engine.';
+
+  label.append(title, output);
+  wrapper.append(label);
+
+  const actions = document.createElement('div');
+  actions.className = 'actions result-actions';
+
+  const copyButton = document.createElement('button');
+  copyButton.id = 'qwenCopyPrompt';
+  copyButton.className = 'secondary';
+  copyButton.type = 'button';
+  copyButton.disabled = true;
+  copyButton.textContent = 'نسخ Qwen Prompt';
+
+  actions.append(copyButton);
+  section.append(wrapper, actions);
+
+  return { output, copyButton };
+}
+
+const qwenUi = ensureQwenOutputUi();
+const output = qwenUi.output;
+const copyButton = qwenUi.copyButton;
 
 function selectedRecord(id) {
   const select = byId(id);
@@ -74,23 +117,20 @@ function setQwenStatus(text, state = 'idle') {
   status.dataset.state = state;
 }
 
-function setOutputMetrics(prompt) {
-  if (mainStatus) {
-    mainStatus.className = 'status ready';
-    mainStatus.textContent = 'READY';
-  }
-  if (metricOneLabel) metricOneLabel.textContent = 'المحرك';
-  if (metricOneValue) metricOneValue.textContent = 'QWEN';
-  if (metricTwoLabel) metricTwoLabel.textContent = 'الطول';
-  if (metricTwoValue) metricTwoValue.textContent = String(prompt.split(/\s+/).filter(Boolean).length);
-  if (metricThreeLabel) metricThreeLabel.textContent = 'المصدر';
-  if (metricThreeValue) metricThreeValue.textContent = 'LOCAL AI';
-  if (copyButton) copyButton.disabled = !prompt;
+async function copyQwenPrompt() {
+  const text = output?.value || '';
+  if (!text) return;
+  await navigator.clipboard.writeText(text);
+  if (!copyButton) return;
+  const previous = copyButton.textContent;
+  copyButton.textContent = 'تم النسخ ✓';
+  setTimeout(() => { copyButton.textContent = previous; }, 1300);
 }
 
 async function generateWithQwen() {
   if (!generateButton) return;
   generateButton.disabled = true;
+  if (copyButton) copyButton.disabled = true;
   setQwenStatus('Qwen يبني Prompt واقعيًا…', 'working');
 
   try {
@@ -102,7 +142,7 @@ async function generateWithQwen() {
 
     if (!prompt) throw new Error('Qwen returned an empty prompt');
     if (output) output.value = prompt;
-    setOutputMetrics(prompt);
+    if (copyButton) copyButton.disabled = false;
     setQwenStatus(`Qwen جاهز — ${QWEN_PROMPT_ENGINE_CONFIG.model}`, 'ready');
   } catch (error) {
     setQwenStatus(`فشل Qwen: ${error?.message || error}`, 'error');
@@ -112,4 +152,5 @@ async function generateWithQwen() {
 }
 
 generateButton?.addEventListener('click', generateWithQwen);
+copyButton?.addEventListener('click', copyQwenPrompt);
 setQwenStatus(`Qwen Prompt Engine — ${QWEN_PROMPT_ENGINE_CONFIG.model}`, 'idle');

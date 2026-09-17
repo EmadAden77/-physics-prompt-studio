@@ -543,3 +543,23 @@ test('seeded randomizer keeps angle smart instead of choosing an explicit angle'
   }));
   assert.equal(state.angle, 'smart');
 });
+
+test('validateRealism rejects a positive banned term in its own clause', () => {
+  const text = 'A portrait with perfect skin. visible skin pores, chromatic aberration, corneal reflections, stray hairs.';
+  assert.equal(validateRealism(text).valid, false);
+});
+
+test('validateRealism keeps negation local to the same clause', () => {
+  const text = 'Do not use studio lighting. visible skin pores, chromatic aberration, corneal reflections, stray hairs.';
+  assert.equal(validateRealism(text).valid, true);
+});
+
+test('validateRealism does not let negation cross sentence boundaries', () => {
+  const text = 'No DSLR bokeh. Realistic DSLR bokeh was requested. visible skin pores, chromatic aberration, corneal reflections, stray hairs.';
+  assert.equal(validateRealism(text).valid, false);
+});
+
+test('validateRealism does not let negative-section scope hide a later positive clause', () => {
+  const text = '[NEGATIVE CONSTRAINTS]\nAvoid: no DSLR bokeh.\n\n[SCENE]\nA scene with DSLR bokeh.\n\nvisible skin pores, chromatic aberration, corneal reflections, stray hairs.';
+  assert.equal(validateRealism(text).valid, false);
+});

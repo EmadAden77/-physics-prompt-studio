@@ -14,7 +14,7 @@ import {
   REALISM_LEVELS,
   FRAMING_OPTIONS
 } from './core/prompt-generator.js';
-import { compatibilitySnapshot, getPoseCameraHint, locationsForScene, recommendedDefaults, resolveCompatibleValue } from './core/scene-compatibility.js';
+import { clothingForScene, compatibilitySnapshot, getPoseCameraHint, locationsForScene, recommendedDefaults, resolveCompatibleValue } from './core/scene-compatibility.js';
 import { baseSceneTypeFor, narrowOptions, sceneMeta, HOME_SCENE_TYPES } from './core/scene-type-expansion.js';
 import { enforceSaudiNoLandmarks, mergeSaudiNoLandmarksConstraint } from './core/saudi-location-lock.js';
 
@@ -229,8 +229,7 @@ function applySceneCompatibility() {
     framing: controls.framing.value
   };
 
-  const manualClothing = HOME_SCENE_TYPES.includes(sceneType) ? options.clothing
-    : CATALOGS.clothing.filter((item) => !item.sceneTypes);
+  const manualClothing = clothingForScene(sceneType, CATALOGS.clothing);
   rebuildOptionalSelect(controls.clothing, manualClothing, 'تلقائي — ملابس متناسقة مع المشهد', true);
   showAllOptions(controls.clothing);
   rebuildOptionalSelect(controls.location, options.location, 'تلقائي — مكان سعودي واقعي جدًا بدون معالم', true);
@@ -582,7 +581,7 @@ function download(filename, content, type) {
 
 if (HAS_DOM) {
   populateFlat(controls.sceneType, SCENE_TYPES);
-  populateGrouped(controls.clothing, CATALOGS.clothing);
+  populateGrouped(controls.clothing, clothingForScene('front_selfie', CATALOGS.clothing));
   populateGrouped(controls.hairStyle, CATALOGS.hairStyle);
   populateFlat(controls.aspectRatio, ASPECT_RATIOS);
   populateFlat(controls.expression, EXPRESSIONS);

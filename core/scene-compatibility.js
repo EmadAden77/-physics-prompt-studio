@@ -266,8 +266,11 @@ export function recommendedDefaults(sceneType) {
   return { camera:'xiaomi15_front', framing:'chest_up' };
 }
 
-export function resolveCompatibleValue(currentValue, options = [], preferredValue = '') {
+export function resolveCompatibleValue(currentValue, options = [], preferredValue = '', { required = false, fieldName = 'value' } = {}) {
   const validValues = options.map((item) => item.value).filter(Boolean);
+  if (required && validValues.length === 0) {
+    throw new Error(`Invariant violation: required compatibility field "${fieldName}" has no valid options.`);
+  }
   if (currentValue && validValues.includes(currentValue)) return currentValue;
   if (preferredValue && validValues.includes(preferredValue)) return preferredValue;
   return validValues[0] || '';

@@ -1,6 +1,7 @@
 import { HOME_SCENE_TYPES, sceneMeta } from './scene-type-expansion.js';
 
 export const SAUDI_CULTURAL_DRESS_LOCK = 'CULTURAL CONTEXT — SAUDI: All women who appear in the frame must wear a plain black abaya. Adult women should also wear a black niqab covering everything except the eyes. Do not show exposed hair, uncovered female faces, or Western-style female clothing. Men may wear a white Saudi thobe, a bisht, or ordinary business attire (shirt and trousers). This rule applies to every Saudi location, indoor or outdoor, day or night.';
+export const SAUDI_SIGNAGE_RULE = 'SIGNAGE REALISM: If any sign or text appears in the frame and is legible, the text must be short, generic Arabic words (such as بقالة، مطعم، مقهى، صيدلية، ماء، خبز) or a real Arabic brand name. English may appear only as a smaller secondary line. When text is not legible due to distance, angle, motion, or focus, the sign must genuinely be unreadable — not pseudo-Arabic, not gibberish Latin characters, and not a fictional script.';
 
 const grouped = (rows) => rows.map(([group, value, label, prompt]) => ({ group, value, label, prompt }));
 const simple = (rows) => rows.map(([value, label, prompt]) => ({ value, label, prompt }));

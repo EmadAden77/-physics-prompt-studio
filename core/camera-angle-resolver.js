@@ -1,4 +1,5 @@
 import { BEDROOM_POSES, SELFIE_POSES, SELFIE_ANGLES } from './scene-builder.js';
+import { getPoseCameraHint } from './scene-compatibility.js';
 
 function normalizeSeed(seed) {
   const numeric = Number(seed);
@@ -75,8 +76,8 @@ export function getCandidatesForPose(poseValue, framing, sceneType) {
 
 export function resolveSmartAngle({ sceneType, poseValue, framing, time, seed = 42 } = {}) {
   void time;
-  const bedroomPose = BEDROOM_POSES.find((pose) => pose.value === poseValue || pose.prompt === poseValue);
-  if (bedroomPose?.cameraHint) return bedroomPose.cameraHint;
+  const bedroomHint = getPoseCameraHint(poseValue);
+  if (bedroomHint) return bedroomHint;
 
   const candidates = getCandidatesForPose(poseValue, framing, sceneType);
   const mixedSeed = normalizeSeed(seed) + hash(`${canonicalPoseValue(poseValue)}|${sceneType || ''}|${framing || ''}`);

@@ -623,3 +623,42 @@ test('standing bedroom pose keeps explicit angle authoritative', () => {
   assert.equal(result.config.angle_locked_by_pose, false);
   assert.match(cameraGeometry(result.prompt), /slightly below eye level|gentle upward pitch/i);
 });
+
+test('smart angle is deterministic for the same standing seed', () => {
+  const first = generateImagePrompt({ sceneType: 'standing_selfie', pose: 'standing_relaxed', angle: 'smart', seed: 42 });
+  const second = generateImagePrompt({ sceneType: 'standing_selfie', pose: 'standing_relaxed', angle: 'smart', seed: 42 });
+  assert.equal(first.config.angle, second.config.angle);
+  assert.equal(cameraGeometry(first.prompt), cameraGeometry(second.prompt));
+});
+
+test('smart angle varies for different standing seeds', () => {
+  const seedOne = generateImagePrompt({ sceneType: 'standing_selfie', pose: 'standing_relaxed', angle: 'smart', seed: 1 });
+  const seedFortyTwo = generateImagePrompt({ sceneType: 'standing_selfie', pose: 'standing_relaxed', angle: 'smart', seed: 42 });
+  assert.notEqual(seedOne.config.angle, seedFortyTwo.config.angle);
+});
+
+test('bed-lying-side smart angle still yields the bedroom cameraHint', () => {
+  const result = generateImagePrompt({ sceneType: 'bedroom_selfie', pose: 'bed-lying-side', angle: 'smart', seed: 999 });
+  const geometry = cameraGeometry(result.prompt);
+  assert.match(geometry, /mattress level|beside the face/i);
+  assert.equal(result.config.angle_locked_by_pose, true);
+});
+
+test('third-person smart request never resolves through SELFIE_ANGLES', async () => {
+  const { SELFIE_ANGLES } = await import('../core/scene-builder.js');
+  const result = generateImagePrompt({ sceneType: 'third_person_portrait', angle: 'smart', seed: 42 });
+  const geometry = cameraGeometry(result.prompt);
+  assert.match(geometry, /natural third-person smartphone angle/i);
+  for (const selfieAngle of SELFIE_ANGLES) assert.equal(geometry.includes(selfieAngle.prompt), false, selfieAngle.value);
+});
+
+test('seeded randomizer keeps angle smart instead of choosing an explicit angle', async () => {
+  const { buildSeededSceneState } = await import('../app.js');
+  const state = buildSeededSceneState(42, [{ value:'standing_selfie' }], () => ({
+    location:[{ value:'ordinary_saudi_street' }], clothing:[{ value:'thobe-white' }], pose:[{ value:'standing_relaxed' }],
+    angle:[{ value:'eye_centered' },{ value:'slightly_high_center' }], lighting:[{ value:'day_open_shade' }], camera:[{ value:'xiaomi15_front' }],
+    framing:[{ value:'chest_up' }], expression:[{ value:'neutral' }], backgroundActivity:[{ value:'normal' }], realismLevel:[{ value:'strict' }],
+    aspectRatio:[{ value:'9:16' }], hairStyle:[{ value:'natural' }]
+  }));
+  assert.equal(state.angle, 'smart');
+});

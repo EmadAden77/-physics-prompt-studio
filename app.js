@@ -145,14 +145,18 @@ function populateFlat(select, options) {
 function rebuildOptionalSelect(select, options, placeholder, grouped = false) {
   const previous = select.value;
   const unique = uniqueByValue(options);
+  const isAngleSelect = select === controls.angle;
   select.replaceChildren();
   const auto = document.createElement('option');
   auto.value = '';
   auto.textContent = placeholder;
   select.append(auto);
+  if (isAngleSelect) select.append(makeOption({ value:'smart', label:'ذكي — زاوية حتمية حسب Seed', prompt:'smart' }));
   if (grouped) populateGrouped(select, unique);
   else populateFlat(select, unique);
-  select.value = previous && unique.some((item) => item.value === previous) ? previous : '';
+  if (isAngleSelect && previous === 'smart') select.value = 'smart';
+  else if (previous && unique.some((item) => item.value === previous)) select.value = previous;
+  else select.value = isAngleSelect ? 'smart' : '';
 }
 
 function rebuildRequiredSelect(select, options, preferredValue) {
@@ -242,7 +246,8 @@ function applySceneCompatibility() {
 
   restoreCompatibleSelection(controls.location, previous.location, options.location, defaults.location);
   restoreCompatibleSelection(controls.pose, previous.pose, options.pose, defaults.pose);
-  restoreCompatibleSelection(controls.angle, previous.angle, options.angle, defaults.angle);
+  if (previous.angle === 'smart') controls.angle.value = 'smart';
+  else restoreCompatibleSelection(controls.angle, previous.angle, options.angle, defaults.angle);
   restoreCompatibleSelection(controls.lighting, previous.lighting, options.lighting, defaults.lighting);
   controls.framing.value = resolveCompatibleValue(previous.framing, options.framing, defaults.framing);
   updatePoseCameraLock();
@@ -299,6 +304,7 @@ function autoInput() {
     hairStyle: selectedPrompt(controls.hairStyle),
     pose: selectedPrompt(controls.pose),
     angle: selectedPrompt(controls.angle),
+    seed: currentSeed,
     lighting: selectedPrompt(controls.lighting),
     lightingNotes: controls.lightingNotes.value,
     cameraDistance: controls.cameraDistance.value,
@@ -430,7 +436,8 @@ function valueRecord(item) {
 }
 
 export function randomizationOptionsForScene(sceneType, locationValue = '') {
-  return sceneCompatibilityData(sceneType, locationValue).options;
+  const options = sceneCompatibilityData(sceneType, locationValue).options;
+  return { ...options, angle: [{ value:'smart', label:'ذكي — زاوية حتمية حسب Seed', prompt:'smart' }, ...options.angle] };
 }
 
 export function buildSeededSceneState(seed, sceneTypes, optionsForScene = randomizationOptionsForScene) {
@@ -443,6 +450,10 @@ export function buildSeededSceneState(seed, sceneTypes, optionsForScene = random
   const state = { seed: normalized, sceneType: pickedScene.value };
   let options = optionsForScene(pickedScene.value) || {};
   for (const field of RANDOMIZED_FIELDS) {
+    if (field === 'angle') {
+      state.angle = 'smart';
+      continue;
+    }
     const picked = pickRandom((options[field] || []).map(valueRecord).filter((item) => item?.value), rng);
     state[field] = picked?.value || '';
     if (field === 'location' && pickedScene.value === 'floor_seated_selfie') options = optionsForScene(pickedScene.value, state.location) || {};
@@ -537,7 +548,7 @@ function resetAll() {
   controls.clothing.value = '';
   controls.hairStyle.value = '';
   controls.pose.value = '';
-  controls.angle.value = '';
+  controls.angle.value = 'smart';
   controls.lighting.value = '';
   controls.lightingNotes.value = '';
   controls.camera.value = 'xiaomi15_front';

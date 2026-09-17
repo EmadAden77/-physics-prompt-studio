@@ -1,7 +1,8 @@
 import { buildRealismPacket, renderRealismGuidance } from './realistic-image-generator.js';
 import { baseSceneTypeFor, sceneMeta } from './scene-type-expansion.js';
-import { resolveContextAwareConstraints, getPoseCameraHint, MIRROR_ANGLES, THIRD_PERSON_ANGLES } from './scene-compatibility.js';
-import { BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_POSES, SELFIE_ANGLES, SAUDI_CULTURAL_DRESS_LOCK, SAUDI_SIGNAGE_RULE } from './scene-builder.js';
+import { resolveContextAwareConstraints, getPoseCameraHint } from './scene-compatibility.js';
+import { BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_POSES, SAUDI_CULTURAL_DRESS_LOCK, SAUDI_SIGNAGE_RULE } from './scene-builder.js';
+import { resolveCameraAngle } from './camera-angle-resolver.js';
 
 export const SCENE_TYPES = [
   { value:'front_selfie', label:'سيلفي عادي', capture:'subject-held front-camera smartphone selfie', prompt:'a casual subject-held front-camera smartphone selfie with physically feasible arm-reach geometry', framing:'chest-up to mid-torso framing' },
@@ -58,7 +59,6 @@ const HAIR_DIRECTION_LOCK = "HAIR DIRECTION LOCK: The chosen hairstyle direction
 const SAUDI_CONTEXT = /(?:^|[^a-z])(saudi(?: arabia)?|riyadh|jeddah|khobar|dammam|makkah|madinah|medina|taif|abha|tabuk|alula|qassim|hail|najran|jazan|alahsa|al ahsa|yanbu|arabian gulf|red sea)(?:$|[^a-z])/i;
 const CAPTURE_IMPERFECTIONS = 'Allow capture-level imperfections only: tiny handheld roll, slight off-center crop, minor exposure or white-balance variation, subtle edge softness, restrained shadow sensor noise, and modest highlight clipping when caused by real practical lights.';
 const BACKGROUND_HUMAN_INTEGRITY_RULE = 'Background humans must have distinct identities, intact anatomy with correctly formed limbs and hands, perspective-consistent scale relative to camera distance, real ground contact, correct occlusion by foreground objects, and independent silhouettes. No fused bodies, no cloned faces, no deformed background hands.';
-const ALL_CAMERA_ANGLES = [...SELFIE_ANGLES, ...MIRROR_ANGLES, ...THIRD_PERSON_ANGLES];
 
 function clean(value){ return typeof value === 'string' ? value.trim() : ''; }
 function pick(options,value,fallback){ return options.find((item)=>item.value===value) || fallback; }
@@ -150,7 +150,6 @@ export function generateImagePrompt(input={}){
   const location=clean(input.location)||'a generic, ordinary Saudi Arabian setting appropriate to the scene, without inventing a specific city or landmark';
   const clothing=clean(input.clothing)||'realistic context-appropriate clothing with believable textile weight, seams, folds and material response';
   const hair=clean(input.hairStyle), poseInput=clean(input.pose), angleInput=clean(input.angle);
-  const angle=ALL_CAMERA_ANGLES.find((item)=>item.value===angleInput || item.prompt===angleInput)?.prompt || angleInput;
   const bedroomPoseCameraEnabled=requested==='bedroom_selfie' || requested==='bedroom_mirror_selfie';
   const selectedBedroomPose=bedroomPoseCameraEnabled
     ? BEDROOM_POSES.find((item)=>item.value===poseInput || item.prompt===poseInput)
@@ -161,10 +160,15 @@ export function generateImagePrompt(input={}){
   const pose=selectedBedroomPose?.prompt || selectedGeneralPose?.prompt || poseInput;
   const poseHint=bedroomPoseCameraEnabled ? getPoseCameraHint(poseInput || pose) : null;
   const angleLockedByPose=bedroomPoseCameraEnabled && Boolean(poseHint);
-  const bedroomFallback=requested==='bedroom_selfie'
-    ? 'front camera at eye level with a tiny natural handheld roll'
-    : requested==='bedroom_mirror_selfie' ? 'mirror-view camera at eye level, phone visible in reflection' : '';
-  const cameraGeometryText=angleLockedByPose ? poseHint : angle || bedroomFallback;
+  const cameraGeometryText=resolveCameraAngle({
+    sceneType:scene.value,
+    requestedSceneType:requested,
+    captureType:scene.capture,
+    pose:poseInput || pose,
+    angle:angleInput,
+    seed:input.seed,
+    time:input.time
+  });
   const contextual=resolveContextAwareConstraints({
     sceneType:scene.value,
     requestedSceneType:requested,

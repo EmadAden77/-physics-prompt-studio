@@ -45,16 +45,90 @@ export async function askLocalQwen(messages, options = {}) {
   }
 }
 
+function stripCodeFence(text) {
+  return text
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+}
+
+function appendMissingClosers(candidate) {
+  const stack = [];
+  let inString = false;
+  let escaped = false;
+
+  for (const char of candidate) {
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (char === '{' || char === '[') {
+      stack.push(char);
+      continue;
+    }
+
+    if (char === '}' || char === ']') {
+      const expected = char === '}' ? '{' : '[';
+      if (stack.at(-1) !== expected) return candidate;
+      stack.pop();
+    }
+  }
+
+  if (inString || stack.length === 0) return candidate;
+
+  let repaired = candidate;
+  while (stack.length) {
+    repaired += stack.pop() === '{' ? '}' : ']';
+  }
+  return repaired;
+}
+
+function parseCandidate(candidate) {
+  try {
+    return JSON.parse(candidate);
+  } catch (originalError) {
+    const repaired = appendMissingClosers(candidate);
+    if (repaired === candidate) throw originalError;
+    return JSON.parse(repaired);
+  }
+}
+
 export function parseQwenJson(text) {
   if (typeof text !== 'string' || !text.trim()) throw new Error('Qwen returned no JSON');
-  try {
-    return JSON.parse(text);
-  } catch {
-    const start = text.indexOf('{');
-    const end = text.lastIndexOf('}');
-    if (start < 0 || end <= start) throw new Error('Qwen response did not contain a JSON object');
-    return JSON.parse(text.slice(start, end + 1));
+
+  const clean = stripCodeFence(text);
+  const candidates = [clean];
+  const start = clean.indexOf('{');
+  const end = clean.lastIndexOf('}');
+
+  if (start >= 0) {
+    candidates.push(end > start ? clean.slice(start, end + 1) : clean.slice(start));
   }
+
+  let lastError = null;
+  for (const candidate of [...new Set(candidates)]) {
+    try {
+      return parseCandidate(candidate);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (start < 0) throw new Error('Qwen response did not contain a JSON object');
+  throw lastError || new Error('Qwen response did not contain valid JSON');
 }
 
 export const LOCAL_QWEN_CONFIG = Object.freeze({

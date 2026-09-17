@@ -27,6 +27,16 @@ function controlPrompt(context) {
   ].join('\n');
 }
 
+function parseOrThrow(raw, stage) {
+  try {
+    return parseQwenJson(raw);
+  } catch (error) {
+    const wrapped = new Error(`${stage}: ${error?.message || error}`);
+    wrapped.raw = raw;
+    throw wrapped;
+  }
+}
+
 async function getControlPlan(command, context) {
   const seed = Number(context.state.seed) || 42;
   const raw = await askLocalQwen([
@@ -47,7 +57,8 @@ async function getControlPlan(command, context) {
         content: `User request: ${command}\nConvert this previous reply into the required JSON object: ${raw.slice(0, 1200)}`
       }
     ], { seed });
-    return { plan: parseQwenJson(repairRaw), raw: repairRaw, repaired: true };
+
+    return { plan: parseOrThrow(repairRaw, 'repair parse failed'), raw: repairRaw, repaired: true };
   }
 }
 
@@ -59,11 +70,9 @@ async function runAiCommand() {
   setStatus('Qwen يفكر محليًا…', 'working');
   if (result) result.textContent = '';
 
-  let lastRaw = '';
   try {
     const context = getAppControlContext();
     const response = await getControlPlan(command, context);
-    lastRaw = response.raw;
     const plan = response.plan;
     const applied = await applyAiControlPlan(plan);
     const failed = applied.filter((item) => item.applied === false);
@@ -80,7 +89,8 @@ async function runAiCommand() {
     setStatus(failed.length ? `تم مع ${failed.length} خيار مرفوض` : 'Qwen متصل — تم التنفيذ', failed.length ? 'warning' : 'ready');
   } catch (error) {
     setStatus('Qwen رد بصيغة غير قابلة للتنفيذ', 'error');
-    if (result) result.textContent = `ERROR: ${error?.message || error}${lastRaw ? `\n\nRAW:\n${lastRaw.slice(0, 1200)}` : ''}`;
+    const raw = typeof error?.raw === 'string' ? error.raw : '';
+    if (result) result.textContent = `ERROR: ${error?.message || error}${raw ? `\n\nRAW:\n${raw.slice(0, 1600)}` : ''}`;
   } finally {
     runButton.disabled = false;
   }

@@ -7,6 +7,10 @@ const status = document.getElementById('aiConnectionStatus');
 const result = document.getElementById('aiControlResult');
 
 const DIRECT_ACTIONS = new Set(['generate', 'randomize', 'reset']);
+const NIGHT_REQUEST_RE = /(?:بالليل|ليلًا|ليلاً|ليلا|\bليل\b|\bat\s+night\b|\bnighttime\b|\bnight\b)/iu;
+const KEEP_LIGHTING_RE = /(?:لا\s+(?:تغير|تغيّر|تعدل|تعدّل|تلمس)\s+(?:الإضاءة|الاضاءة)|(?:do\s+not|don't)\s+change\s+(?:the\s+)?lighting)/iu;
+const SCENE_NIGHT_VALUE_RE = /(?:_at_night|_nighttime|_night)\b/gi;
+const SCENE_NIGHT_LABEL_RE = /(?:\s+بالليل|\s+ليلًا|\s+ليلاً|\s+ليلا|\s+ليل|\s+at\s+night|\s+nighttime|\s+night)\b/giu;
 
 function setStatus(text, state = 'idle') {
   if (!status) return;
@@ -33,7 +37,42 @@ function controlPrompt(context) {
   ].join('\n');
 }
 
-function normalizePlan(rawPlan) {
+function applyDeterministicIntentFallbacks(plan, command = '') {
+  const requestsNight = NIGHT_REQUEST_RE.test(command) && !KEEP_LIGHTING_RE.test(command);
+  if (!requestsNight) return plan;
+
+  const actions = plan.actions.map((action) => {
+    if (action?.type !== 'set' || action.field !== 'sceneType') return action;
+
+    const value = typeof action.value === 'string' ? action.value : '';
+    const label = typeof action.label === 'string' ? action.label : '';
+    const carriesNight = NIGHT_REQUEST_RE.test(`${value} ${label}`) || SCENE_NIGHT_VALUE_RE.test(value);
+    SCENE_NIGHT_VALUE_RE.lastIndex = 0;
+    if (!carriesNight) return action;
+
+    const cleanValue = value
+      .replace(SCENE_NIGHT_VALUE_RE, '')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '');
+    SCENE_NIGHT_VALUE_RE.lastIndex = 0;
+    const cleanLabel = label.replace(SCENE_NIGHT_LABEL_RE, '').trim();
+    SCENE_NIGHT_LABEL_RE.lastIndex = 0;
+
+    return {
+      ...action,
+      value: cleanValue,
+      label: cleanLabel || label
+    };
+  });
+
+  if (!actions.some((action) => action?.type === 'set' && action.field === 'lighting')) {
+    actions.push({ type: 'set', field: 'lighting', value: 'night', label: '' });
+  }
+
+  return { ...plan, actions };
+}
+
+function normalizePlan(rawPlan, command = '') {
   const root = Array.isArray(rawPlan)
     ? { actions: rawPlan }
     : (rawPlan && typeof rawPlan === 'object' ? rawPlan : {});
@@ -71,12 +110,12 @@ function normalizePlan(rawPlan) {
     }
   }
 
-  return { actions, generate, summary };
+  return applyDeterministicIntentFallbacks({ actions, generate, summary }, command);
 }
 
-function parseOrThrow(raw, stage) {
+function parseOrThrow(raw, stage, command = '') {
   try {
-    return normalizePlan(parseQwenJson(raw));
+    return normalizePlan(parseQwenJson(raw), command);
   } catch (error) {
     const wrapped = new Error(`${stage}: ${error?.message || error}`);
     wrapped.raw = raw;
@@ -92,7 +131,7 @@ async function getControlPlan(command, context) {
   ], { seed });
 
   try {
-    return { plan: normalizePlan(parseQwenJson(raw)), raw, repaired: false };
+    return { plan: normalizePlan(parseQwenJson(raw), command), raw, repaired: false };
   } catch {
     const repairRaw = await askLocalQwen([
       {
@@ -112,7 +151,7 @@ async function getControlPlan(command, context) {
       }
     ], { seed });
 
-    return { plan: parseOrThrow(repairRaw, 'repair parse failed'), raw: repairRaw, repaired: true };
+    return { plan: parseOrThrow(repairRaw, 'repair parse failed', command), raw: repairRaw, repaired: true };
   }
 }
 

@@ -29,6 +29,24 @@
     </nav>
 
     <section id="autoPanel">
+      <section class="card builder-card" aria-labelledby="aiControlTitle">
+        <div class="section-head">
+          <div><p class="kicker">LOCAL AI CONTROL</p><h2 id="aiControlTitle">تحكم بـ Qwen</h2></div>
+          <span id="aiConnectionStatus" class="pill" data-state="idle">Local AI</span>
+        </div>
+        <div class="advanced-grid">
+          <label class="field span-2"><span>اكتب ما تريد تغييره في التطبيق</span><textarea id="aiCommand" rows="3" placeholder="مثال: سو لي سيلفي داخل السيارة بالليل، لا تغيّر الهوية، وخلي الزاوية ذكية"></textarea></label>
+        </div>
+        <div class="actions primary-actions">
+          <button id="aiRunButton" class="primary" type="button">تنفيذ بواسطة Qwen</button>
+          <span class="hint">يعمل محليًا عبر Ollama على 127.0.0.1:11434. Qwen يغيّر حالة التطبيق فقط، ومحرك Physics Prompt Studio يبني الـPrompt النهائي.</span>
+        </div>
+        <details class="advanced">
+          <summary>نتيجة تنفيذ Qwen</summary>
+          <pre id="aiControlResult" class="code-panel">لا توجد أوامر منفذة بعد.</pre>
+        </details>
+      </section>
+
       <section class="card builder-card">
         <div class="section-head">
           <div><p class="kicker">01 — AUTO BUILDER</p><h2>كوّن المشهد</h2></div>
@@ -115,5 +133,6 @@
   </main>
   <script type="module" src="app.js"></script>
   <script type="module" src="scene-expansion-ui.js"></script>
+  <script type="module" src="ai-control-ui.js"></script>
 </body>
 </html>

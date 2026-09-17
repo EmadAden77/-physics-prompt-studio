@@ -10,6 +10,12 @@
 - البرومبتات تستخدم تعليمات طبيعية مباشرة يمكن لصقها في ChatGPT، بدون معاملات خاصة بـ Midjourney أو Stable Diffusion مثل CFG / sampler / steps / model IDs.
 - الهدف هو تحسين فهم ChatGPT للمشهد والهوية والهندسة والإضاءة والمواد، وليس إنتاج Prompt عام يحاول إرضاء عدة محركات في الوقت نفسه.
 
+## Qwen Local Control (Experimental)
+
+Qwen Local Control lives on the `qwen-local-control` branch only.
+It is not merged into `main` and is not deployed to Vercel.
+It requires local Ollama and is not a dependency of the core engine.
+
 ## المسار الكامل
 
 1. **index.html** — استوديو المشاهد العامة لبناء Prompt جاهز لـ ChatGPT Images، مع فلترة ديناميكية للمكان والملابس وتسريحة الشعر والوضعية والزاوية والإضاءة والكاميرا والتأطير.

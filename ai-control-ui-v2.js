@@ -7,10 +7,10 @@ const status = document.getElementById('aiConnectionStatus');
 const result = document.getElementById('aiControlResult');
 
 const DIRECT_ACTIONS = new Set(['generate', 'randomize', 'reset']);
-const NIGHT_REQUEST_RE = /(?:بالليل|ليلًا|ليلاً|ليلا|\bليل\b|\bat\s+night\b|\bnighttime\b|\bnight\b)/iu;
+const NIGHT_REQUEST_RE = /(?:بالليل|ليلًا|ليلاً|ليلا|(?<![\p{L}\p{N}])ليل(?![\p{L}\p{N}])|\bat\s+night\b|\bnighttime\b|\bnight\b)/iu;
 const KEEP_LIGHTING_RE = /(?:لا\s+(?:تغير|تغيّر|تعدل|تعدّل|تلمس)\s+(?:الإضاءة|الاضاءة)|(?:do\s+not|don't)\s+change\s+(?:the\s+)?lighting)/iu;
 const SCENE_NIGHT_VALUE_RE = /(?:_at_night|_nighttime|_night)\b/gi;
-const SCENE_NIGHT_LABEL_RE = /(?:\s+بالليل|\s+ليلًا|\s+ليلاً|\s+ليلا|\s+ليل|\s+at\s+night|\s+nighttime|\s+night)\b/giu;
+const SCENE_NIGHT_LABEL_RE = /(?:\s+بالليل|\s+ليلًا|\s+ليلاً|\s+ليلا|\s+ليل(?=$|[\s،,.!?؟])|\s+at\s+night\b|\s+nighttime\b|\s+night\b)/giu;
 
 function setStatus(text, state = 'idle') {
   if (!status) return;
@@ -38,8 +38,8 @@ function controlPrompt(context) {
 }
 
 function applyDeterministicIntentFallbacks(plan, command = '') {
-  const requestsNight = NIGHT_REQUEST_RE.test(command) && !KEEP_LIGHTING_RE.test(command);
-  if (!requestsNight) return plan;
+  const mentionsNight = NIGHT_REQUEST_RE.test(command);
+  if (!mentionsNight) return plan;
 
   const actions = plan.actions.map((action) => {
     if (action?.type !== 'set' || action.field !== 'sceneType') return action;
@@ -65,7 +65,8 @@ function applyDeterministicIntentFallbacks(plan, command = '') {
     };
   });
 
-  if (!actions.some((action) => action?.type === 'set' && action.field === 'lighting')) {
+  const preserveLighting = KEEP_LIGHTING_RE.test(command);
+  if (!preserveLighting && !actions.some((action) => action?.type === 'set' && action.field === 'lighting')) {
     actions.push({ type: 'set', field: 'lighting', value: 'night', label: '' });
   }
 

@@ -84,7 +84,21 @@
           </div>
         </details>
 
-        <div class="actions primary-actions"><button id="generateButton" class="primary" type="button">توليد Prompt لـ ChatGPT</button><span class="live-note">⚡ يتحدث تلقائيًا عند تغيير أي اختيار</span></div>
+        <div class="actions primary-actions"><button id="generateButton" class="primary" type="button">توليد بواسطة Physics Engine</button><span class="live-note">⚡ المحرك الحتمي الحالي</span></div>
+      </section>
+
+      <section class="card builder-card" aria-labelledby="qwenPromptEngineTitle">
+        <div class="section-head">
+          <div><p class="kicker">02 — QWEN PROMPT ENGINE</p><h2 id="qwenPromptEngineTitle">مولد Prompt بواسطة Qwen</h2></div>
+          <span id="qwenPromptStatus" class="pill" data-state="idle">Qwen Prompt Engine</span>
+        </div>
+        <div class="advanced-grid">
+          <label class="field span-2"><span>تعليمات إضافية اختيارية لـ Qwen قبل التوليد</span><textarea id="qwenPromptInstructions" rows="3" placeholder="مثال: اجعل المشهد عفويًا أكثر، حافظ على الإضاءة الموجودة، ولا تضف أشخاصًا في الخلفية"></textarea></label>
+        </div>
+        <div class="actions primary-actions">
+          <button id="qwenGeneratePrompt" class="primary" type="button">توليد Prompt بواسطة Qwen</button>
+          <span class="hint">يستخدم نفس إعدادات المشهد الحالية، ثم يولد Prompt مستقلًا بقواعد ثابتة للواقعية الفيزيائية والتصوير الطبيعي.</span>
+        </div>
       </section>
     </section>
 
@@ -101,7 +115,7 @@
 
     <section class="output-grid">
       <article class="card result-card">
-        <div class="section-head"><div><p class="kicker">02 — CHATGPT OUTPUT</p><h2>الـPrompt النهائي</h2></div><span id="statusBadge" class="status idle">IDLE</span></div>
+        <div class="section-head"><div><p class="kicker">03 — CHATGPT OUTPUT</p><h2>الـPrompt النهائي</h2></div><span id="statusBadge" class="status idle">IDLE</span></div>
         <div class="metrics">
           <div class="metric"><span id="metricOneLabel">الوضع</span><strong id="metricOneValue">AUTO</strong></div>
           <div class="metric"><span id="metricTwoLabel">الأقسام</span><strong id="metricTwoValue">0</strong></div>
@@ -134,5 +148,6 @@
   <script type="module" src="app.js"></script>
   <script type="module" src="scene-expansion-ui.js"></script>
   <script type="module" src="ai-control-ui-v2.js?v=20260917-1741"></script>
+  <script type="module" src="qwen-prompt-ui.js?v=20260917-1815"></script>
 </body>
 </html>

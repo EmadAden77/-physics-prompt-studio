@@ -117,12 +117,21 @@ function negatives(scene){
 }
 function verification(scene,ratio,guidance){ return `Before finalizing, verify: capture type unmistakably matches “${scene.capture}”; the camera position is physically possible; anatomy and contacts are coherent; selected location, clothing, hair direction, pose, angle and lighting are visible and mutually compatible; lighting can be traced to plausible physical sources; materials respond differently according to their properties; background scale and requested activity level make sense; composition is ${ratio.prompt}; and the realism checklist is satisfied: ${guidance.consistency.replace(/^Before finalizing, verify:\s*/i,'')} If a secondary aesthetic choice conflicts with physical causality or capture geometry, preserve physical plausibility.`; }
 
+function splitIntoClauses(text){
+  return String(text||'')
+    .replace(/\[[^\]\r\n]+\]/g,'\n')
+    .split(/[.!?\r\n]+/)
+    .map((clause)=>clause.trim())
+    .filter(Boolean);
+}
 function hasPositiveUse(text,term){
-  let i=0;
-  while((i=text.indexOf(term,i))!==-1){
-    const prefix=text.slice(Math.max(0,i-40),i);
-    if(!/(?:\bno\b|\bnot\b|\bwithout\b|\bavoid\b|\bdo not\b|\bnever\b)[^.!?\n]{0,28}$/i.test(prefix)) return true;
-    i+=term.length;
+  for(const clause of splitIntoClauses(text)){
+    let i=0;
+    while((i=clause.indexOf(term,i))!==-1){
+      const prefix=clause.slice(0,i);
+      if(!/(?:\bno\b|\bnot\b|\bwithout\b|\bavoid\b|\bdo not\b|\bnever\b)/i.test(prefix)) return true;
+      i+=term.length;
+    }
   }
   return false;
 }

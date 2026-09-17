@@ -18,6 +18,10 @@ function cameraGeometry(prompt) {
   return prompt.split('[CAMERA GEOMETRY]\n')[1].split('\n\n[PHYSICAL LIGHTING]')[0];
 }
 
+function observableBackground(prompt) {
+  return prompt.split('[OBSERVABLE BACKGROUND ELEMENTS]\n')[1].split('\n\n[CLOTHING]')[0];
+}
+
 test('generates a complete prompt without free-form source text', () => {
   const result = generateImagePrompt();
   assert.equal(result.validation.valid, true);
@@ -75,6 +79,13 @@ test('selfie modes lock reachable subject-held geometry', () => {
   assert.match(result.prompt, /third-person viewpoint|third-person camera/i);
 });
 
+test('pose section does not fallback to scene prompt when pose selected', () => {
+  const result = generateImagePrompt({ sceneType: 'front_selfie', pose: 'standing_relaxed' });
+  const poseSection = result.prompt.split('[POSE & BODY MECHANICS]\n')[1].split('\n\n[CAMERA GEOMETRY]')[0];
+  assert.match(poseSection, /standing naturally/i);
+  assert.doesNotMatch(poseSection, /a casual subject-held front-camera smartphone selfie/i);
+});
+
 test('third-person mode does not silently become selfie capture', () => {
   const result = generateImagePrompt({ sceneType: 'third_person_portrait', camera: 'smartphone_rear' });
   assert.ok(result.prompt.includes('third-person smartphone photograph'));
@@ -109,10 +120,10 @@ test('background activity controls people count without cross-section conflict',
   const quiet = generateImagePrompt({ sceneType: 'front_selfie', backgroundActivity: 'quiet' });
   const normal = generateImagePrompt({ sceneType: 'front_selfie', backgroundActivity: 'normal' });
   const lively = generateImagePrompt({ sceneType: 'front_selfie', backgroundActivity: 'lively' });
-  assert.match(quiet.prompt, /no background people/i);
+  assert.match(quiet.prompt, /no other people appear in this frame/i);
   assert.doesNotMatch(quiet.prompt, /1-2 independently behaving background people/i);
   assert.match(normal.prompt, /1-2 independently behaving background people/i);
-  assert.match(lively.prompt, /5 to 7 background people/i);
+  assert.match(lively.prompt, /5 to 7 distinct background people/i);
   assert.doesNotMatch(lively.prompt, /3-5 independently behaving background people/i);
 });
 
@@ -123,11 +134,11 @@ test('bedroom lively activity is corrected and no other people appear', () => {
     backgroundActivity: 'lively',
     lighting: 'phone-screen-only lighting'
   });
-  const scene = result.prompt.split('[SCENE]\n')[1].split('\n\n[SAUDI CULTURAL DRESS]')[0];
+  const background = observableBackground(result.prompt);
   assert.equal(result.config.background_activity, 'normal');
   assert.deepEqual(result.config.background_activity_allowed, ['quiet', 'normal']);
-  assert.match(scene, /no other people appear in this frame/i);
-  assert.doesNotMatch(scene, /5 to 7 background people/i);
+  assert.match(background, /no other people appear in this frame/i);
+  assert.doesNotMatch(background, /5 to 7 background people/i);
   assert.match(result.config.context_warnings.join(' '), /النشاط تغيّر إلى normal/);
   assert.match(result.config.context_warnings.join(' '), /الإضاءة تغيّرت/);
   assert.doesNotMatch(result.config.lighting, /phone-screen-only/i);
@@ -140,12 +151,12 @@ test('lively Saudi retail scene specifies people types and actions', () => {
     backgroundActivity: 'lively',
     lighting: 'broad retail ceiling lighting'
   });
-  const scene = result.prompt.split('[SCENE]\n')[1].split('\n\n[SAUDI CULTURAL DRESS]')[0];
-  assert.match(scene, /5 to 7 background people/i);
-  assert.match(scene, /men in white thobes/i);
-  assert.match(scene, /women in plain black abayas with black niqabs/i);
-  assert.match(scene, /shopping bag/i);
-  assert.match(scene, /walking, standing/i);
+  const background = observableBackground(result.prompt);
+  assert.match(background, /5 to 7 distinct background people/i);
+  assert.match(background, /men in white thobes/i);
+  assert.match(background, /women in plain black abayas with black niqabs/i);
+  assert.match(background, /shopping bag/i);
+  assert.match(background, /walking, standing/i);
 });
 
 test('dark car phone-only lighting excludes other visible light sources', () => {
@@ -433,14 +444,14 @@ test('third-person car scene does not use car-interior action or imperfections',
   assert.equal(result.config.camera, 'smartphone_rear');
 });
 
-test('third-person scene does not mention front camera in accessories', () => {
+test('third-person scene does not duplicate device semantics in accessories', () => {
   const result = generateImagePrompt({
     sceneType: 'third_person_portrait',
     location: 'day_parking'
   });
   const accessories = result.prompt.split('[CONTEXTUAL ACCESSORIES]\n')[1].split('\n\n[POSE & BODY MECHANICS]')[0];
-  assert.doesNotMatch(accessories, /device: smartphone front camera/i);
-  assert.match(accessories, /none held by the subject; photographed by another person/i);
+  assert.doesNotMatch(accessories, /device:/i);
+  assert.doesNotMatch(accessories, /none held by the subject; photographed by another person/i);
   assert.match(result.prompt, /photographed by another person|not holding the camera/i);
 });
 

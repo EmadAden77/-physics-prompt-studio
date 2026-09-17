@@ -436,7 +436,8 @@ function valueRecord(item) {
 }
 
 export function randomizationOptionsForScene(sceneType, locationValue = '') {
-  return sceneCompatibilityData(sceneType, locationValue).options;
+  const options = sceneCompatibilityData(sceneType, locationValue).options;
+  return { ...options, angle: [{ value:'smart', label:'ذكي — زاوية حتمية حسب Seed', prompt:'smart' }, ...options.angle] };
 }
 
 export function buildSeededSceneState(seed, sceneTypes, optionsForScene = randomizationOptionsForScene) {

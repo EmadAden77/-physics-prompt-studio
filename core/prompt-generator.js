@@ -1,7 +1,7 @@
 import { buildRealismPacket, renderRealismGuidance } from './realistic-image-generator.js';
 import { baseSceneTypeFor, sceneMeta } from './scene-type-expansion.js';
 import { resolveContextAwareConstraints, getPoseCameraHint, MIRROR_ANGLES, THIRD_PERSON_ANGLES } from './scene-compatibility.js';
-import { BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_ANGLES, SAUDI_CULTURAL_DRESS_LOCK } from './scene-builder.js';
+import { BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_POSES, SELFIE_ANGLES, SAUDI_CULTURAL_DRESS_LOCK } from './scene-builder.js';
 
 export const SCENE_TYPES = [
   { value:'front_selfie', label:'سيلفي عادي', capture:'subject-held front-camera smartphone selfie', prompt:'a casual subject-held front-camera smartphone selfie with physically feasible arm-reach geometry', framing:'chest-up to mid-torso framing' },
@@ -82,7 +82,7 @@ function identityRules(enabled,hair){
 }
 function geometryRules(scene,camera,framing,angle,distance){
   const d = clean(distance) || (scene.capture.includes('selfie') ? 'natural arm-reach distance, approximately 40–60 cm unless the selected angle requires a minor physically plausible adjustment' : 'a natural third-person smartphone shooting distance appropriate to the framing');
-  return `${camera.prompt}. ${scene.framing}. ${framing.prompt}. ${angle || 'Use a natural eye-level or slightly off-axis camera angle with mild handheld imperfection.'} Camera distance: ${d}. Preserve realistic wide-angle perspective and human scale; no impossible camera placement, no DSLR compression and no fake optical bokeh.`;
+  return `${camera.prompt}. ${scene.framing}. ${framing.prompt}. ${angle || 'Use a natural eye-level or slightly off-axis camera angle.'} Camera distance: ${d}. Preserve realistic wide-angle perspective and human scale; no impossible camera placement.`;
 }
 function backgroundRules(background,contextual,saudi){
   if (contextual.privateContext || background.value === 'quiet') return 'no background people; no other people appear in this frame. Preserve only context-appropriate environmental detail and ordinary objects.';
@@ -154,7 +154,10 @@ export function generateImagePrompt(input={}){
   const selectedBedroomPose=bedroomPoseCameraEnabled
     ? BEDROOM_POSES.find((item)=>item.value===poseInput || item.prompt===poseInput)
     : undefined;
-  const pose=selectedBedroomPose?.prompt || poseInput || scene.prompt;
+  const selectedGeneralPose=!bedroomPoseCameraEnabled
+    ? SELFIE_POSES.find((item)=>item.value===poseInput || item.prompt===poseInput)
+    : undefined;
+  const pose=selectedBedroomPose?.prompt || selectedGeneralPose?.prompt || poseInput;
   const poseHint=bedroomPoseCameraEnabled ? getPoseCameraHint(poseInput || pose) : null;
   const angleLockedByPose=bedroomPoseCameraEnabled && Boolean(poseHint);
   const bedroomFallback=requested==='bedroom_selfie'
@@ -177,12 +180,15 @@ export function generateImagePrompt(input={}){
   });
   packet.accessories.device=captureDeviceRule(scene.capture);
   const guidance=renderRealismGuidance(packet);
+  const actionText=guidance.action.replace(/\s+The subject must look occupied by a real moment, not frozen into a generic pose\.$/,'');
+  const accessoriesText=guidance.accessories.replace(/\n- device:[^\n]*/i,'');
+  const productText=/^No product is featured\./i.test(guidance.product) ? 'No product is featured.' : guidance.product;
   const captureLower=scene.capture.toLowerCase();
   const mirrorSection=/mirror selfie/i.test(captureLower)
     ? guidance.mirror
-    : 'Mirror rules: not applicable for this capture type.';
+    : 'Mirror rules: not applicable.';
 
-  let sceneText=`Location: ${location}. Background behavior: ${backgroundRules(background,contextual,saudi)} Maintain believable architecture, furniture, roads, vehicles, landscape, circulation space, object scale and environmental depth appropriate to the selected location.`;
+  let sceneText=`Location: ${location}. Maintain believable architecture, furniture, roads, vehicles, landscape, circulation space, object scale and environmental depth appropriate to the selected location.`;
   if(requested.startsWith('bedroom_')){
     const anchorText=[
       `ROOM ANCHOR (locked layout): ${BEDROOM_ANCHOR.room}`,
@@ -199,24 +205,25 @@ export function generateImagePrompt(input={}){
     sceneText=`${sceneText} ${anchorText} ROOM CLUTTER: ${clutter}`;
   }
 
+  const poseText=pose ? `${pose}. ` : '';
   const sections=[
     section('GOAL',`Generate ONE highly photorealistic ${ratio.prompt} image. Capture type: ${scene.capture}. ${description?`User scene intent: ${description}.`:'Keep the moment natural, personal and unstaged.'} The result must look like a genuine smartphone photograph rather than advertising, polished commercial photography, CGI or AI-stylized imagery.`),
-    section('ACTION-DRIVEN AUTHENTICITY',guidance.action), section('CAPTURE TYPE LOCK — CRITICAL',captureRules(scene)),
+    section('ACTION-DRIVEN AUTHENTICITY',actionText), section('CAPTURE TYPE LOCK — CRITICAL',captureRules(scene)),
     section('IDENTITY / SUBJECT',`${identityRules(identity,hair)} Expression: ${expression.prompt}. ${packet.subject.face}`),
     section('SCENE',sceneText),
     section('SAUDI CULTURAL DRESS',saudi?SAUDI_CULTURAL_DRESS_LOCK:'Not applicable: the selected scene is outside Saudi context.'),
     section('OBSERVABLE BACKGROUND ELEMENTS',guidance.background),
-    section('CLOTHING',`${clothing}. Preserve gravity-driven drape, realistic material thickness, seam tension, compression at body/contact points, and non-mirrored natural asymmetry.`),
-    section('CONTEXTUAL ACCESSORIES',guidance.accessories), section('POSE & BODY MECHANICS',`${pose}. Body mechanics must respect balance, support, joint limits, body weight, seat or ground contact, and natural asymmetric posture.`),
+    section('CLOTHING',clothing),
+    section('CONTEXTUAL ACCESSORIES',accessoriesText), section('POSE & BODY MECHANICS',`${poseText}Body mechanics must respect balance, support, joint limits, body weight, seat or ground contact, and natural asymmetric posture.`),
     section('CAMERA GEOMETRY',geometryRules(scene,camera,framing,cameraGeometryText,input.cameraDistance)), section('PHYSICAL LIGHTING',lightingRules(lighting,input.lightingNotes,realism.value)),
-    section('MIRROR RULES',mirrorSection), section('PRODUCT INTEGRATION',guidance.product),
-    section('PHYSICAL / MATERIAL REALISM',`${realism.prompt}. Enforce correct human anatomy; realistic neck, shoulder, arm, hand and finger structure; natural weight distribution; correct support and contact deformation; coherent gravity; realistic cloth drape and seam tension; material-specific reflectance; grounded feet or body support; physically consistent reflections; plausible atmospheric depth; and scene-specific scale.`),
-    section('SMARTPHONE IMAGE BEHAVIOR','The result must read as an ordinary real smartphone photograph, not a polished commercial portrait, CGI render or cinematic frame. Use broad smartphone focus, restrained computational sharpening, realistic local contrast, modest dynamic range, plausible white balance, subtle edge softness, mild sensor/noise-reduction texture in darker areas, and natural clipping of strong practical lights when appropriate.'),
+    section('MIRROR RULES',mirrorSection), section('PRODUCT INTEGRATION',productText),
+    section('PHYSICAL / MATERIAL REALISM',`${realism.prompt}. Enforce correct human anatomy; realistic neck, shoulder, arm, hand and finger structure; natural weight distribution; correct support and contact deformation; coherent gravity; realistic cloth drape and seam tension; material-specific reflectance; physically consistent reflections; and scene-specific scale.`),
+    section('SMARTPHONE IMAGE BEHAVIOR','Use broad smartphone focus, restrained computational sharpening, realistic local contrast, modest dynamic range, plausible white balance, mild sensor/noise-reduction texture in darker areas, and natural clipping of strong practical lights when appropriate.'),
     section('LENS_PHYSICS','LENS PHYSICS (mandatory): Preserve mild lateral chromatic aberration on high-contrast edges, visible as faint color fringing near frame corners. Preserve mild vignetting consistent with a wide smartphone lens, corners 15-20% darker than center. Preserve 2-3% barrel distortion typical of a 23mm-equivalent smartphone wide-angle lens. Preserve natural lens flare and ghosting only when a bright source is in or near the frame. Do not add artificial or decorative lens effects.'),
     section('BIOLOGICAL_MICRO_REALISM','BIOLOGICAL MICRO-REALISM (mandatory, apply only where resolvable): Preserve visible skin pores with non-uniform spatial distribution. Preserve fine vellus facial hair where the visible cheek, temple or jaw region is close enough and lit enough to register such detail. Preserve 5-12 stray hairs near the silhouette or hairline of the visible hair mass. Preserve source-consistent corneal reflections showing the actual scene. Preserve slight natural asymmetry in eyebrows, eyelids and jawline. Preserve individual fabric fibers visible at realistic viewing distance. Do not beautify, smooth, symmetrize or sterilize. If a region is cropped, occluded, too dark, too soft, too distant or out of focus, do not invent micro-detail merely to satisfy this section.'),
     section('CAMERA_METADATA_HINT',metadata(camera)),
     section('AUTHENTIC IMPERFECTIONS',`${guidance.imperfections}\n${CAPTURE_IMPERFECTIONS}`),
-    section('USER CONSTRAINTS',custom||'No additional user constraints were provided.'), section('NEGATIVE CONSTRAINTS',negatives(scene)), section('FINAL VERIFICATION',verification(scene,ratio,guidance))
+    section('USER CONSTRAINTS',custom||'None.'), section('NEGATIVE CONSTRAINTS',negatives(scene)), section('FINAL VERIFICATION',verification(scene,ratio,guidance))
   ];
   const prompt=sections.join('\n\n'), realismCheck=validateRealism(prompt), validation=validateGeneratedPrompt(prompt,{sceneType:scene,realismPacket:packet,saudiContext:saudi});
   validation.warnings.push(...contextual.warnings);

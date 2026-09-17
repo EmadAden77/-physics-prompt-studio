@@ -1,5 +1,7 @@
 const DEFAULT_OLLAMA_URL = 'http://127.0.0.1:11434/api/chat';
 const DEFAULT_MODEL = 'qwen2.5vl:3b';
+const DEFAULT_NUM_CTX = 4096;
+const DEFAULT_NUM_PREDICT = 512;
 
 function normalizeMessage(message) {
   if (!message || typeof message !== 'object') return null;
@@ -13,6 +15,8 @@ export async function askLocalQwen(messages, options = {}) {
   const url = options.url || DEFAULT_OLLAMA_URL;
   const model = options.model || DEFAULT_MODEL;
   const timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : 120000;
+  const numCtx = Number.isFinite(options.numCtx) ? Math.trunc(options.numCtx) : DEFAULT_NUM_CTX;
+  const numPredict = Number.isFinite(options.numPredict) ? Math.trunc(options.numPredict) : DEFAULT_NUM_PREDICT;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -26,7 +30,9 @@ export async function askLocalQwen(messages, options = {}) {
         stream: false,
         options: {
           temperature: 0.1,
-          seed: Number.isFinite(options.seed) ? Math.trunc(options.seed) : 42
+          seed: Number.isFinite(options.seed) ? Math.trunc(options.seed) : 42,
+          num_ctx: numCtx,
+          num_predict: numPredict
         }
       }),
       signal: controller.signal
@@ -133,5 +139,7 @@ export function parseQwenJson(text) {
 
 export const LOCAL_QWEN_CONFIG = Object.freeze({
   url: DEFAULT_OLLAMA_URL,
-  model: DEFAULT_MODEL
+  model: DEFAULT_MODEL,
+  numCtx: DEFAULT_NUM_CTX,
+  numPredict: DEFAULT_NUM_PREDICT
 });

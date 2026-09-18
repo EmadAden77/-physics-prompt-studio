@@ -1,5 +1,5 @@
 import { compilePrompt, createLedger } from './core/prompt-optimizer.js';
-import { LOCATION_CATALOG, CLOTHING_CATALOG, HOME_CLOTHING, HAIR_STYLES, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from './core/scene-builder.js';
+import { LOCATION_CATALOG, CLOTHING_CATALOG, HOME_CLOTHING, HAIR_STYLES, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES, CLOTHING_STYLING, HAND_INTERACTIONS } from './core/scene-builder.js';
 import { enrichClothingPrompt } from './core/expanded-catalogs.js';
 import {
   generateImagePrompt,
@@ -61,6 +61,17 @@ const randomButton = $('randomButton');
 const resetButton = $('resetButton');
 const cameraAngleHint = $('cameraAngleHint');
 const clothingStylingHint = $('clothingStylingHint');
+const handInteractionHint = (() => {
+  if (!HAS_DOM || !controls.handInteraction?.parentElement) return null;
+  const existing = $('handInteractionHint');
+  if (existing) return existing;
+  const hint = document.createElement('span');
+  hint.id = 'handInteractionHint';
+  hint.className = 'hint';
+  hint.hidden = true;
+  controls.handInteraction.parentElement.append(hint);
+  return hint;
+})();
 
 const GENERAL_CLOTHING_OPTIONS = CLOTHING_CATALOG;
 const CATALOGS = {
@@ -74,9 +85,9 @@ const CATALOGS = {
   camera: CAMERA_PROFILES,
   framing: FRAMING_OPTIONS
 };
-const CLOTHING_PROMPT_BY_VALUE = new Map(
-  [...CATALOGS.generalClothing, ...CATALOGS.bedroomClothing].map((item) => [item.value, item.prompt || ''])
-);
+const ALL_CLOTHING = [...CATALOGS.generalClothing, ...CATALOGS.bedroomClothing];
+const CLOTHING_PROMPT_BY_VALUE = new Map(ALL_CLOTHING.map((item) => [item.value, item.prompt || '']));
+const CLOTHING_ITEM_BY_VALUE = new Map(ALL_CLOTHING.map((item) => [item.value, item]));
 const RANDOMIZED_FIELDS = Object.freeze([
   'location','clothing','pose','angle','lighting','camera','framing',
   'expression','backgroundActivity','realismLevel','aspectRatio','hairStyle'
@@ -273,17 +284,58 @@ function selectedClothingPrompt() {
   return selectedPrompt(controls.clothing, CLOTHING_PROMPT_BY_VALUE);
 }
 
-function updateClothingStylingAvailability() {
-  if (!controls.clothingStyling) return false;
-  const sceneType = selectedSceneType();
-  const clothingDescriptor = `${controls.clothing?.value || ''} ${selectedClothingPrompt()}`;
-  const supported = CLOTHING_STYLING_SCENE_TYPES.includes(sceneType)
-    && sceneType !== 'supermarket_selfie'
-    && !/\b(?:thobe|bisht)\b/i.test(clothingDescriptor);
-  controls.clothingStyling.disabled = !supported;
-  if (!supported) controls.clothingStyling.value = 'default';
-  if (clothingStylingHint) clothingStylingHint.hidden = supported;
+function optionAppliesToGarment(definition, garmentTags) {
+  const applicableTo = definition?.applicableTo || [];
+  return applicableTo.includes('all') || applicableTo.some((tag) => garmentTags.has(tag));
+}
+
+function updateInteractionSelect(select, definitions, garmentTags, fallbackValue, allowSpecific, hint) {
+  if (!select) return false;
+  const definitionByValue = new Map(definitions.map((item) => [item.value, item]));
+  let enabledSpecificCount = 0;
+  for (const option of select.options) {
+    const definition = definitionByValue.get(option.value);
+    const isFallback = option.value === fallbackValue;
+    const allowed = Boolean(definition) && (isFallback || (allowSpecific && optionAppliesToGarment(definition, garmentTags)));
+    option.disabled = !allowed;
+    if (allowed && !isFallback) enabledSpecificCount += 1;
+  }
+  if (select.selectedOptions[0]?.disabled) select.value = fallbackValue;
+  const supported = enabledSpecificCount > 0;
+  select.disabled = !supported;
+  if (hint) {
+    hint.hidden = supported;
+    hint.textContent = supported ? '' : 'غير متاح مع الملابس المختارة';
+  }
   return supported;
+}
+
+function updateClothingStylingAvailability() {
+  const sceneType = selectedSceneType();
+  const selectedClothing = CLOTHING_ITEM_BY_VALUE.get(controls.clothing?.value || '');
+  const garmentTags = new Set(selectedClothing?.garmentTags || []);
+  const stylingSceneSupported = CLOTHING_STYLING_SCENE_TYPES.includes(sceneType) && sceneType !== 'supermarket_selfie';
+  const stylingSupported = updateInteractionSelect(
+    controls.clothingStyling,
+    CLOTHING_STYLING,
+    garmentTags,
+    'default',
+    stylingSceneSupported,
+    clothingStylingHint
+  );
+  updateInteractionSelect(
+    controls.handInteraction,
+    HAND_INTERACTIONS,
+    garmentTags,
+    'none',
+    true,
+    handInteractionHint
+  );
+  if (clothingStylingHint && !stylingSceneSupported) {
+    clothingStylingHint.hidden = false;
+    clothingStylingHint.textContent = 'غير متاح في هذا المشهد';
+  }
+  return stylingSupported;
 }
 
 function updatePoseCameraLock() {
@@ -321,6 +373,7 @@ function autoInput() {
     framing: controls.framing.value,
     location: enforceSaudiNoLandmarks(selectedPrompt(controls.location)),
     clothing: enrichClothingPrompt(selectedClothingPrompt()),
+    clothingValue: controls.clothing.value,
     clothingStyling: controls.clothingStyling.value,
     handInteraction: controls.handInteraction.value,
     hairStyle: selectedPrompt(controls.hairStyle),
@@ -585,6 +638,7 @@ function resetAll() {
   controls.description.value = '';
   controls.customConstraints.value = '';
   controls.identityReference.checked = true;
+  updateClothingStylingAvailability();
   currentSeed = 42;
   controls.seedInput.value = '42';
   globalThis.localStorage?.setItem(SEED_STORAGE_KEY, '42');

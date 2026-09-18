@@ -1,10 +1,33 @@
 import { HOME_SCENE_TYPES, sceneMeta } from './scene-type-expansion.js';
+import { enrichClothingPrompt } from './expanded-catalogs.js';
 
 export const SAUDI_CULTURAL_DRESS_LOCK = 'CULTURAL CONTEXT — SAUDI: All women who appear in the frame must wear a plain black abaya. Adult women should also wear a black niqab covering everything except the eyes. Do not show exposed hair, uncovered female faces, or Western-style female clothing. Men may wear a white Saudi thobe, a bisht, or ordinary business attire (shirt and trousers). This rule applies to every Saudi location, indoor or outdoor, day or night.';
 export const SAUDI_SIGNAGE_RULE = 'SIGNAGE REALISM: If any sign or text appears in the frame and is legible, the text must be short, generic Arabic words (such as بقالة، مطعم، مقهى، صيدلية، ماء، خبز) or a real Arabic brand name. English may appear only as a smaller secondary line. When text is not legible due to distance, angle, motion, or focus, the sign must genuinely be unreadable — not pseudo-Arabic, not gibberish Latin characters, and not a fictional script.';
 
 const grouped = (rows) => rows.map(([group, value, label, prompt]) => ({ group, value, label, prompt }));
 const simple = (rows) => rows.map(([value, label, prompt]) => ({ value, label, prompt }));
+
+const formalLookGroup = (value) => {
+  const match = /^look-(\d{2,3})$/.exec(value);
+  const index = match ? Number(match[1]) : null;
+  if (index !== null && index <= 10) return 'أبيض وكحلي';
+  if (index !== null && index <= 25) return 'أزرق';
+  if (index !== null && index <= 36) return 'كحلي';
+  if (index !== null && index <= 49) return 'فحمي';
+  if (index !== null && index <= 58) return 'أسود';
+  if (index !== null && index <= 79) return 'بيج وكريمي';
+  if (index !== null && index <= 89) return 'زيتي';
+  if (index !== null && index <= 103) return 'ملون وبياقة';
+  if (index !== null && index <= 116) return 'كتان صيفي';
+  return 'متعدد';
+};
+
+const expandedClothing = (group, value, label, prompt) => ({
+  group,
+  value,
+  label,
+  prompt: enrichClothingPrompt(prompt)
+});
 const LOCATION_REALISM_SUFFIX = ' Keep the place ordinary, non-iconic, and non-identifiable. Preserve realistic scale, circulation space, surface wear, small maintenance imperfections, dust or use marks where plausible, non-uniform object placement, believable background occupancy, material-specific reflections, and no showroom-clean or staged advertising look.';
 const locationCatalog = (rows) => rows.map(([group, value, label, prompt, sceneTypes]) => ({
   group,
@@ -328,7 +351,64 @@ export const FORMAL_LOOKS = simple([
 ['look-120','قميص بيج + بنطال بني فاتح','a beige dress shirt with light-brown tailored trousers'],
 ['look-beige-white','قميص بيج + بنطال أبيض','a beige linen-blend shirt with white tailored trousers, warm light palette, natural slub texture and matte white trouser drape'],
 ['look-steelblue-khaki','قميص أزرق فولاذي + بنطال كاكي','a steel-blue dress shirt with khaki cotton-twill trousers, cool formal-casual pairing with matte finish']
+]).map((item) => ({ ...item, group: formalLookGroup(item.value) }));
+
+const EXTRA_DEDUPED = [
+  expandedClothing('ثياب وتراث سعودي', 'offwhite_thobe', 'ثوب أوف وايت', 'an off-white Saudi thobe in medium-light cotton poplin with slight tonal warmth, crisp collar structure, natural vertical drape, and soft compression creases at the elbows and seat'),
+  expandedClothing('ثياب وتراث سعودي', 'skyblue_thobe', 'ثوب أزرق سماوي هادئ', 'a muted sky-blue Saudi thobe in matte woven cotton blend with realistic collar stiffness, soft body drape, restrained highlights, and natural sleeve folding'),
+  expandedClothing('ثياب وتراث سعودي', 'stone_thobe', 'ثوب حجري فاتح', 'a light stone-grey Saudi thobe in breathable woven fabric with subtle texture, medium-soft drape, small cuff creases, and realistic body contact'),
+  expandedClothing('ثياب وتراث سعودي', 'darkgreen_thobe', 'ثوب أخضر داكن', 'a dark muted green Saudi thobe in medium-weight matte fabric with deep but not crushed shadow detail, broad gravity folds, and natural tension around shoulders and elbows'),
+  expandedClothing('ثياب وتراث سعودي', 'brown_winter_thobe', 'ثوب شتوي بني', 'a warm brown winter Saudi thobe in heavier brushed woven fabric with increased thickness, broader folds, slower drape, soft surface nap, and restrained low-gloss highlights'),
+  expandedClothing('ثياب وتراث سعودي', 'grey_winter_thobe', 'ثوب شتوي رمادي', 'a medium-grey winter thobe in dense woven fabric with believable weight, thicker collar and cuff structure, broad seated folds, and subtle wool-like surface texture'),
+  expandedClothing('ثياب وتراث سعودي', 'white_thobe_red_shemagh', 'ثوب أبيض + شماغ أحمر وعقال', 'a plain white Saudi thobe paired with a red-and-white shemagh and one realistic black agal; the thobe keeps crisp cotton-poplin structure while the shemagh shows woven thickness, gravity-driven asymmetry, crown contact, and natural shoulder folds'),
+  expandedClothing('ثياب وتراث سعودي', 'white_thobe_white_ghutra', 'ثوب أبيض + غترة بيضاء وعقال', 'a white Saudi thobe paired with a white ghutra and one black agal; preserve subtle fabric separation between thobe and ghutra, natural translucency only at thin ghutra edges, and physically correct head-and-shoulder contact'),
+  expandedClothing('ثياب وتراث سعودي', 'navy_thobe_red_shemagh', 'ثوب كحلي + شماغ أحمر وعقال', 'a dark navy Saudi thobe paired with a red-and-white shemagh and one black agal, with matte thobe fabric, realistic color contrast, asymmetric shemagh drape, and no ceremonial over-styling'),
+  expandedClothing('كاجوال', 'lightblue_oxford_beige_chinos', 'قميص أكسفورد أزرق + تشينو بيج', 'a light-blue Oxford shirt with beige chinos; the shirt has visible basket-weave texture, collar and placket structure, small elbow and waist creases, while the chinos have matte twill texture and realistic knee and hip folding'),
+  expandedClothing('كاجوال', 'beige_linen_shirt_offwhite_trousers', 'قميص كتان بيج + بنطال فاتح', 'a beige linen shirt with off-white trousers; the linen shows irregular slub texture, breathable soft wrinkling, slightly crushed folds at elbows and waist, while the trousers keep heavier structured drape'),
+  expandedClothing('كاجوال', 'black_overshirt_grey_tshirt', 'أوفرشيرت أسود + تيشيرت رمادي', 'a black cotton-twill overshirt worn open over a grey crew-neck T-shirt, with distinct material behavior between structured overshirt panels and softer jersey underneath, plus realistic layered folds'),
+  expandedClothing('كاجوال', 'denim_overshirt_white_tshirt', 'أوفرشيرت دنيم + تيشيرت أبيض', 'a mid-weight denim overshirt over a plain white T-shirt, with visible denim weave, seam bulk, elbow creasing, slightly firmer drape, and soft jersey tension underneath'),
+  expandedClothing('كاجوال', 'charcoal_hoodie_joggers', 'هودي فحمي + جوغر', 'a charcoal cotton-fleece hoodie with matching or black joggers, showing thick ribbed cuffs, hood weight, rounded fleece folds, pocket sag, knee bunching, and realistic seated compression'),
+  expandedClothing('كاجوال', 'navy_crewneck_jeans', 'سويت شيرت كحلي + جينز', 'a navy crew-neck sweatshirt with dark straight-fit jeans, with soft fleece-body folds, ribbed collar and cuffs, denim stiffness at knees and hips, and natural contrast between the two fabrics'),
+  expandedClothing('كاجوال', 'olive_field_jacket_tshirt', 'جاكيت ميداني زيتي + تيشيرت', 'a lightweight olive field jacket over a plain T-shirt, with structured pocket flaps, zipper and seam tension, mild sleeve crumpling, matte synthetic-cotton response, and softer jersey underneath'),
+  expandedClothing('كاجوال', 'black_bomber_tshirt', 'بومبر أسود + تيشيرت', 'a black lightweight bomber jacket over a plain T-shirt, with realistic rib-knit collar and cuffs, slight nylon sheen only on highlight-facing folds, zipper weight, and natural puffing around elbows and waist'),
+  expandedClothing('كاجوال', 'sand_knit_sweater_dark_trousers', 'كنزة رملية + بنطال داكن', 'a sand-colored fine-knit sweater with dark trousers, showing visible knit structure, soft shoulder drape, subtle elbow stretching, gentle hem compression, and heavier trouser folds'),
+  expandedClothing('كاجوال', 'navy_henley_chinos', 'هنلي كحلي + تشينو', 'a navy cotton Henley shirt with neutral chinos, with soft jersey texture, realistic button-placket structure, torso tension, elbow creases, and matte twill trousers'),
+  expandedClothing('كاجوال', 'black_gym_tshirt_shorts', 'تيشيرت رياضي أسود + شورت', 'a black moisture-wicking gym T-shirt with athletic shorts, with thin technical-knit texture, slight sweat-darkening only where plausible, body-conforming tension without painted-on tightness, and lightweight shorts with movement folds'),
+  expandedClothing('كاجوال', 'navy_gym_tshirt_joggers', 'تيشيرت رياضي كحلي + جوغر', 'a navy performance T-shirt with charcoal joggers, with breathable knit texture, mild post-workout dampness where plausible, natural shoulder and torso stretch, and soft jogger folds at hips and knees'),
+  expandedClothing('كاجوال', 'grey_training_top_black_pants', 'بلوزة تدريب رمادية + بنطال أسود', 'a heather-grey athletic training top with black tapered pants, with subtle technical-fabric grain, realistic moisture response, seam tension around shoulders, and non-glossy stretch fabric at the legs'),
+  expandedClothing('كاجوال', 'lightweight_track_jacket', 'جاكيت رياضي خفيف', 'a lightweight matte track jacket over a simple athletic shirt with tapered training pants, showing thin-shell folds, zipper behavior, cuff compression, and restrained synthetic highlights rather than plastic shine'),
+  expandedClothing('كاجوال', 'navy_blazer_blue_shirt', 'بليزر كحلي + قميص أزرق فاتح', 'a navy single-breasted blazer over a light-blue shirt with neutral trousers, with realistic wool-blend grain, lapel roll, shoulder structure, elbow bends, shirt collar interaction, and natural jacket opening around the seated or standing torso'),
+  expandedClothing('كاجوال', 'charcoal_blazer_white_tshirt', 'بليزر فحمي + تيشيرت أبيض', 'a charcoal blazer over a plain white T-shirt, combining structured jacket shoulders and lapels with softer jersey underneath, realistic sleeve creases, and no editorial-fashion stiffness'),
+  expandedClothing('كاجوال', 'beige_overshirt_black_tshirt', 'أوفرشيرت بيج + تيشيرت أسود', 'a beige structured overshirt over a plain black T-shirt with dark trousers, with visible cotton-twill grain, pocket structure, layered hem behavior, realistic elbow folds, and matte color response'),
+  expandedClothing('كاجوال', 'navy_polo_beige_chinos', 'بولو كحلي + تشينو بيج', 'a navy pique polo with beige chinos, showing true pique knit texture, collar shape, sleeve hem tension, small torso folds, matte twill trousers, and realistic seated or walking creasing'),
+  expandedClothing('كاجوال', 'white_polo_olive_chinos', 'بولو أبيض + تشينو زيتي', 'a white pique polo with muted olive chinos, with visible knit texture, controlled brightness, realistic collar stiffness, natural waist folds, and heavier chino drape at the legs'),
+  expandedClothing('كاجوال', 'dark_brown_blazer_cream_shirt', 'بليزر بني داكن + قميص كريمي', 'a dark-brown textured blazer with a cream shirt and dark trousers, with visible woven jacket grain, realistic lapel and pocket structure, shirt softness, and modest everyday formal wear rather than luxury-ad styling'),
+  expandedClothing('كاجوال', 'quilted_vest_knit', 'فيست مبطن + كنزة', 'a lightweight quilted vest over a fine-knit sweater with dark trousers, showing realistic stitched baffles, restrained synthetic highlights, knit compression under the vest, and natural bulk around the torso'),
+  expandedClothing('كاجوال', 'charcoal_wool_jacket', 'جاكيت صوفي فحمي', 'a charcoal wool-blend casual jacket over a plain shirt or knit top, with soft brushed texture, structured collar, heavier sleeve folds, realistic button or zipper pull, and no polished catalog finish'),
+  expandedClothing('كاجوال', 'sand_light_jacket', 'جاكيت خفيف رملي', 'a sand-colored lightweight jacket over a dark T-shirt with neutral trousers, with matte woven shell, realistic zipper and pocket construction, natural elbow creasing, and weather-appropriate layering')
+];
+
+const CLOTHING_PROMPT_OVERRIDES = new Map([
+  ['bisht_thobe', enrichClothingPrompt('a clean Saudi thobe with a lightweight formal bisht worn naturally over the shoulders; the bisht hangs with long gravity-driven folds, subtle edge trim, limited sheen, realistic sleeve openings, and no costume-like stiffness')],
+  ['suit-navy-lightblue', enrichClothingPrompt('a navy two-piece suit with a light-blue dress shirt, with realistic wool-blend texture, proper lapel roll, shoulder structure, sleeve break, trouser crease and seat compression, and no glossy showroom fabric')],
+  ['suit-charcoal-white', enrichClothingPrompt('a charcoal suit with a white dress shirt, preserving subtle wool weave, natural jacket drape, lapel shadow, shirt cuff interaction, trouser break, and realistic wrinkles from sitting or arm movement')],
+  ['look-02', enrichClothingPrompt('a white Oxford shirt with charcoal trousers, with realistic cotton weave, slight translucency control in bright light, natural sleeve creases, trouser break and seat compression, and restrained formal-casual structure')]
 ]);
+
+const FORMAL_SUIT_VALUES = new Set(FORMAL_SUITS.map((item) => item.value));
+
+const normalizeClothingCatalogItem = (item) => ({
+  ...item,
+  group: FORMAL_SUIT_VALUES.has(item.value) ? 'بدلات رسمية كاملة' : item.group,
+  prompt: CLOTHING_PROMPT_OVERRIDES.get(item.value) || item.prompt
+});
+
+export const CLOTHING_CATALOG = [
+  ...CLOTHING_OPTIONS,
+  ...FORMAL_SUITS,
+  ...FORMAL_LOOKS,
+  ...EXTRA_DEDUPED
+].map(normalizeClothingCatalogItem);
 
 export const BEDROOM_ANCHOR = Object.freeze({
   room: 'A single fixed master bedroom, roughly 4m x 5m, with cream-painted walls, a large window with beige curtains on the RIGHT wall, a wooden door on the LEFT wall, and warm wooden flooring. This layout is locked and identical in every image.',
@@ -351,21 +431,21 @@ export const BEDROOM_CLUTTER_LEVELS = Object.freeze({
 });
 
 export const HOME_CLOTHING = [
-{ group:'تيشيرت', value:'tee-white', label:'تيشيرت أبيض', prompt:'a plain white cotton crew-neck t-shirt with visible jersey knit texture, natural body-conforming tension, and soft rounded folds' },
-{ group:'تيشيرت', value:'tee-black', label:'تيشيرت أسود', prompt:'a plain black cotton crew-neck t-shirt with matte jersey texture, deep shadow absorption, and natural folds' },
-{ group:'تيشيرت', value:'tee-navy', label:'تيشيرت كحلي', prompt:'a plain navy cotton t-shirt with matte finish and natural body folds' },
-{ group:'تيشيرت', value:'tee-grey', label:'تيشيرت رمادي', prompt:'a plain grey cotton t-shirt with heather knit variation and soft folds' },
-{ group:'تيشيرت', value:'tee-charcoal', label:'تيشيرت فحمي', prompt:'a plain charcoal cotton t-shirt with matte knit texture and natural drape' },
-{ group:'تيشيرت', value:'tee-olive', label:'تيشيرت زيتي', prompt:'a plain olive cotton t-shirt with muted earth tone and natural folds' },
-{ group:'تيشيرت', value:'tee-beige', label:'تيشيرت بيج', prompt:'a plain beige cotton t-shirt with warm neutral tone and natural knit texture' },
-{ group:'تيشيرت', value:'tee-cream', label:'تيشيرت كريمي', prompt:'a plain cream cotton t-shirt with warm light tone and soft folds' },
-{ group:'تيشيرت', value:'tee-burgundy', label:'تيشيرت عنابي', prompt:'a plain burgundy cotton t-shirt with deep warm tone and matte texture' },
-{ group:'تيشيرت', value:'tee-lightblue', label:'تيشيرت أزرق فاتح', prompt:'a plain light blue cotton t-shirt with cool tone and natural knit texture' },
-{ group:'تيشيرت', value:'tee-skyblue', label:'تيشيرت سماوي', prompt:'a plain sky blue cotton t-shirt with fresh cool tone' },
-{ group:'تيشيرت', value:'tee-sage', label:'تيشيرت أخضر مريمي', prompt:'a plain sage green cotton t-shirt with muted tone' },
-{ group:'تيشيرت', value:'tee-dustypink', label:'تيشيرت وردي ترابي', prompt:'a plain dusty pink cotton t-shirt with muted warm tone' },
-{ group:'تيشيرت', value:'tee-mustard', label:'تيشيرت خردلي', prompt:'a plain mustard yellow cotton t-shirt with warm mid-tone' },
-{ group:'تيشيرت', value:'tee-brown', label:'تيشيرت بني', prompt:'a plain brown cotton t-shirt with warm earth tone' },
+{ group:'تيشيرت', value:'tee-white', label:'تيشيرت غرفة نوم أبيض', prompt:'a plain white cotton crew-neck t-shirt with visible jersey knit texture, natural body-conforming tension, and soft rounded folds' },
+{ group:'تيشيرت', value:'tee-black', label:'تيشيرت غرفة نوم أسود', prompt:'a plain black cotton crew-neck t-shirt with matte jersey texture, deep shadow absorption, and natural folds' },
+{ group:'تيشيرت', value:'tee-navy', label:'تيشيرت غرفة نوم كحلي', prompt:'a plain navy cotton t-shirt with matte finish and natural body folds' },
+{ group:'تيشيرت', value:'tee-grey', label:'تيشيرت غرفة نوم رمادي', prompt:'a plain grey cotton t-shirt with heather knit variation and soft folds' },
+{ group:'تيشيرت', value:'tee-charcoal', label:'تيشيرت غرفة نوم فحمي', prompt:'a plain charcoal cotton t-shirt with matte knit texture and natural drape' },
+{ group:'تيشيرت', value:'tee-olive', label:'تيشيرت غرفة نوم زيتي', prompt:'a plain olive cotton t-shirt with muted earth tone and natural folds' },
+{ group:'تيشيرت', value:'tee-beige', label:'تيشيرت غرفة نوم بيج', prompt:'a plain beige cotton t-shirt with warm neutral tone and natural knit texture' },
+{ group:'تيشيرت', value:'tee-cream', label:'تيشيرت غرفة نوم كريمي', prompt:'a plain cream cotton t-shirt with warm light tone and soft folds' },
+{ group:'تيشيرت', value:'tee-burgundy', label:'تيشيرت غرفة نوم عنابي', prompt:'a plain burgundy cotton t-shirt with deep warm tone and matte texture' },
+{ group:'تيشيرت', value:'tee-lightblue', label:'تيشيرت غرفة نوم أزرق فاتح', prompt:'a plain light blue cotton t-shirt with cool tone and natural knit texture' },
+{ group:'تيشيرت', value:'tee-skyblue', label:'تيشيرت غرفة نوم سماوي', prompt:'a plain sky blue cotton t-shirt with fresh cool tone' },
+{ group:'تيشيرت', value:'tee-sage', label:'تيشيرت غرفة نوم أخضر مريمي', prompt:'a plain sage green cotton t-shirt with muted tone' },
+{ group:'تيشيرت', value:'tee-dustypink', label:'تيشيرت غرفة نوم وردي ترابي', prompt:'a plain dusty pink cotton t-shirt with muted warm tone' },
+{ group:'تيشيرت', value:'tee-mustard', label:'تيشيرت غرفة نوم خردلي', prompt:'a plain mustard yellow cotton t-shirt with warm mid-tone' },
+{ group:'تيشيرت', value:'tee-brown', label:'تيشيرت غرفة نوم بني', prompt:'a plain brown cotton t-shirt with warm earth tone' },
 { group:'شورت', value:'shorts-black', label:'شورت أسود', prompt:'plain black cotton lounge shorts with visible woven or jersey texture, natural waistband compression, and soft fabric draping over the thighs' },
 { group:'شورت', value:'shorts-navy', label:'شورت كحلي', prompt:'plain navy cotton lounge shorts with matte finish' },
 { group:'شورت', value:'shorts-grey', label:'شورت رمادي', prompt:'plain grey cotton lounge shorts with heather texture' },

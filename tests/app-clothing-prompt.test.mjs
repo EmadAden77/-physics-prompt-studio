@@ -27,13 +27,31 @@ test('clothing select is catalog-driven rather than duplicated as static HTML op
   assert.deepEqual(values, ['']);
 });
 
-test('clothing UI group order is base, formal suits, then formal looks', async () => {
-  const { CLOTHING_OPTIONS } = await import('../core/scene-builder.js');
-  const baseGroups = [...new Set(CLOTHING_OPTIONS.map((item) => item.group))];
-  assert.deepEqual([...baseGroups, 'بدلات رسمية كاملة', 'أطقم كاملة (قميص + بنطال)'], [
+test('clothing UI exposes the required unified catalog groups', async () => {
+  const { CLOTHING_CATALOG } = await import('../core/scene-builder.js');
+  const groups = [...new Set(CLOTHING_CATALOG.map((item) => item.group))];
+  const requiredGroups = [
     'ثياب وتراث سعودي',
     'كاجوال',
     'بدلات رسمية كاملة',
-    'أطقم كاملة (قميص + بنطال)'
-  ]);
+    'أبيض وكحلي',
+    'أزرق',
+    'كحلي',
+    'فحمي',
+    'أسود',
+    'بيج وكريمي',
+    'زيتي',
+    'ملون وبياقة',
+    'كتان صيفي',
+    'متعدد'
+  ];
+  for (const group of requiredGroups) {
+    assert.ok(groups.includes(group), `Missing group: ${group}`);
+  }
+});
+
+test('clothing UI exposes 209 items in general scenes', async () => {
+  const { randomizationOptionsForScene } = await import('../app.js');
+  const options = randomizationOptionsForScene('front_selfie');
+  assert.equal(options.clothing.length, 209);
 });

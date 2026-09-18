@@ -789,3 +789,49 @@ test('23 sections preserved with held props', () => {
   const result = generateImagePrompt({ sceneType: 'cafe_selfie', heldProp: 'cappuccino-cup' });
   assert.equal(result.sections.length, 23);
 });
+
+test('bedroom prompt contains furniture geometry rule', () => {
+  const result = generateImagePrompt({ sceneType: 'bedroom_selfie' });
+  assert.match(result.prompt, /FURNITURE GEOMETRY/i);
+  assert.match(result.prompt, /continuous structural frame|continuous frame/i);
+});
+
+test('majlis prompt contains sofa geometry rule', () => {
+  const result = generateImagePrompt({ sceneType: 'majlis_selfie', location: 'modern_saudi_majlis' });
+  assert.match(result.prompt, /FURNITURE GEOMETRY/i);
+  assert.match(result.prompt, /sofa maintains a continuous/i);
+});
+
+test('cafe prompt contains table geometry rule', () => {
+  const result = generateImagePrompt({ sceneType: 'cafe_selfie', location: 'saudi_cafe' });
+  assert.match(result.prompt, /FURNITURE GEOMETRY/i);
+  assert.match(result.prompt, /table|chair/i);
+});
+
+test('generic geometry rule used when no specific furniture in scene', () => {
+  const result = generateImagePrompt({ sceneType: 'front_selfie', location: 'desert_roadside' });
+  assert.match(result.prompt, /FURNITURE GEOMETRY/i);
+  assert.match(result.prompt, /coherent 3D structure/i);
+});
+
+test('23 sections preserved with furniture geometry', () => {
+  const result = generateImagePrompt({ sceneType: 'bedroom_selfie' });
+  assert.equal(result.sections.length, 23);
+});
+
+test('negative constraints include furniture grounding bans', () => {
+  const result = generateImagePrompt({ sceneType: 'front_selfie' });
+  assert.match(result.prompt, /furniture with disconnected legs/i);
+  assert.match(result.prompt, /furniture floating above the ground/i);
+});
+
+test('every base and expanded scene emits furniture geometry guidance', async () => {
+  const { SCENE_TYPES } = await import('../core/prompt-generator.js');
+  const { EXTRA_SCENE_TYPES } = await import('../core/scene-type-expansion.js');
+  for (const scene of [...SCENE_TYPES, ...EXTRA_SCENE_TYPES]) {
+    const result = generateImagePrompt({ sceneType: scene.value });
+    const sceneSection = result.prompt.split('[SCENE]\n')[1].split('\n\n[SAUDI CULTURAL DRESS]')[0];
+    assert.match(sceneSection, /FURNITURE GEOMETRY:/i, scene.value);
+  }
+});
+

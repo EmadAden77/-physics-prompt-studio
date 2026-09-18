@@ -223,3 +223,23 @@ test('Arabic coffee finjan is limited to majlis and cafe contexts', () => {
   assert.ok(!getAvailableProps('inside_car_selfie', 'subject-held front-camera smartphone selfie', 'day_parking').some((prop) => prop.value === 'arabic-coffee-finjan'));
   assert.ok(!getAvailableProps('outdoor_selfie', 'subject-held front-camera smartphone selfie', 'public_park').some((prop) => prop.value === 'arabic-coffee-finjan'));
 });
+
+test('FURNITURE_GEOMETRY_RULES covers all major furniture types', async () => {
+  const { FURNITURE_GEOMETRY_RULES } = await import('../core/scene-builder.js');
+  for (const key of ['sofa', 'armchair', 'chair', 'table', 'desk', 'bed', 'counter', 'generic']) {
+    assert.ok(FURNITURE_GEOMETRY_RULES[key], `missing: ${key}`);
+    assert.ok(FURNITURE_GEOMETRY_RULES[key].length > 50);
+  }
+});
+
+test('bedroom poses use armchair-* identifiers not sofa-*', async () => {
+  const { BEDROOM_POSES } = await import('../core/scene-builder.js');
+  const sofaIds = BEDROOM_POSES.filter(p => p.value.startsWith('sofa-') || p.value.includes('-sofa'));
+  assert.equal(sofaIds.length, 0, `Found sofa identifiers: ${sofaIds.map(p => p.value).join(', ')}`);
+});
+
+test('BEDROOM_ANCHOR bed specifies two nightstands total', async () => {
+  const { BEDROOM_ANCHOR } = await import('../core/scene-builder.js');
+  assert.match(BEDROOM_ANCHOR.bed, /two matching nightstands total/i);
+});
+

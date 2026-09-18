@@ -29,6 +29,34 @@ const expandedClothing = (group, value, label, prompt) => ({
   prompt: enrichClothingPrompt(prompt)
 });
 const LOCATION_REALISM_SUFFIX = ' Keep the place ordinary, non-iconic, and non-identifiable. Preserve realistic scale, circulation space, surface wear, small maintenance imperfections, dust or use marks where plausible, non-uniform object placement, believable background occupancy, material-specific reflections, and no showroom-clean or staged advertising look.';
+
+export const FURNITURE_GEOMETRY_RULES = Object.freeze({
+  sofa: 'The sofa maintains a continuous structural frame with a single seat base, unified backrest, and clearly separated armrests on both sides. All legs or base contact the ground with realistic contact shadows. Cushions show weight-driven compression at contact points and gravity-driven fabric folds.',
+  armchair: 'The armchair is a single-seat piece with a continuous frame, unified backrest, two armrests, and a seat base. It is not a sofa. All feet contact the ground with realistic shadows. Cushion compresses under body weight.',
+  chair: 'The chair has four legs (or a continuous base) in contact with the ground, a seat, and a backrest. It is not part of another piece of furniture. Legs cast realistic contact shadows.',
+  table: 'The table has a continuous top supported by legs or a base, all in contact with the ground. The top surface maintains physical continuity with no splitting or floating elements. Objects on the table rest with correct support and contact shadows.',
+  desk: 'The desk has a flat working surface supported by legs or a base, with realistic desk-to-chair clearance and human scale. All supports contact the ground with coherent shadows.',
+  bed: 'The bed has a continuous frame, a mattress with realistic compression under weight, a headboard connected to the frame, and legs or base in ground contact. Bedding shows gravity-driven wrinkles.',
+  counter: 'The counter is a continuous solid structure with a top, front panel, and base in ground contact. No floating sections. Objects on the counter have correct support and shadows.',
+  generic: 'All furniture maintains a coherent 3D structure: no morphing, no merging, no splitting, no floating pieces. All supports, legs, and bases contact the ground. Contact shadows are consistent with the light source direction. Surfaces show weight-driven compression at contact points.'
+});
+
+export function getFurnitureGeometryForScene(sceneType, location = '') {
+  const context = `${sceneType} ${location}`.toLowerCase();
+  const rules = [];
+
+  if (/bed|bedroom|lying|reclining|night_bed/.test(context)) rules.push(FURNITURE_GEOMETRY_RULES.bed);
+  if (/sofa|majlis|living_room|couch/.test(context)) rules.push(FURNITURE_GEOMETRY_RULES.sofa);
+  if (/armchair/.test(context)) rules.push(FURNITURE_GEOMETRY_RULES.armchair);
+  if (/chair|seated|barber|clinic|waiting|office/.test(context)) rules.push(FURNITURE_GEOMETRY_RULES.chair);
+  if (/table|restaurant|dining|desk_work|meeting|cafe|coffee/.test(context)) rules.push(FURNITURE_GEOMETRY_RULES.table);
+  if (/desk|office|workstation|admin|government/.test(context)) rules.push(FURNITURE_GEOMETRY_RULES.desk);
+  if (/counter|cafe|coffee|reception|service/.test(context)) rules.push(FURNITURE_GEOMETRY_RULES.counter);
+
+  if (rules.length === 0) rules.push(FURNITURE_GEOMETRY_RULES.generic);
+
+  return rules;
+}
 const locationCatalog = (rows) => rows.map(([group, value, label, prompt, sceneTypes]) => ({
   group,
   value,
@@ -84,7 +112,7 @@ export const LOCATION_CATALOG = locationCatalog([
 ['طبيعة ورحلات','red_sea_beach','شاطئ البحر الأحمر','on a Saudi Red Sea beach with physically plausible shoreline, wet-sand reflectance, sea haze, wind, and ordinary recreational context',['standing_selfie','walking_selfie','outdoor_selfie','third_person_portrait','full_body_third_person','beach_corniche_selfie','wind_interactive_outdoor_scene','harsh_noon_outdoor_selfie','open_shade_outdoor_selfie']],
 ['طبيعة ورحلات','gulf_beach','شاطئ الخليج','on a Saudi Arabian Gulf beach with calm coastal water, humidity haze, realistic sand, shoreline reflections, and ordinary waterfront context',['standing_selfie','walking_selfie','outdoor_selfie','third_person_portrait','full_body_third_person','beach_corniche_selfie','wind_interactive_outdoor_scene','harsh_noon_outdoor_selfie','open_shade_outdoor_selfie']],
 ['طبيعة ورحلات','public_park','حديقة عامة','inside a Saudi public park with practical paths, benches, irrigation-aware landscaping, family-use context, and realistic lighting',['front_selfie','standing_selfie','seated_selfie','walking_selfie','outdoor_selfie','third_person_portrait','full_body_third_person','candid_third_person','family_group_selfie','crowd_light_background_scene']],
-['مجالس ومنازل','saudi_bedroom_livedin','غرفة نوم سعودية واقعية','inside a lived-in Saudi bedroom with a normal bed, slightly imperfect bedding, bedside table, chargers, curtains, wardrobe surfaces, a few personal items, and ordinary residential proportions',['front_selfie','standing_selfie','seated_selfie','mirror_selfie','third_person_portrait','full_body_third_person','candid_third_person','home_interior_casual_selfie','mirror_bedroom_selfie','reclining_bed_selfie','lying_bed_selfie','phone_screen_only_selfie']],
+['مجالس ومنازل','saudi_bedroom_livedin','غرفة نوم سعودية واقعية','inside a lived-in Saudi bedroom with a normal bed, slightly imperfect bedding, two bedside tables (one on each side of the bed), chargers, curtains, wardrobe surfaces, a few personal items, and ordinary residential proportions',['front_selfie','standing_selfie','seated_selfie','mirror_selfie','third_person_portrait','full_body_third_person','candid_third_person','home_interior_casual_selfie','mirror_bedroom_selfie','reclining_bed_selfie','lying_bed_selfie','phone_screen_only_selfie']],
 ['مجالس ومنازل','apartment_living_room','صالة شقة سكنية','inside an ordinary Saudi apartment living room with realistically sized sofa seating, side tables, television wall, mixed household objects, slight furniture wear, and plausible circulation space',['front_selfie','standing_selfie','seated_selfie','mirror_selfie','third_person_portrait','full_body_third_person','candid_third_person','home_interior_casual_selfie','family_group_selfie']],
 ['مجالس ومنازل','family_dining_room','غرفة طعام منزلية','inside a Saudi family dining area with a practical dining table, mismatched small everyday items, chair spacing that allows movement, used table surfaces, and non-staged domestic context',['front_selfie','standing_selfie','seated_selfie','third_person_portrait','full_body_third_person','candid_third_person','family_group_selfie','third_person_dining_candid']],
 ['مجالس ومنازل','home_kitchen_breakfast','مطبخ منزلي وقت الفطور','inside a realistic Saudi home kitchen during an ordinary meal period, with countertops, cabinets, a few used cups or containers, practical appliances, subtle clutter, and believable working-space clearances',['front_selfie','standing_selfie','candid_third_person','home_kitchen_selfie','interaction_shot']],
@@ -282,11 +310,11 @@ export const POSE_HAND_USAGE = Object.freeze({
   'bed-propped-pillows':0, 'bed-lying-partial':1, 'bed-lying-diagonal':1, 'bed-lying-reading':1,
   'bed-lying-back-knees-bent':0, 'bed-sitting-cross':0, 'bed-sitting-edge':0, 'bed-sitting-back-wall':0,
   'bed-sitting-legs-extended':0, 'bed-sitting-hugging-pillow':1, 'bed-sitting-sideways':0,
-  'sofa-sit-lean-back':0, 'sofa-sit-corner':0, 'sofa-sit-one-knee':0, 'sofa-sit-crossed':0,
+  'armchair-sit-lean-back':0, 'armchair-sit-corner':0, 'armchair-sit-one-knee':0, 'armchair-sit-crossed':0,
   'armchair-sit-feet-floor':0, 'bedroom-stand-relaxed':0, 'bedroom-stand-one-hand':0,
   'bedroom-stand-lean-wardrobe':0, 'bedroom-stand-lean-wall':0, 'bedroom-stand-near-bed':0,
   'bedroom-stand-window':0, 'bedroom-laptop-bed':0, 'bedroom-laptop-armchair':1, 'bedroom-cup-bed':1,
-  'bedroom-tea-sofa':1, 'bedroom-book-bed':1, 'bedroom-phone-only':0, 'bedroom-floor-cross':0,
+  'bedroom-tea-armchair':1, 'bedroom-book-bed':1, 'bedroom-phone-only':0, 'bedroom-floor-cross':0,
   'bedroom-floor-back-wall':0, 'bedroom-floor-knee-up':0, 'bedroom-curtain-touch':1,
   'bedroom-nightstand-reach':1, 'bedroom-mirror-stand-relaxed':0, 'bedroom-mirror-adjust':1,
   'bedroom-mirror-seated':0
@@ -637,7 +665,7 @@ export const CLOTHING_CATALOG = [
 
 export const BEDROOM_ANCHOR = Object.freeze({
   room: 'A single fixed master bedroom, roughly 4m x 5m, with cream-painted walls, a large window with beige curtains on the RIGHT wall, a wooden door on the LEFT wall, and warm wooden flooring. This layout is locked and identical in every image.',
-  bed: 'A queen-size bed with a dark wooden frame and a beige tufted headboard, positioned against the BACK wall, centered, with two matching nightstands on each side. The bed is always in the same position.',
+  bed: 'A queen-size bed with a dark wooden frame and a beige tufted headboard, positioned against the BACK wall, centered, with two matching nightstands total, one on each side of the bed, one on the left and one on the right. The bed is always in the same position.',
   wardrobe: 'A tall wooden wardrobe with three doors, positioned on the LEFT wall near the door, always in the same position.',
   mirror: 'A full-length framed mirror attached to the wardrobe door, always visible when the camera faces the wardrobe side.',
   armchair: 'A single upholstered armchair in the far RIGHT corner near the window, with a folded throw blanket on its backrest. It is a chair, not a sofa — no more than one adult can sit in it.',
@@ -732,11 +760,11 @@ export const BEDROOM_POSES = [
 { group:'جلوس على السرير', value:'bed-sitting-legs-extended', label:'جالس ومدد ساقيه', prompt:'seated on the bed with legs extended forward, back slightly reclined, phone at arm length', cameraHint:'front camera at eye level with legs extended forward' },
 { group:'جلوس على السرير', value:'bed-sitting-hugging-pillow', label:'جالس يحتضن وسادة', prompt:'sitting on the bed hugging a pillow against the chest, natural relaxed posture', cameraHint:'front camera at eye level, pillow visible in the frame lower area' },
 { group:'جلوس على السرير', value:'bed-sitting-sideways', label:'جالس جانبيًا على السرير', prompt:'sitting sideways on the bed edge with both feet grounded, torso mildly rotated toward the phone and visible mattress compression under the hips', cameraHint:'front camera at eye level while seated sideways on the bed edge' },
-{ group:'جلوس على الأريكة', value:'sofa-sit-lean-back', label:'متكئ على الأريكة', prompt:'seated in the bedroom armchair with back against the backrest, legs relaxed, natural cushion compression', cameraHint:'front camera at eye level while leaning back in the armchair' },
-{ group:'جلوس على الأريكة', value:'sofa-sit-corner', label:'في زاوية الأريكة', prompt:'seated in the bedroom armchair with elbow resting on the armrest, natural asymmetric posture', cameraHint:'front camera at eye level in the armchair corner' },
-{ group:'جلوس على الأريكة', value:'sofa-sit-one-knee', label:'على الأريكة بركبة مرفوعة', prompt:'seated in the bedroom armchair with one knee raised, foot planted, casual relaxed posture', cameraHint:'front camera at eye level with one knee raised' },
-{ group:'جلوس على الأريكة', value:'sofa-sit-crossed', label:'جالس مربع على الأريكة', prompt:'sitting cross-legged in the bedroom armchair, natural weight distribution', cameraHint:'front camera at eye level while sitting cross-legged in the armchair' },
-{ group:'جلوس على الأريكة', value:'armchair-sit-feet-floor', label:'جالس على الكرسي والقدمان على الأرض', prompt:'seated fully inside the bedroom armchair with both feet planted on the floor, pelvis supported by the cushion and phone held within comfortable arm reach', cameraHint:'front camera at eye level while seated fully in the armchair with both feet on the floor' },
+{ group:'جلوس على الكرسي المفرد', value:'armchair-sit-lean-back', label:'متكئ على الكرسي المفرد', prompt:'seated in the bedroom armchair with back against the backrest, legs relaxed, natural cushion compression', cameraHint:'front camera at eye level while leaning back in the armchair' },
+{ group:'جلوس على الكرسي المفرد', value:'armchair-sit-corner', label:'في زاوية الكرسي المفرد', prompt:'seated in the bedroom armchair with elbow resting on the armrest, natural asymmetric posture', cameraHint:'front camera at eye level in the armchair corner' },
+{ group:'جلوس على الكرسي المفرد', value:'armchair-sit-one-knee', label:'على الكرسي المفرد بركبة مرفوعة', prompt:'seated in the bedroom armchair with one knee raised, foot planted, casual relaxed posture', cameraHint:'front camera at eye level with one knee raised' },
+{ group:'جلوس على الكرسي المفرد', value:'armchair-sit-crossed', label:'جالس مربع على الكرسي المفرد', prompt:'sitting cross-legged in the bedroom armchair, natural weight distribution', cameraHint:'front camera at eye level while sitting cross-legged in the armchair' },
+{ group:'جلوس على الكرسي المفرد', value:'armchair-sit-feet-floor', label:'جالس على الكرسي والقدمان على الأرض', prompt:'seated fully inside the bedroom armchair with both feet planted on the floor, pelvis supported by the cushion and phone held within comfortable arm reach', cameraHint:'front camera at eye level while seated fully in the armchair with both feet on the floor' },
 { group:'وقوف', value:'bedroom-stand-relaxed', label:'واقف باسترخاء', prompt:'standing naturally in the bedroom with relaxed weight distribution, mild shoulder asymmetry', cameraHint:'front camera at eye level, natural selfie angle' },
 { group:'وقوف', value:'bedroom-stand-one-hand', label:'واقف ويده الحرة مرتاحة', prompt:'standing with one hand resting naturally near the hip or pocket', cameraHint:'front camera at eye level' },
 { group:'وقوف', value:'bedroom-stand-lean-wardrobe', label:'متكئ على الخزانة', prompt:'leaning lightly against the wardrobe with visible shoulder contact and natural weight transfer', cameraHint:'front camera at eye level, wardrobe visible behind' },
@@ -744,9 +772,9 @@ export const BEDROOM_POSES = [
 { group:'وقوف', value:'bedroom-stand-near-bed', label:'واقف بجانب السرير', prompt:'standing near the edge of the bed, phone held at arm length', cameraHint:'front camera at eye level, bed visible behind' },
 { group:'وقوف', value:'bedroom-stand-window', label:'واقف عند النافذة', prompt:'standing near the bedroom window with natural daylight from the side', cameraHint:'front camera at eye level, window light from one side' },
 { group:'ماسك لابتوب', value:'bedroom-laptop-bed', label:'لابتوب على السرير', prompt:'seated on the bed with a laptop resting on the bed in front, phone held for the selfie, natural relaxed posture', cameraHint:'front camera held at chest height while seated on the bed, laptop visible in the lower frame' },
-{ group:'ماسك لابتوب', value:'bedroom-laptop-armchair', label:'لابتوب على الحضن في الأريكة', prompt:'seated in the bedroom armchair with a laptop on the lap, phone held in the other hand', cameraHint:'front camera at chest height, laptop on lap visible in the lower frame' },
+{ group:'ماسك لابتوب', value:'bedroom-laptop-armchair', label:'لابتوب على الحضن في الكرسي المفرد', prompt:'seated in the bedroom armchair with a laptop on the lap, phone held in the other hand', cameraHint:'front camera at chest height, laptop on lap visible in the lower frame' },
 { group:'ماسك شيء', value:'bedroom-cup-bed', label:'ماسك كوب قهوة على السرير', prompt:'seated on the bed holding a small cup of coffee in one hand and the phone in the other, natural relaxed posture', cameraHint:'front camera at eye level while seated on the bed, cup visible in one hand' },
-{ group:'ماسك شيء', value:'bedroom-tea-sofa', label:'ماسك كوب شاي على الأريكة', prompt:'seated in the bedroom armchair holding a small cup of tea, phone held in the other hand', cameraHint:'front camera at eye level in the armchair, cup visible' },
+{ group:'ماسك شيء', value:'bedroom-tea-armchair', label:'ماسك كوب شاي على الكرسي المفرد', prompt:'seated in the bedroom armchair holding a small cup of tea, phone held in the other hand', cameraHint:'front camera at eye level in the armchair, cup visible' },
 { group:'ماسك شيء', value:'bedroom-book-bed', label:'ماسك كتابًا على السرير', prompt:'seated on the bed holding an open book in one hand, phone in the other', cameraHint:'front camera at eye level while seated on the bed, book visible' },
 { group:'ماسك شيء', value:'bedroom-phone-only', label:'ماسك الهاتف فقط', prompt:'holding only the phone with the other hand resting naturally on the thigh or side', cameraHint:'front camera at eye level, free hand resting naturally' },
 { group:'أرضية', value:'bedroom-floor-cross', label:'جالس مربع على الأرض', prompt:'sitting cross-legged on the bedroom rug with natural hip and knee placement', cameraHint:'front camera at chest height while seated cross-legged on the floor' },

@@ -374,6 +374,35 @@ test('formal look prompt is preserved verbatim in clothing section', async () =>
   assert.doesNotMatch(clothing, /a clean collared shirt with tailored trousers/i);
 });
 
+
+test('expressions catalog contains 25 anatomical expressions', async () => {
+  const { EXPRESSIONS } = await import('../core/prompt-generator.js');
+  assert.equal(EXPRESSIONS.length, 25);
+});
+
+test('every expression mentions an anatomical muscle or feature', async () => {
+  const { EXPRESSIONS } = await import('../core/prompt-generator.js');
+  const anatomy = /zygomaticus|orbicularis|corrugator|frontalis|levator|mentalis|procerus|depressor|risorius|lip|eyelid|brow|cheek|mouth|jaw|chin/i;
+  for (const expr of EXPRESSIONS) {
+    assert.match(expr.prompt, anatomy, `${expr.value} has no anatomical detail`);
+  }
+});
+
+test('only laughing-soft reveals teeth', async () => {
+  const { EXPRESSIONS } = await import('../core/prompt-generator.js');
+  const teeth = EXPRESSIONS.filter(e => /\bteeth\b/i.test(e.prompt));
+  assert.equal(teeth.length, 1);
+  assert.equal(teeth[0].value, 'laughing-soft');
+});
+
+test('expressions catalog has no duplicate values or labels', async () => {
+  const { EXPRESSIONS } = await import('../core/prompt-generator.js');
+  const values = EXPRESSIONS.map(e => e.value);
+  const labels = EXPRESSIONS.map(e => e.label);
+  assert.equal(new Set(values).size, values.length);
+  assert.equal(new Set(labels).size, labels.length);
+});
+
 test('bedroom_selfie does not contain mirror rules', () => {
   const result = generateImagePrompt({ sceneType: 'bedroom_selfie' });
   assert.match(result.prompt, /Mirror rules: not applicable/i);

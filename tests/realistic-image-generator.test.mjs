@@ -77,6 +77,8 @@ test('heldProp overrides gym default action', async () => {
   });
   assert.doesNotMatch(packet.action, /water bottle/i);
   assert.match(packet.accessories.prop, /iPhone 15 Pro/i);
+  const guidance = renderRealismGuidance(packet);
+  assert.doesNotMatch(guidance.action, /\.\./);
 });
 
 test('heldProp none preserves gym default prop', async () => {

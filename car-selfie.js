@@ -1,6 +1,6 @@
 import { generateImagePrompt, validateRealism } from './core/prompt-generator.js';
 import { processImageBlob, XIAOMI_15_ULTRA_PRESET } from './core/photo-post-processing.js';
-import { SAUDI_LOCATIONS, CLOTHING_OPTIONS, SELFIE_ANGLES, LIGHTING_PROFILES } from './core/scene-builder.js';
+import { SAUDI_LOCATIONS, CLOTHING_CATALOG, SELFIE_ANGLES, LIGHTING_PROFILES } from './core/scene-builder.js';
 
 const IPHONE_15_PRO_MAX_PRESET = Object.freeze({
   iso: 'auto', lumaNoise: 0.38, chromaNoise: 0.18, chromaticAberration: 0.32,
@@ -213,7 +213,7 @@ function renderValidation(check) {
 }
 function generateCarPrompt() {
   const placeItem = byValue(SAUDI_LOCATIONS, place.value);
-  const clothingItem = byValue(CLOTHING_OPTIONS, clothing.value);
+  const clothingItem = byValue(CLOTHING_CATALOG, clothing.value);
   const angleItem = byValue(SELFIE_ANGLES, selfieAngle.value);
   const lightingItem = byValue(LIGHTING_PROFILES, lighting.value);
   const poseItem = selectedPose();
@@ -345,7 +345,7 @@ appendOptions(vehicleState, VEHICLE_STATES);
 appendOptions(seat, SEATS);
 appendOptions(standingPose, OUTSIDE_POSES);
 appendOptions(timeOfDay, TIMES);
-appendOptions(clothing, CLOTHING_OPTIONS, true);
+appendOptions(clothing, CLOTHING_CATALOG, true);
 refreshPlaces();
 setMode('inside', { initialize: true });
 

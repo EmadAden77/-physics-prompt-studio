@@ -21,6 +21,8 @@ const controls = {
   sceneType: $('sceneType'),
   location: $('sceneLocation'),
   clothing: $('sceneClothing'),
+  clothingStyling: $('clothingStyling'),
+  handInteraction: $('handInteraction'),
   hairStyle: $('hairStyle'),
   pose: $('scenePose'),
   angle: $('sceneAngle'),
@@ -58,6 +60,7 @@ const optimizeButton = $('optimizeButton');
 const randomButton = $('randomButton');
 const resetButton = $('resetButton');
 const cameraAngleHint = $('cameraAngleHint');
+const clothingStylingHint = $('clothingStylingHint');
 
 const GENERAL_CLOTHING_OPTIONS = CLOTHING_CATALOG;
 const CATALOGS = {
@@ -80,6 +83,13 @@ const RANDOMIZED_FIELDS = Object.freeze([
 ]);
 const CORE_VISUAL_FIELDS = Object.freeze(['sceneType','location','clothing','hairStyle','pose','lighting']);
 const SEED_STORAGE_KEY = 'physicsPromptStudioSeed';
+const CLOTHING_STYLING_SCENE_TYPES = Object.freeze([
+  'front_selfie','standing_selfie','seated_selfie','walking_selfie',
+  'office_selfie','cafe_selfie','majlis_selfie','outdoor_selfie',
+  'inside_car_selfie','military_meal_selfie',
+  'bedroom_selfie','bedroom_third_person',
+  'third_person_portrait','full_body_third_person','candid_third_person'
+]);
 
 let currentMode = 'auto';
 let latestResult = null;
@@ -247,6 +257,7 @@ function applySceneCompatibility() {
     required: true,
     fieldName: 'framing'
   });
+  updateClothingStylingAvailability();
   updatePoseCameraLock();
   return compatibilityType;
 }
@@ -260,6 +271,19 @@ function selectedPrompt(select, promptByValue = null) {
 
 function selectedClothingPrompt() {
   return selectedPrompt(controls.clothing, CLOTHING_PROMPT_BY_VALUE);
+}
+
+function updateClothingStylingAvailability() {
+  if (!controls.clothingStyling) return false;
+  const sceneType = selectedSceneType();
+  const clothingDescriptor = `${controls.clothing?.value || ''} ${selectedClothingPrompt()}`;
+  const supported = CLOTHING_STYLING_SCENE_TYPES.includes(sceneType)
+    && sceneType !== 'supermarket_selfie'
+    && !/\b(?:thobe|bisht)\b/i.test(clothingDescriptor);
+  controls.clothingStyling.disabled = !supported;
+  if (!supported) controls.clothingStyling.value = 'default';
+  if (clothingStylingHint) clothingStylingHint.hidden = supported;
+  return supported;
 }
 
 function updatePoseCameraLock() {
@@ -297,6 +321,8 @@ function autoInput() {
     framing: controls.framing.value,
     location: enforceSaudiNoLandmarks(selectedPrompt(controls.location)),
     clothing: enrichClothingPrompt(selectedClothingPrompt()),
+    clothingStyling: controls.clothingStyling.value,
+    handInteraction: controls.handInteraction.value,
     hairStyle: selectedPrompt(controls.hairStyle),
     pose: selectedPrompt(controls.pose),
     angle: selectedPrompt(controls.angle),
@@ -542,6 +568,8 @@ function resetAll() {
   applySceneCompatibility();
   controls.location.value = '';
   controls.clothing.value = '';
+  controls.clothingStyling.value = 'default';
+  controls.handInteraction.value = 'none';
   controls.hairStyle.value = '';
   controls.pose.value = '';
   controls.angle.value = 'smart';
@@ -596,6 +624,8 @@ if (HAS_DOM) {
   populateFlat(controls.realismLevel, REALISM_LEVELS);
 
   controls.sceneType.value = 'front_selfie';
+  controls.clothingStyling.value = 'default';
+  controls.handInteraction.value = 'none';
   controls.aspectRatio.value = '9:16';
   controls.expression.value = 'neutral';
   controls.backgroundActivity.value = 'normal';
@@ -622,6 +652,10 @@ if (HAS_DOM) {
     applySceneCompatibility();
     scheduleGenerate();
   });
+  controls.clothing.addEventListener('change', () => {
+    updateClothingStylingAvailability();
+    scheduleGenerate();
+  });
   controls.pose.addEventListener('change', () => {
     updatePoseCameraLock();
     scheduleGenerate();
@@ -632,7 +666,7 @@ if (HAS_DOM) {
     document.querySelectorAll('.tab-panel').forEach((panel) => panel.classList.toggle('active', panel.dataset.panel === button.dataset.tab));
   }));
   Object.values(controls).forEach((control) => {
-    if (!control || control === controls.sceneType || control === controls.seedInput || control === controls.pose) return;
+    if (!control || control === controls.sceneType || control === controls.seedInput || control === controls.pose || control === controls.clothing) return;
     control.addEventListener('change', scheduleGenerate);
     control.addEventListener('input', scheduleGenerate);
   });

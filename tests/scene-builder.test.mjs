@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { compilePrompt, validatePacket } from '../core/prompt-optimizer.js';
-import { SAUDI_LOCATIONS, CLOTHING_OPTIONS, CLOTHING_CATALOG, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES, normalizeSceneContext } from '../core/scene-builder.js';
+import { SAUDI_LOCATIONS, CLOTHING_OPTIONS, CLOTHING_CATALOG, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES, normalizeSceneContext, BEDROOM_POSES, HAND_PROPS, POSE_HAND_USAGE, getAvailableProps } from '../core/scene-builder.js';
 import { generateImagePrompt } from '../core/prompt-generator.js';
 
 test('scene catalog is broad across requested categories', () => {
@@ -186,4 +186,40 @@ test('all 40 bedroom poses expose a non-empty cameraHint', async () => {
     assert.equal(typeof pose.cameraHint, 'string', `cameraHint is not a string for ${pose.value}`);
     assert.ok(pose.cameraHint.trim().length > 0, `missing cameraHint for ${pose.value}`);
   }
+});
+
+
+test('HAND_PROPS contains exactly the supplied 52 items', () => {
+  assert.equal(HAND_PROPS.length, 52);
+  assert.equal(new Set(HAND_PROPS.map((prop) => prop.value)).size, 52);
+});
+
+test('POSE_HAND_USAGE covers all selfie and bedroom poses', () => {
+  const all = [...SELFIE_POSES, ...BEDROOM_POSES];
+  assert.equal(all.length, 56);
+  for (const pose of all) assert.ok(Object.hasOwn(POSE_HAND_USAGE, pose.value), `missing hand usage for ${pose.value}`);
+});
+
+test('bedroom laptop on bed does not consume a hand but laptop on lap does', () => {
+  assert.equal(POSE_HAND_USAGE['bedroom-laptop-bed'], 0);
+  assert.equal(POSE_HAND_USAGE['bedroom-laptop-armchair'], 1);
+});
+
+test('iPhone 15 Pro is available in at least 90 percent of registered scene types at neutral budget', async () => {
+  const { SCENE_TYPES } = await import('../core/prompt-generator.js');
+  const { EXTRA_SCENE_TYPES } = await import('../core/scene-type-expansion.js');
+  const baseCapture = new Map(SCENE_TYPES.map((scene) => [scene.value, scene.capture]));
+  const scenes = [
+    ...SCENE_TYPES.map((scene) => ({ value:scene.value, capture:scene.capture })),
+    ...EXTRA_SCENE_TYPES.map((scene) => ({ value:scene.value, capture:baseCapture.get(scene.baseType) }))
+  ];
+  const available = scenes.filter((scene) => getAvailableProps(scene.value, scene.capture).some((prop) => prop.value === 'iphone-15-pro-black'));
+  assert.ok(available.length / scenes.length >= 0.9, `${available.length}/${scenes.length}`);
+});
+
+test('Arabic coffee finjan is limited to majlis and cafe contexts', () => {
+  assert.ok(getAvailableProps('cafe_selfie', 'subject-held front-camera smartphone selfie', 'saudi_cafe').some((prop) => prop.value === 'arabic-coffee-finjan'));
+  assert.ok(getAvailableProps('majlis_selfie', 'subject-held front-camera smartphone selfie', 'modern_saudi_majlis').some((prop) => prop.value === 'arabic-coffee-finjan'));
+  assert.ok(!getAvailableProps('inside_car_selfie', 'subject-held front-camera smartphone selfie', 'day_parking').some((prop) => prop.value === 'arabic-coffee-finjan'));
+  assert.ok(!getAvailableProps('outdoor_selfie', 'subject-held front-camera smartphone selfie', 'public_park').some((prop) => prop.value === 'arabic-coffee-finjan'));
 });

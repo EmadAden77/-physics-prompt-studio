@@ -592,3 +592,61 @@ test('validateRealism does not let negative-section scope hide a later positive 
   const text = '[NEGATIVE CONSTRAINTS]\nAvoid: no DSLR bokeh.\n\n[SCENE]\nA scene with DSLR bokeh.\n\nvisible skin pores, chromatic aberration, corneal reflections, stray hairs.';
   assert.equal(validateRealism(text).valid, false);
 });
+
+test('clothing styling is injected when selected', () => {
+  const result = generateImagePrompt({
+    sceneType: 'front_selfie',
+    clothingStyling: 'sleeves-rolled'
+  });
+  assert.match(result.prompt, /rolled up to the elbows/i);
+});
+
+test('default clothing styling adds nothing', () => {
+  const result = generateImagePrompt({
+    sceneType: 'front_selfie',
+    clothingStyling: 'default'
+  });
+  assert.doesNotMatch(result.prompt, /rolled up to the elbows/i);
+  assert.doesNotMatch(result.prompt, /French Tuck|french-tuck/i);
+});
+
+test('hand interaction is injected when selected', () => {
+  const result = generateImagePrompt({
+    sceneType: 'front_selfie',
+    handInteraction: 'pocket-hands'
+  });
+  assert.match(result.prompt, /side pockets/i);
+});
+
+test('new negative terms are present', () => {
+  const result = generateImagePrompt({ sceneType: 'front_selfie' });
+  for (const term of [
+    'melted fabric',
+    'floating clothes',
+    'deformed abs',
+    'impossible anatomy',
+    'morphing sofa',
+    'split furniture',
+    'merged furniture',
+    'disconnected armrest',
+    'two sofas merged'
+  ]) {
+    assert.match(result.prompt.toLowerCase(), new RegExp(term, 'i'));
+  }
+});
+
+test('no duplicate negative terms', () => {
+  const result = generateImagePrompt({ sceneType: 'front_selfie' });
+  const negativeSection = result.prompt.split('[NEGATIVE CONSTRAINTS]')[1].split('[FINAL VERIFICATION]')[0];
+  const terms = negativeSection.split(',').map((term) => term.trim().toLowerCase()).filter(Boolean);
+  assert.equal(new Set(terms).size, terms.length, 'Duplicate negative terms found');
+});
+
+test('23 sections are preserved', () => {
+  const result = generateImagePrompt({
+    sceneType: 'front_selfie',
+    clothingStyling: 'sleeves-rolled',
+    handInteraction: 'pocket-hands'
+  });
+  assert.equal(result.sections.length, 23);
+});

@@ -31,10 +31,31 @@ export const ASPECT_RATIOS = [
   { value:'1:1', label:'1:1 مربع', prompt:'square 1:1 composition' }, { value:'16:9', label:'16:9 أفقي', prompt:'horizontal 16:9 composition' }
 ];
 export const EXPRESSIONS = [
-  { value:'neutral', label:'محايد هادئ', prompt:'calm neutral expression, relaxed eyes and a naturally closed mouth' },
-  { value:'subtle_smile', label:'ابتسامة خفيفة', prompt:'a very subtle natural closed-mouth smile without posing or beauty-ad energy' },
-  { value:'focused', label:'تركيز طبيعي', prompt:'a naturally focused expression with relaxed facial muscles and no exaggerated tension' },
-  { value:'candid', label:'عفوي', prompt:'a candid in-between expression with natural facial asymmetry and no forced smile' }
+  { value:'neutral-calm', label:'هدوء تام', prompt:'a calm neutral face with low orbicularis oris activity, lips resting together naturally, soft eyelids, relaxed cheeks, and no deliberate smile' },
+  { value:'neutral-composed', label:'هدوء مع تعبير محكم', prompt:'a composed neutral face with minimal frontalis activity, level brows, relaxed orbicularis oris around the lips, and steady eyelids' },
+  { value:'neutral-attentive', label:'انتباه محايد', prompt:'an attentive neutral expression with mild levator palpebrae activity, slightly more open eyelids, relaxed lips, and level brows' },
+  { value:'neutral-thoughtful', label:'تأمل هادئ', prompt:'a mildly thoughtful neutral expression with low corrugator supercilii activity, subtly drawn brows, relaxed lips, and soft eyelids' },
+  { value:'neutral-relaxed', label:'ارتخاء طبيعي', prompt:'a naturally relaxed face with minimal orbicularis oris tension, loosely resting lips, relaxed eyelids, soft cheeks, and an unstrained jaw' },
+  { value:'smile-subtle', label:'ابتسامة خفيفة جدًا', prompt:'a very small closed-mouth smile with low zygomaticus major activity, gently lifted lip corners, relaxed orbicularis oculi, and calm cheeks' },
+  { value:'smile-warm', label:'ابتسامة دافئة', prompt:'a warm closed-mouth smile with mild zygomaticus major activation, subtle orbicularis oculi engagement near the eyes, softly lifted cheeks, and relaxed lips' },
+  { value:'smile-genuine', label:'ابتسامة صادقة (Duchenne)', prompt:'a genuine Duchenne smile with moderate zygomaticus major activation and clear orbicularis oculi engagement, lifted cheeks, narrowed lower eyelids, and a naturally closed mouth' },
+  { value:'smile-soft', label:'ابتسامة ناعمة', prompt:'a soft closed-mouth smile with low zygomaticus minor and zygomaticus major activity, gently raised lip corners, relaxed eyelids, and soft cheeks' },
+  { value:'smile-half', label:'نصف ابتسامة', prompt:'a restrained half smile with low zygomaticus major and risorius activity, one lip corner slightly higher than the other, mild cheek lift, and deliberate natural asymmetry' },
+  { value:'focused-mild', label:'تركيز خفيف', prompt:'a mildly focused expression with low frontalis activity, steady brows, relaxed lips, slightly narrowed eyelids, and gentle jaw tone' },
+  { value:'focused-deep', label:'تركيز عميق', prompt:'a deeply focused expression with moderate corrugator supercilii activity, slightly drawn brows, steady eyelids, closed relaxed lips, and controlled jaw tension' },
+  { value:'thoughtful-upward', label:'تأمل بنظرة أعلى', prompt:'a thoughtful upward gaze with mild levator palpebrae activity, slightly raised upper eyelids, relaxed brows, closed lips, and soft cheeks' },
+  { value:'contemplative', label:'تفكر هادئ', prompt:'a contemplative expression with low orbicularis oculi activity, relaxed eyelids, still lips, softened cheeks, and a quiet jaw' },
+  { value:'curious', label:'فضول', prompt:'a curious expression with mild frontalis activity, slightly raised brows, attentive eyelids, relaxed lips, and soft cheeks' },
+  { value:'mild-surprise', label:'دهشة خفيفة', prompt:'a mildly surprised expression with low frontalis activation, gently elevated brows, slightly widened eyelids, relaxed lips, and a softly released jaw' },
+  { value:'mild-concern', label:'قلق خفيف', prompt:'a mildly concerned expression with low corrugator supercilii and frontalis activity, inner brows slightly raised, soft eyelids, closed lips, and light tension around the chin' },
+  { value:'mild-doubt', label:'شك خفيف', prompt:'a mildly doubtful expression with low frontalis and corrugator supercilii activity, one brow slightly higher than the other, closed lips, restrained cheek movement, and natural asymmetry' },
+  { value:'candid-mid-reaction', label:'رد فعل عفوي', prompt:'a candid mid-reaction with low risorius and orbicularis oris activity, lips shifting slightly off-center, one cheek fractionally more engaged, alert eyelids, and natural asymmetry' },
+  { value:'laughing-soft', label:'ضحكة هادئة', prompt:'a soft laugh with moderate zygomaticus major and orbicularis oculi activation, lifted cheeks, smiling eyelids, parted lips, and only a small natural glimpse of teeth' },
+  { value:'speaking-natural', label:'منتصف الكلام', prompt:'a natural mid-speech expression with mild orbicularis oris activity, lips parted in a plausible speech shape, relaxed cheeks, steady brows, and open attentive eyelids' },
+  { value:'tired-end-of-day', label:'إرهاق نهاية اليوم', prompt:'subtle end-of-day fatigue with low levator palpebrae activity, slightly lowered upper eyelids, relaxed brows, softly closed lips, and gentle cheek heaviness' },
+  { value:'content-satisfied', label:'رضا', prompt:'a quietly satisfied expression with low zygomaticus major activity, softly lifted lip corners, relaxed eyelids, calm cheeks, and a closed mouth' },
+  { value:'reflective', label:'استغراق', prompt:'a reflective expression with low orbicularis oculi activity, gaze slightly downward through relaxed eyelids, still lips, soft cheeks, and a loose jaw' },
+  { value:'quiet-confidence', label:'ثقة هادئة', prompt:'quiet confidence with mild frontalis stabilization, steady brows, relaxed eyelids, closed neutral lips, softly set cheeks, and a calm jaw' }
 ];
 export const BACKGROUND_ACTIVITY = [
   { value:'quiet', label:'هادئ', prompt:'quiet background with no background people; preserve only context-appropriate environmental detail and vehicles when physically appropriate' },

@@ -177,7 +177,9 @@ function selectedSceneType() {
 }
 
 function specializedOptions(sceneType, kind, options) {
-  return sceneMeta(sceneType) ? narrowOptions(sceneType, kind, options) : options;
+  if (!sceneMeta(sceneType)) return options;
+  const narrowed = narrowOptions(sceneType, kind, options);
+  return narrowed.length === 0 ? options : narrowed;
 }
 
 function restoreCompatibleSelection(control, previousValue, options, preferredValue = '') {

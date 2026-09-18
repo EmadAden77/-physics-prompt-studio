@@ -1,9 +1,6 @@
 import { compilePrompt, createLedger } from './core/prompt-optimizer.js';
-import { LOCATION_CATALOG, CLOTHING_OPTIONS, HOME_CLOTHING, FORMAL_LOOKS, FORMAL_SUITS, HAIR_STYLES, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from './core/scene-builder.js';
-import {
-  EXTRA_CLOTHING_OPTIONS,
-  enrichClothingPrompt
-} from './core/expanded-catalogs.js';
+import { LOCATION_CATALOG, CLOTHING_CATALOG, HOME_CLOTHING, HAIR_STYLES, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from './core/scene-builder.js';
+import { enrichClothingPrompt } from './core/expanded-catalogs.js';
 import {
   generateImagePrompt,
   SCENE_TYPES,
@@ -62,12 +59,7 @@ const randomButton = $('randomButton');
 const resetButton = $('resetButton');
 const cameraAngleHint = $('cameraAngleHint');
 
-const withUiGroup = (options, group) => options.map((item) => ({ ...item, group }));
-const GENERAL_CLOTHING_OPTIONS = [
-  ...CLOTHING_OPTIONS,
-  ...withUiGroup(FORMAL_SUITS, 'بدلات رسمية كاملة'),
-  ...withUiGroup(FORMAL_LOOKS, 'أطقم كاملة (قميص + بنطال)')
-];
+const GENERAL_CLOTHING_OPTIONS = CLOTHING_CATALOG;
 const CATALOGS = {
   location: LOCATION_CATALOG,
   generalClothing: GENERAL_CLOTHING_OPTIONS,
@@ -82,9 +74,6 @@ const CATALOGS = {
 const CLOTHING_PROMPT_BY_VALUE = new Map(
   [...CATALOGS.generalClothing, ...CATALOGS.bedroomClothing].map((item) => [item.value, item.prompt || ''])
 );
-for (const item of EXTRA_CLOTHING_OPTIONS) {
-  if (!CLOTHING_PROMPT_BY_VALUE.has(item.value)) CLOTHING_PROMPT_BY_VALUE.set(item.value, item.prompt || '');
-}
 const RANDOMIZED_FIELDS = Object.freeze([
   'location','clothing','pose','angle','lighting','camera','framing',
   'expression','backgroundActivity','realismLevel','aspectRatio','hairStyle'

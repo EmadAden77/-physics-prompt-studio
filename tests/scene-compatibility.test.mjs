@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { compatibleOptions, compatibilitySnapshot, locationsForScene, recommendedDefaults, resolveCompatibleValue, resolveContextAwareConstraints } from '../core/scene-compatibility.js';
-import { LOCATION_CATALOG, SAUDI_LOCATIONS, CLOTHING_OPTIONS, HOME_CLOTHING, BEDROOM_POSES, BEDROOM_ANCHOR, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
+import { LOCATION_CATALOG, SAUDI_LOCATIONS, CLOTHING_CATALOG, HOME_CLOTHING, BEDROOM_POSES, BEDROOM_ANCHOR, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
 import { CAMERA_PROFILES, FRAMING_OPTIONS, SCENE_TYPES, generateImagePrompt } from '../core/prompt-generator.js';
 import { baseSceneTypeFor, EXTRA_SCENE_TYPES } from '../core/scene-type-expansion.js';
 
 const catalogs = {
   location: LOCATION_CATALOG,
-  clothing: CLOTHING_OPTIONS,
+  clothing: CLOTHING_CATALOG,
   pose: SELFIE_POSES,
   angle: SELFIE_ANGLES,
   lighting: LIGHTING_PROFILES,
@@ -263,8 +263,8 @@ test('phone-screen-only remains allowed in a naturally dark car and excludes oth
 });
 
 test('clothing remains available when it is physically compatible with the scene', () => {
-  const options = compatibleOptions('inside_car_selfie', 'clothing', CLOTHING_OPTIONS);
-  assert.equal(options.length, CLOTHING_OPTIONS.length);
+  const options = compatibleOptions('inside_car_selfie', 'clothing', CLOTHING_CATALOG);
+  assert.equal(options.length, CLOTHING_CATALOG.length);
 });
 
 test('recommended defaults switch camera and framing by capture type', () => {
@@ -354,8 +354,7 @@ test('non-bedroom prompts do not contain the bedroom anchor', () => {
 });
 
 test('office_selfie does NOT expose any HOME_CLOTHING item', async () => {
-  const { FORMAL_SUITS, FORMAL_LOOKS } = await import('../core/scene-builder.js');
-  const allClothing = [...CLOTHING_OPTIONS, ...HOME_CLOTHING, ...FORMAL_SUITS, ...FORMAL_LOOKS];
+  const allClothing = [...CLOTHING_CATALOG, ...HOME_CLOTHING];
   const options = compatibleOptions('office_selfie', 'clothing', allClothing);
   const homeClothingValues = new Set(HOME_CLOTHING.map((item) => item.value));
   const leaked = options.filter((item) => homeClothingValues.has(item.value));
@@ -363,8 +362,7 @@ test('office_selfie does NOT expose any HOME_CLOTHING item', async () => {
 });
 
 test('front_selfie does NOT expose any HOME_CLOTHING item', async () => {
-  const { FORMAL_SUITS, FORMAL_LOOKS } = await import('../core/scene-builder.js');
-  const allClothing = [...CLOTHING_OPTIONS, ...HOME_CLOTHING, ...FORMAL_SUITS, ...FORMAL_LOOKS];
+  const allClothing = [...CLOTHING_CATALOG, ...HOME_CLOTHING];
   const options = compatibleOptions('front_selfie', 'clothing', allClothing);
   const homeClothingValues = new Set(HOME_CLOTHING.map((item) => item.value));
   const leaked = options.filter((item) => homeClothingValues.has(item.value));
@@ -372,8 +370,7 @@ test('front_selfie does NOT expose any HOME_CLOTHING item', async () => {
 });
 
 test('inside_car_selfie does NOT expose any HOME_CLOTHING item', async () => {
-  const { FORMAL_SUITS, FORMAL_LOOKS } = await import('../core/scene-builder.js');
-  const allClothing = [...CLOTHING_OPTIONS, ...HOME_CLOTHING, ...FORMAL_SUITS, ...FORMAL_LOOKS];
+  const allClothing = [...CLOTHING_CATALOG, ...HOME_CLOTHING];
   const options = compatibleOptions('inside_car_selfie', 'clothing', allClothing);
   const homeClothingValues = new Set(HOME_CLOTHING.map((item) => item.value));
   const leaked = options.filter((item) => homeClothingValues.has(item.value));
@@ -395,8 +392,7 @@ test('bedroom mirror and third-person scenes expose exactly 58 HOME_CLOTHING ite
 });
 
 test('non-bedroom scenes expose no tee-white / tee-black / shorts-* items', async () => {
-  const { FORMAL_SUITS, FORMAL_LOOKS } = await import('../core/scene-builder.js');
-  const allClothing = [...CLOTHING_OPTIONS, ...HOME_CLOTHING, ...FORMAL_SUITS, ...FORMAL_LOOKS];
+  const allClothing = [...CLOTHING_CATALOG, ...HOME_CLOTHING];
   const forbidden = /^tee-|^shorts-|^set-|^pj-|^robe-|^lounge-|^nightthobe-/;
   for (const scene of ['office_selfie', 'cafe_selfie', 'front_selfie', 'outdoor_selfie', 'inside_car_selfie']) {
     const options = compatibleOptions(scene, 'clothing', allClothing);

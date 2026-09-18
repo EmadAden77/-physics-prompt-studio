@@ -1,12 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { LOCATION_CATALOG } from '../core/scene-builder.js';
+import { CLOTHING_CATALOG, LOCATION_CATALOG } from '../core/scene-builder.js';
 import { locationsForScene } from '../core/scene-compatibility.js';
-import {
-  EXTRA_CLOTHING_OPTIONS,
-  enrichClothingPrompt
-} from '../core/expanded-catalogs.js';
+import * as expandedCatalogs from '../core/expanded-catalogs.js';
+
+const { enrichClothingPrompt } = expandedCatalogs;
 
 test('unified Saudi location catalog is broad and unique', () => {
   assert.equal(LOCATION_CATALOG.length, 125);
@@ -14,10 +13,8 @@ test('unified Saudi location catalog is broad and unique', () => {
   assert.equal(new Set(values).size, values.length, 'location values must be unique');
 });
 
-test('expanded clothing catalog is broad and unique', () => {
-  assert.ok(EXTRA_CLOTHING_OPTIONS.length >= 30, `expected >=30 extra clothing options, got ${EXTRA_CLOTHING_OPTIONS.length}`);
-  const values = EXTRA_CLOTHING_OPTIONS.map((item) => item.value);
-  assert.equal(new Set(values).size, values.length, 'clothing values must be unique');
+test('EXTRA_CLOTHING_OPTIONS is merged and no longer exported separately', () => {
+  assert.equal(expandedCatalogs.EXTRA_CLOTHING_OPTIONS, undefined);
 });
 
 test('every unified location carries strong environmental realism and scene metadata', () => {
@@ -29,12 +26,24 @@ test('every unified location carries strong environmental realism and scene meta
   }
 });
 
-test('every added clothing option carries material-specific fabric physics', () => {
-  for (const item of EXTRA_CLOTHING_OPTIONS) {
+test('migrated clothing options carry material-specific fabric physics', () => {
+  const overrideValues = new Set([
+    'bisht_thobe',
+    'suit-navy-lightblue',
+    'suit-charcoal-white',
+    'look-02'
+  ]);
+  const migrated = CLOTHING_CATALOG.filter(
+    (item) =>
+      /textile-specific weight, thickness, weave/i.test(item.prompt) &&
+      !overrideValues.has(item.value)
+  );
+  for (const item of migrated) {
     assert.match(item.prompt, /textile-specific weight, thickness, weave/i, item.value);
     assert.match(item.prompt, /gravity-driven drape/i, item.value);
     assert.match(item.prompt, /no plastic-like smoothness/i, item.value);
   }
+  assert.ok(migrated.length >= 30, `Expected at least 30 migrated items with fabric suffix, got ${migrated.length}`);
 });
 
 test('unified locations are scene-aware', () => {

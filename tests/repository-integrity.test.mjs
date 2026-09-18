@@ -6,14 +6,12 @@ import path from 'node:path';
 import {
   LOCATION_CATALOG,
   SAUDI_LOCATIONS,
-  CLOTHING_OPTIONS,
-  FORMAL_LOOKS,
+  CLOTHING_CATALOG,
   HAIR_STYLES,
   SELFIE_POSES,
   SELFIE_ANGLES,
   LIGHTING_PROFILES
 } from '../core/scene-builder.js';
-import { EXTRA_CLOTHING_OPTIONS } from '../core/expanded-catalogs.js';
 import { SCENE_TYPES, CAMERA_PROFILES, FRAMING_OPTIONS } from '../core/prompt-generator.js';
 import {
   MIRROR_POSES,
@@ -52,7 +50,7 @@ function haystack(item) {
 
 const combined = {
   location: LOCATION_CATALOG,
-  clothing: [...CLOTHING_OPTIONS, ...EXTRA_CLOTHING_OPTIONS, ...FORMAL_LOOKS],
+  clothing: CLOTHING_CATALOG,
   pose: [...SELFIE_POSES, ...MIRROR_POSES, ...THIRD_PERSON_POSES],
   angle: [...SELFIE_ANGLES, ...MIRROR_ANGLES, ...THIRD_PERSON_ANGLES],
   lighting: LIGHTING_PROFILES,
@@ -74,9 +72,7 @@ test('every catalog has unique usable values', () => {
   for (const [name, items] of Object.entries({
     LOCATION_CATALOG,
     SAUDI_LOCATIONS,
-    CLOTHING_OPTIONS,
-    EXTRA_CLOTHING_OPTIONS,
-    FORMAL_LOOKS,
+    CLOTHING_CATALOG,
     HAIR_STYLES,
     SELFIE_POSES,
     SELFIE_ANGLES,
@@ -93,7 +89,7 @@ test('every catalog has unique usable values', () => {
 test('compatibility profiles reference only real values and leave no base catalog item orphaned', () => {
   const result = validateCompatibilityCatalogs({
     location: LOCATION_CATALOG,
-    clothing: [...CLOTHING_OPTIONS, ...FORMAL_LOOKS],
+    clothing: CLOTHING_CATALOG,
     pose: SELFIE_POSES,
     angle: SELFIE_ANGLES,
     lighting: LIGHTING_PROFILES,
@@ -133,8 +129,7 @@ test('main UI exposes and app reads every scene-builder control', () => {
   }
   assert.match(app, /LOCATION_CATALOG/);
   assert.match(app, /HAIR_STYLES/);
-  assert.match(app, /FORMAL_LOOKS/);
-  assert.match(app, /EXTRA_CLOTHING_OPTIONS/);
+  assert.match(app, /CLOTHING_CATALOG/);
 });
 
 test('unified location catalog remains complete and the legacy alias stays derived', () => {

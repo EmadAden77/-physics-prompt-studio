@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 import { generateImagePrompt, validateGeneratedPrompt, validateRealism } from '../core/prompt-generator.js';
 import { addSensorNoise, XIAOMI_15_ULTRA_PRESET } from '../core/photo-post-processing.js';
-import { CLOTHING_OPTIONS, FORMAL_SUITS, FORMAL_LOOKS, HOME_CLOTHING, BEDROOM_POSES, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
+import { CLOTHING_OPTIONS, CLOTHING_CATALOG, FORMAL_SUITS, FORMAL_LOOKS, HOME_CLOTHING, BEDROOM_POSES, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
 
 const sceneTypes = ['front_selfie', 'inside_car_selfie', 'mirror_selfie', 'third_person_portrait'];
 
@@ -45,6 +45,7 @@ test('core catalog counts match the documented production baseline', () => {
   assert.equal(CLOTHING_OPTIONS.length, 25, 'CLOTHING_OPTIONS count changed');
   assert.equal(FORMAL_SUITS.length, 30, 'FORMAL_SUITS count changed');
   assert.equal(FORMAL_LOOKS.length, 122, 'FORMAL_LOOKS count changed');
+  assert.equal(CLOTHING_CATALOG.length, 209, 'CLOTHING_CATALOG count changed');
   assert.equal(CLOTHING_OPTIONS.length + FORMAL_SUITS.length, 55, 'combined base clothing and formal suits count changed');
   assert.equal(HOME_CLOTHING.length, 58, 'HOME_CLOTHING count changed');
   assert.equal(BEDROOM_POSES.length, 40, 'BEDROOM_POSES count changed');
@@ -149,6 +150,7 @@ test('car studio is wired to prompt generation, realism validation and local pho
   assert.match(script, /generateImagePrompt/);
   assert.match(script, /validateRealism/);
   assert.match(script, /processImageBlob/);
+  assert.match(script, /CLOTHING_CATALOG/);
   assert.doesNotMatch(script, /Math\.random\s*\(/);
   assert.doesNotMatch(script, /\bfetch\s*\(|XMLHttpRequest|WebSocket/);
   assert.match(html, /<canvas\b[^>]*id=["']processedCanvas["']/i);
@@ -169,7 +171,7 @@ test('bedroom studio exposes 3 scenes, 58 outfits and 40 dedicated poses', () =>
   assert.equal(BEDROOM_POSES.length, 40);
   assert.equal(new Set(EXTRA_SCENE_TYPES.map((item) => item.value)).size, EXTRA_SCENE_TYPES.length);
   for (const value of HOME_SCENE_TYPES) assert.ok(EXTRA_SCENE_TYPES.some((item) => item.value === value));
-  const clothes = [...CLOTHING_OPTIONS, ...FORMAL_LOOKS, ...FORMAL_SUITS, ...HOME_CLOTHING];
+  const clothes = [...CLOTHING_CATALOG, ...HOME_CLOTHING];
   assert.equal(new Set(clothes.map((item) => item.value)).size, clothes.length);
 });
 

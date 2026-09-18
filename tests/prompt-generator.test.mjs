@@ -364,8 +364,8 @@ test('third-person scene does not duplicate device semantics in accessories', ()
 });
 
 test('formal look prompt is preserved verbatim in clothing section', async () => {
-  const { EXTRA_CLOTHING_OPTIONS } = await import('../core/expanded-catalogs.js');
-  const look = EXTRA_CLOTHING_OPTIONS.find((item) => item.value === 'navy_suit_lightblue_shirt');
+  const { CLOTHING_CATALOG } = await import('../core/scene-builder.js');
+  const look = CLOTHING_CATALOG.find((item) => item.value === 'suit-navy-lightblue');
   assert.ok(look, 'missing navy suit + light-blue shirt catalog entry');
   const result = generateImagePrompt({ clothing: look.prompt });
   const clothing = result.prompt.split('[CLOTHING]\n')[1].split('\n\n[CONTEXTUAL ACCESSORIES]')[0];

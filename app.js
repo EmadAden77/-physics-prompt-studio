@@ -1,5 +1,5 @@
 import { compilePrompt, createLedger } from './core/prompt-optimizer.js';
-import { LOCATION_CATALOG, CLOTHING_CATALOG, HOME_CLOTHING, HAIR_STYLES, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES, CLOTHING_STYLING, HAND_INTERACTIONS } from './core/scene-builder.js';
+import { LOCATION_CATALOG, CLOTHING_CATALOG, HOME_CLOTHING, HAIR_STYLES, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES, CLOTHING_STYLING, HAND_INTERACTIONS, getAvailableProps, getRemainingHands, getPropHandUsage } from './core/scene-builder.js';
 import { enrichClothingPrompt } from './core/expanded-catalogs.js';
 import {
   generateImagePrompt,
@@ -23,6 +23,8 @@ const controls = {
   clothing: $('sceneClothing'),
   clothingStyling: $('clothingStyling'),
   handInteraction: $('handInteraction'),
+  heldProp: $('heldProp'),
+  secondaryProp: $('secondaryProp'),
   hairStyle: $('hairStyle'),
   pose: $('scenePose'),
   angle: $('sceneAngle'),
@@ -61,6 +63,8 @@ const randomButton = $('randomButton');
 const resetButton = $('resetButton');
 const cameraAngleHint = $('cameraAngleHint');
 const clothingStylingHint = $('clothingStylingHint');
+const heldPropHint = $('heldPropHint');
+const secondaryPropField = $('secondaryPropField');
 const handInteractionHint = (() => {
   if (!HAS_DOM || !controls.handInteraction?.parentElement) return null;
   const existing = $('handInteractionHint');
@@ -188,6 +192,51 @@ function selectedSceneType() {
   return controls.sceneType?.value || 'front_selfie';
 }
 
+function selectedCaptureType() {
+  const baseType = baseSceneTypeFor(selectedSceneType());
+  return SCENE_TYPES.find((item) => item.value === baseType)?.capture || SCENE_TYPES[0].capture;
+}
+
+function rebuildPropSelect(select, options, selectedValue = 'none') {
+  if (!select) return;
+  select.replaceChildren();
+  select.append(makeOption({ value:'none', label:'لا يوجد', prompt:'' }));
+  populateGrouped(select, options);
+  select.value = options.some((item) => item.value === selectedValue) ? selectedValue : 'none';
+}
+
+function updateHeldPropAvailability() {
+  if (!controls.heldProp || !controls.secondaryProp) return;
+  const sceneType = selectedSceneType();
+  const captureType = selectedCaptureType();
+  const location = controls.location?.value || '';
+  const pose = controls.pose?.value || '';
+  const handInteraction = controls.handInteraction?.value || 'none';
+  const previousPrimary = controls.heldProp.value || 'none';
+  const previousSecondary = controls.secondaryProp.value || 'none';
+  const available = getAvailableProps(sceneType, captureType, location, pose, handInteraction);
+  rebuildPropSelect(controls.heldProp, available, previousPrimary);
+
+  const primary = controls.heldProp.value || 'none';
+  const baseRemaining = getRemainingHands(sceneType, captureType, 'none', pose, handInteraction);
+  const remaining = getRemainingHands(sceneType, captureType, primary, pose, handInteraction);
+  const secondaryOptions = remaining > 0
+    ? available.filter((prop) => prop.value !== primary && prop.grip !== 'two-hands' && getPropHandUsage(prop) <= remaining)
+    : [];
+  rebuildPropSelect(controls.secondaryProp, secondaryOptions, previousSecondary);
+
+  const secondaryAllowed = baseRemaining >= 2 && remaining >= 1 && primary !== 'none';
+  if (secondaryPropField) secondaryPropField.hidden = !secondaryAllowed;
+  if (!secondaryAllowed) controls.secondaryProp.value = 'none';
+
+  if (heldPropHint) {
+    heldPropHint.hidden = available.length > 0;
+    heldPropHint.textContent = available.length > 0
+      ? ''
+      : baseRemaining <= 0 ? 'لا توجد يد حرة مع الوضعية أو تفاعل اليدين الحالي' : 'لا توجد أشياء مناسبة لهذا السياق';
+  }
+}
+
 function specializedOptions(sceneType, kind, options) {
   if (!sceneMeta(sceneType)) return options;
   const narrowed = narrowOptions(sceneType, kind, options);
@@ -272,6 +321,7 @@ function applySceneCompatibility() {
   });
   updateClothingStylingAvailability();
   updatePoseCameraLock();
+  updateHeldPropAvailability();
   return compatibilityType;
 }
 
@@ -374,12 +424,16 @@ function autoInput() {
     realismLevel: controls.realismLevel.value,
     framing: controls.framing.value,
     location: enforceSaudiNoLandmarks(selectedPrompt(controls.location)),
+    locationValue: controls.location.value,
     clothing: enrichClothingPrompt(selectedClothingPrompt()),
     clothingValue: controls.clothing.value,
     clothingStyling: controls.clothingStyling.value,
     handInteraction: controls.handInteraction.value,
+    heldProp: controls.heldProp.value,
+    secondaryProp: controls.secondaryProp.value,
     hairStyle: selectedPrompt(controls.hairStyle),
     pose: selectedPrompt(controls.pose),
+    poseValue: controls.pose.value,
     angle: selectedPrompt(controls.angle),
     seed: currentSeed,
     lighting: selectedPrompt(controls.lighting),
@@ -625,6 +679,8 @@ function resetAll() {
   controls.clothing.value = '';
   controls.clothingStyling.value = 'default';
   controls.handInteraction.value = 'none';
+  controls.heldProp.value = 'none';
+  controls.secondaryProp.value = 'none';
   controls.hairStyle.value = '';
   controls.pose.value = '';
   controls.angle.value = 'smart';
@@ -641,6 +697,7 @@ function resetAll() {
   controls.customConstraints.value = '';
   controls.identityReference.checked = true;
   updateClothingStylingAvailability();
+  updateHeldPropAvailability();
   currentSeed = 42;
   controls.seedInput.value = '42';
   globalThis.localStorage?.setItem(SEED_STORAGE_KEY, '42');
@@ -682,6 +739,8 @@ if (HAS_DOM) {
   controls.sceneType.value = 'front_selfie';
   controls.clothingStyling.value = 'default';
   controls.handInteraction.value = 'none';
+  controls.heldProp.value = 'none';
+  controls.secondaryProp.value = 'none';
   controls.aspectRatio.value = '9:16';
   controls.expression.value = 'neutral';
   controls.backgroundActivity.value = 'normal';
@@ -703,6 +762,8 @@ if (HAS_DOM) {
   });
   controls.location.addEventListener('change', () => {
     if (selectedSceneType() === 'floor_seated_selfie') applySceneCompatibility();
+    else updateHeldPropAvailability();
+    scheduleGenerate();
   });
   controls.sceneType.addEventListener('change', () => {
     applySceneCompatibility();
@@ -714,15 +775,25 @@ if (HAS_DOM) {
   });
   controls.pose.addEventListener('change', () => {
     updatePoseCameraLock();
+    updateHeldPropAvailability();
     scheduleGenerate();
   });
+  controls.handInteraction.addEventListener('change', () => {
+    updateHeldPropAvailability();
+    scheduleGenerate();
+  });
+  controls.heldProp.addEventListener('change', () => {
+    updateHeldPropAvailability();
+    scheduleGenerate();
+  });
+  controls.secondaryProp.addEventListener('change', scheduleGenerate);
   document.querySelectorAll('[data-mode]').forEach((button) => button.addEventListener('click', () => setMode(button.dataset.mode)));
   document.querySelectorAll('.tab').forEach((button) => button.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach((tab) => tab.classList.toggle('active', tab === button));
     document.querySelectorAll('.tab-panel').forEach((panel) => panel.classList.toggle('active', panel.dataset.panel === button.dataset.tab));
   }));
   Object.values(controls).forEach((control) => {
-    if (!control || control === controls.sceneType || control === controls.seedInput || control === controls.pose || control === controls.clothing) return;
+    if (!control || control === controls.sceneType || control === controls.seedInput || control === controls.pose || control === controls.clothing || control === controls.location || control === controls.handInteraction || control === controls.heldProp || control === controls.secondaryProp) return;
     control.addEventListener('change', scheduleGenerate);
     control.addEventListener('input', scheduleGenerate);
   });

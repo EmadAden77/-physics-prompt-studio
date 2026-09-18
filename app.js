@@ -86,7 +86,9 @@ const CATALOGS = {
   framing: FRAMING_OPTIONS
 };
 const ALL_CLOTHING = [...CATALOGS.generalClothing, ...CATALOGS.bedroomClothing];
-const CLOTHING_PROMPT_BY_VALUE = new Map(ALL_CLOTHING.map((item) => [item.value, item.prompt || '']));
+const CLOTHING_PROMPT_BY_VALUE = new Map(
+  [...CATALOGS.generalClothing, ...CATALOGS.bedroomClothing].map((item) => [item.value, item.prompt || ''])
+);
 const CLOTHING_ITEM_BY_VALUE = new Map(ALL_CLOTHING.map((item) => [item.value, item]));
 const RANDOMIZED_FIELDS = Object.freeze([
   'location','clothing','pose','angle','lighting','camera','framing',

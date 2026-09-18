@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateImagePrompt, validateGeneratedPrompt, validateRealism } from '../core/prompt-generator.js';
-import { CLOTHING_CATALOG, HOME_CLOTHING, CLOTHING_STYLING, HAND_INTERACTIONS } from '../core/scene-builder.js';
+import { CLOTHING_CATALOG, HOME_CLOTHING, CLOTHING_STYLING, HAND_INTERACTIONS, HAND_PROPS, getAvailableProps, getRemainingHands } from '../core/scene-builder.js';
 
 const canonical = [
   'GOAL','ACTION-DRIVEN AUTHENTICITY','CAPTURE TYPE LOCK — CRITICAL','IDENTITY / SUBJECT','SCENE','SAUDI CULTURAL DRESS',
@@ -726,4 +726,66 @@ test('every clothing item retains at least one styling and hand option', () => {
     assert.ok(styling.length > 0, `No clothing styling options for ${item.value}`);
     assert.ok(hands.length > 0, `No hand interaction options for ${item.value}`);
   }
+});
+
+
+test('handheld selfie has 1 hand and no laptop', () => {
+  const props = getAvailableProps('front_selfie', 'subject-held front-camera smartphone selfie', 'saudi_cafe');
+  assert.ok(!props.some((p) => p.value === 'macbook-pro-16'));
+});
+
+test('third-person in office allows laptop', () => {
+  const props = getAvailableProps('third_person_portrait', 'third-person smartphone photograph', 'saudi_office');
+  assert.ok(props.some((p) => p.value === 'macbook-pro-16'));
+});
+
+test('third-person in parking does NOT allow laptop', () => {
+  const props = getAvailableProps('third_person_portrait', 'third-person smartphone photograph', 'day_parking');
+  assert.ok(!props.some((p) => p.value === 'macbook-pro-16'));
+});
+
+test('pose holding_basket blocks heldProp', () => {
+  const props = getAvailableProps('front_selfie', 'subject-held front-camera smartphone selfie', 'supermarket_aisle', 'holding_basket');
+  assert.equal(props.length, 0);
+});
+
+test('pose coffee_hand blocks additional heldProp', () => {
+  const props = getAvailableProps('cafe_selfie', 'subject-held front-camera smartphone selfie', 'saudi_cafe', 'coffee_hand');
+  assert.equal(props.length, 0);
+});
+
+test('two-hands primary disables secondary budget', () => {
+  assert.equal(getRemainingHands('third_person_portrait', 'third-person smartphone photograph', 'macbook-pro-16'), 0);
+});
+
+test('pocket-hands consumes both subject hands', () => {
+  assert.equal(getRemainingHands('third_person_portrait', 'third-person smartphone photograph', 'none', '', 'pocket-hands'), 0);
+});
+
+test('no alcohol, tobacco, or pork in props', () => {
+  for (const prop of HAND_PROPS) {
+    const text = `${prop.value} ${prop.label} ${prop.prompt}`.toLowerCase();
+    assert.doesNotMatch(text, /wine|beer|whisky|vodka|alcohol|tobacco|cigarette|cigar|shisha|hookah|pork|bacon/i);
+  }
+});
+
+test('held prop is injected into prompt when valid', () => {
+  const result = generateImagePrompt({ sceneType: 'cafe_selfie', heldProp: 'cappuccino-cup' });
+  assert.match(result.prompt, /cappuccino cup/i);
+  assert.match(result.prompt, /grip tension/i);
+});
+
+test('MacBook never injects in handheld selfie', () => {
+  const result = generateImagePrompt({ sceneType: 'front_selfie', location: 'saudi_cafe', heldProp: 'macbook-pro-16' });
+  assert.doesNotMatch(result.prompt, /MacBook Pro/i);
+});
+
+test('MacBook injects for third-person office context', () => {
+  const result = generateImagePrompt({ sceneType: 'third_person_portrait', location: 'saudi_office', heldProp: 'macbook-pro-16' });
+  assert.match(result.prompt, /MacBook Pro/i);
+});
+
+test('23 sections preserved with held props', () => {
+  const result = generateImagePrompt({ sceneType: 'cafe_selfie', heldProp: 'cappuccino-cup' });
+  assert.equal(result.sections.length, 23);
 });

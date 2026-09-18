@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { compilePrompt, validatePacket } from '../core/prompt-optimizer.js';
-import { SAUDI_LOCATIONS, CLOTHING_OPTIONS, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES, normalizeSceneContext } from '../core/scene-builder.js';
+import { SAUDI_LOCATIONS, CLOTHING_OPTIONS, CLOTHING_CATALOG, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES, normalizeSceneContext } from '../core/scene-builder.js';
 import { generateImagePrompt } from '../core/prompt-generator.js';
 
 test('scene catalog is broad across requested categories', () => {
@@ -10,6 +10,26 @@ test('scene catalog is broad across requested categories', () => {
   assert.ok(SELFIE_POSES.length >= 12);
   assert.ok(SELFIE_ANGLES.length >= 12);
   assert.ok(LIGHTING_PROFILES.length >= 15);
+});
+
+test('CLOTHING_CATALOG has 209 items', () => {
+  assert.equal(CLOTHING_CATALOG.length, 209);
+});
+
+test('clothing catalogs have no duplicate labels', () => {
+  const labels = CLOTHING_CATALOG.map((item) => item.label);
+  assert.equal(new Set(labels).size, labels.length);
+});
+
+test('clothing catalogs have no duplicate values', () => {
+  const values = CLOTHING_CATALOG.map((item) => item.value);
+  assert.equal(new Set(values).size, values.length);
+});
+
+test('FORMAL_LOOKS items have non-empty group', async () => {
+  const { FORMAL_LOOKS } = await import('../core/scene-builder.js');
+  assert.equal(FORMAL_LOOKS.length, 122);
+  assert.equal(FORMAL_LOOKS.filter((item) => item.group?.trim()).length, 122);
 });
 
 test('scene controls do not modify original_prompt', () => {

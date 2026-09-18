@@ -835,3 +835,33 @@ test('every base and expanded scene emits furniture geometry guidance', async ()
   }
 });
 
+test('heldProp prompt is injected without concat bug', () => {
+  const result = generateImagePrompt({
+    sceneType: 'majlis_selfie',
+    location: 'modern_saudi_majlis',
+    heldProp: 'iphone-15-pro-black'
+  });
+  const accessories = result.prompt.split('[CONTEXTUAL ACCESSORIES]\n')[1].split('\n\n[POSE')[0];
+  assert.match(accessories, /iPhone 15 Pro/i);
+  assert.doesNotMatch(accessories, /fits the action a black iPhone/i);
+  assert.doesNotMatch(accessories, /water bottle/i);
+});
+
+test('iPhone appears once in final prompt', () => {
+  const result = generateImagePrompt({
+    sceneType: 'majlis_selfie',
+    location: 'modern_saudi_majlis',
+    heldProp: 'iphone-15-pro-black'
+  });
+  const matches = result.prompt.match(/iPhone 15 Pro/gi) || [];
+  assert.equal(matches.length, 1, `iPhone mentioned ${matches.length} times`);
+});
+
+test('23 sections preserved after heldProp override', () => {
+  const result = generateImagePrompt({
+    sceneType: 'majlis_selfie',
+    location: 'modern_saudi_majlis',
+    heldProp: 'iphone-15-pro-black'
+  });
+  assert.equal(result.sections.length, 23);
+});

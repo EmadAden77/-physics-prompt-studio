@@ -11,7 +11,7 @@ import {
   REALISM_LEVELS,
   FRAMING_OPTIONS
 } from './core/prompt-generator.js';
-import { compatibilitySnapshot, getPoseCameraHint, locationsForScene, recommendedDefaults, resolveCompatibleValue } from './core/scene-compatibility.js';
+import { clothingSceneCoherence, compatibilitySnapshot, getPoseCameraHint, locationsForScene, recommendedDefaults, resolveCompatibleValue } from './core/scene-compatibility.js';
 import { baseSceneTypeFor, narrowOptions, sceneMeta, HOME_SCENE_TYPES } from './core/scene-type-expansion.js';
 import { enforceSaudiNoLandmarks, mergeSaudiNoLandmarksConstraint } from './core/saudi-location-lock.js';
 
@@ -63,6 +63,17 @@ const randomButton = $('randomButton');
 const resetButton = $('resetButton');
 const cameraAngleHint = $('cameraAngleHint');
 const clothingStylingHint = $('clothingStylingHint');
+const clothingCoherenceHint = (() => {
+  if (!HAS_DOM || !controls.clothing?.parentElement) return null;
+  const existing = $('clothingCoherenceHint');
+  if (existing) return existing;
+  const hint = document.createElement('small');
+  hint.id = 'clothingCoherenceHint';
+  hint.className = 'hint';
+  hint.hidden = true;
+  controls.clothing.parentElement.append(hint);
+  return hint;
+})();
 const heldPropHint = $('heldPropHint');
 const secondaryPropField = $('secondaryPropField');
 const handInteractionHint = (() => {
@@ -89,7 +100,7 @@ const CATALOGS = {
   camera: CAMERA_PROFILES,
   framing: FRAMING_OPTIONS
 };
-const ALL_CLOTHING = [...CATALOGS.generalClothing, ...CATALOGS.bedroomClothing];
+export const ALL_CLOTHING = [...CLOTHING_CATALOG, ...HOME_CLOTHING];
 const CLOTHING_PROMPT_BY_VALUE = new Map(
   [...CATALOGS.generalClothing, ...CATALOGS.bedroomClothing].map((item) => [item.value, item.prompt || ''])
 );
@@ -175,6 +186,14 @@ function rebuildOptionalSelect(select, options, placeholder, grouped = false) {
   if (isAngleSelect && previous === 'smart') select.value = 'smart';
   else if (previous && unique.some((item) => item.value === previous)) select.value = previous;
   else select.value = isAngleSelect ? 'smart' : '';
+}
+
+export function ensurePersistentClothingSelect(select, options = ALL_CLOTHING, rebuild = rebuildOptionalSelect) {
+  if (!select || (select.options?.length ?? 0) > 1) return false;
+  const previous = select.value || '';
+  rebuild(select, options, 'تلقائي — ملابس مناسبة', true);
+  if (previous && options.some((item) => item.value === previous)) select.value = previous;
+  return true;
 }
 
 function rebuildRequiredSelect(select, options, preferredValue) {
@@ -300,8 +319,7 @@ function applySceneCompatibility() {
     framing: controls.framing.value
   };
 
-  rebuildOptionalSelect(controls.clothing, options.clothing, 'تلقائي — ملابس متناسقة مع المشهد', true);
-  showAllOptions(controls.clothing);
+  ensurePersistentClothingSelect(controls.clothing);
   rebuildOptionalSelect(controls.location, options.location, 'تلقائي — مكان سعودي واقعي جدًا بدون معالم', true);
   rebuildOptionalSelect(controls.pose, options.pose, 'تلقائي — وضعية متناسقة مع نوع المشهد');
   rebuildOptionalSelect(controls.angle, options.angle, 'تلقائي — زاوية متناسقة مع نوع المشهد');
@@ -320,6 +338,7 @@ function applySceneCompatibility() {
     fieldName: 'framing'
   });
   updateClothingStylingAvailability();
+  updateClothingCoherenceHint();
   updatePoseCameraLock();
   updateHeldPropAvailability();
   return compatibilityType;
@@ -334,6 +353,15 @@ function selectedPrompt(select, promptByValue = null) {
 
 function selectedClothingPrompt() {
   return selectedPrompt(controls.clothing, CLOTHING_PROMPT_BY_VALUE);
+}
+
+function updateClothingCoherenceHint() {
+  const warning = clothingSceneCoherence(controls.clothing?.value || '', selectedSceneType());
+  if (clothingCoherenceHint) {
+    clothingCoherenceHint.hidden = !warning;
+    clothingCoherenceHint.textContent = warning ? 'ملاحظة: هذه الملابس غير مناسبة عادةً لهذا المشهد.' : '';
+  }
+  return warning;
 }
 
 function optionAppliesToGarment(definition, garmentTags) {
@@ -677,6 +705,7 @@ function resetAll() {
   applySceneCompatibility();
   controls.location.value = '';
   controls.clothing.value = '';
+  updateClothingCoherenceHint();
   controls.clothingStyling.value = 'default';
   controls.handInteraction.value = 'none';
   controls.heldProp.value = 'none';
@@ -729,7 +758,7 @@ function download(filename, content, type) {
 
 if (HAS_DOM) {
   populateFlat(controls.sceneType, SCENE_TYPES);
-  populateGrouped(controls.clothing, CATALOGS.generalClothing);
+  ensurePersistentClothingSelect(controls.clothing);
   populateGrouped(controls.hairStyle, CATALOGS.hairStyle);
   populateFlat(controls.aspectRatio, ASPECT_RATIOS);
   populateFlat(controls.expression, EXPRESSIONS);
@@ -771,6 +800,7 @@ if (HAS_DOM) {
   });
   controls.clothing.addEventListener('change', () => {
     updateClothingStylingAvailability();
+    updateClothingCoherenceHint();
     scheduleGenerate();
   });
   controls.pose.addEventListener('change', () => {

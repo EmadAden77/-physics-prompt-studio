@@ -196,21 +196,21 @@ export const CLOTHING_OPTIONS = grouped([
 ]);
 
 export const CLOTHING_STYLING = Object.freeze([
-  { value: 'default', label: 'افتراضي', prompt: '' },
-  { value: 'top-buttons-open', label: 'مفتوح من الأعلى', prompt: 'Top 2-3 buttons unbuttoned, revealing collarbone shadow. Fabric stretched across the chest with natural tension lines.' },
-  { value: 'sleeves-rolled', label: 'مطوي الأكمام', prompt: 'Sleeves neatly rolled up to the elbows, creating tight folded fabric tension at the biceps.' },
-  { value: 'untucked', label: 'غير مدخل', prompt: 'Shirt hem untucked, resting naturally over the hips with gravity-driven folds and asymmetric wrinkles.' },
-  { value: 'french-tuck', label: 'مدخل من الأمام فقط', prompt: 'Shirt front hem tucked into the waistband, back hem left untucked. Fabric gathers naturally at the waist.' },
-  { value: 'fully-open', label: 'مفتوح بالكامل', prompt: 'Shirt completely unbuttoned, worn open over a plain undershirt, front panels hanging loosely with gravity-driven folds.' }
+  { value: 'default', label: 'افتراضي', prompt: '', applicableTo: ['all'] },
+  { value: 'top-buttons-open', label: 'مفتوح من الأعلى', prompt: 'Top 2-3 buttons unbuttoned, revealing collarbone shadow. Fabric stretched across the chest with natural tension lines.', applicableTo: ['buttoned-top'] },
+  { value: 'sleeves-rolled', label: 'مطوي الأكمام', prompt: 'Sleeves neatly rolled up to the elbows, creating tight folded fabric tension at the biceps.', applicableTo: ['sleeved'] },
+  { value: 'untucked', label: 'غير مدخل', prompt: 'Shirt hem untucked, resting naturally over the hips with gravity-driven folds and asymmetric wrinkles.', applicableTo: ['tuckable-top'] },
+  { value: 'french-tuck', label: 'مدخل من الأمام فقط', prompt: 'Shirt front hem tucked into the waistband, back hem left untucked. Fabric gathers naturally at the waist.', applicableTo: ['tuckable-top-with-pants'] },
+  { value: 'fully-open', label: 'مفتوح بالكامل', prompt: 'Outer layer fully unbuttoned or unzipped, worn open with panels hanging loosely with gravity-driven folds. Inner layer visible beneath.', applicableTo: ['layered-top'] }
 ]);
 
 export const HAND_INTERACTIONS = Object.freeze([
-  { value: 'none', label: 'لا يوجد', prompt: '' },
-  { value: 'adjust-collar', label: 'تعديل الياقة', prompt: 'Fingers hooked inside the crew neck collar, pulling it slightly away from the neck. Fabric stretches across the chest.' },
-  { value: 'roll-sleeve', label: 'رفع الكم', prompt: 'One hand pulling the short sleeve up towards the shoulder, compressing the fabric at the bicep.' },
-  { value: 'wipe-sweat', label: 'مسح العرق', prompt: 'One hand holding a white towel wiping the forehead, while the other hand naturally pulls up the t-shirt hem. Natural asymmetric posture.' },
-  { value: 'pocket-hands', label: 'وضع اليد في الجيب', prompt: 'Both hands inserted into the side pockets of the joggers. The fabric stretches taut across the pelvis with natural compression at the pocket seams.' },
-  { value: 'adjust-waistband', label: 'تعديل الخصر', prompt: 'One hand pulling the waistband of the joggers up, which inadvertently lifts the bottom of the t-shirt. Natural compression of the jogger fabric at the hips.' }
+  { value: 'none', label: 'لا يوجد', prompt: '', applicableTo: ['all'] },
+  { value: 'adjust-collar', label: 'تعديل الياقة', prompt: 'Fingers hooked inside the collar, pulling it slightly away from the neck. Fabric stretches across the chest.', applicableTo: ['collared'] },
+  { value: 'roll-sleeve', label: 'رفع الكم', prompt: 'One hand pulling the short sleeve up towards the shoulder, compressing the fabric at the bicep.', applicableTo: ['short-sleeve'] },
+  { value: 'wipe-sweat', label: 'مسح العرق', prompt: 'One hand holding a white towel wiping the forehead, while the other hand naturally rests at the side or adjusts clothing. Natural asymmetric posture.', applicableTo: ['all'] },
+  { value: 'pocket-hands', label: 'وضع اليد في الجيب', prompt: 'Both hands inserted into the side pockets of the lower garment. The fabric stretches taut across the pelvis with natural compression at the pocket seams.', applicableTo: ['pocketed'] },
+  { value: 'adjust-waistband', label: 'تعديل الخصر', prompt: 'One hand pulling the waistband of the lower garment up, which slightly lifts the bottom of the upper garment. Natural compression of the fabric at the hips.', applicableTo: ['waistband'] }
 ]);
 
 export const FORMAL_SUITS = [
@@ -414,11 +414,85 @@ const CLOTHING_PROMPT_OVERRIDES = new Map([
 ]);
 
 const FORMAL_SUIT_VALUES = new Set(FORMAL_SUITS.map((item) => item.value));
+const FORMAL_LOOK_VALUES = new Set(FORMAL_LOOKS.map((item) => item.value));
+
+const GARMENT_TAG_PROFILES = Object.freeze({
+  thobe: Object.freeze(['buttoned-top', 'collared', 'long-garment']),
+  thobeHeadwear: Object.freeze(['buttoned-top', 'collared', 'long-garment', 'headwear']),
+  abaya: Object.freeze(['long-garment', 'no-collar']),
+  headwear: Object.freeze(['headwear']),
+  tshirt: Object.freeze(['tuckable-top', 'sleeved', 'short-sleeve', 'no-collar']),
+  polo: Object.freeze(['buttoned-top', 'sleeved', 'short-sleeve', 'collared', 'tuckable-top']),
+  softLongSleeve: Object.freeze(['sleeved', 'no-collar']),
+  formalLook: Object.freeze(['buttoned-top', 'sleeved', 'collared', 'tuckable-top', 'tuckable-top-with-pants', 'waistband', 'pocketed']),
+  formalSuit: Object.freeze(['layered-top', 'buttoned-top', 'sleeved', 'collared', 'tuckable-top-with-pants', 'waistband', 'pocketed']),
+  layeredSleevedCollared: Object.freeze(['layered-top', 'sleeved', 'collared']),
+  layeredCollared: Object.freeze(['layered-top', 'collared']),
+  layeredNoCollar: Object.freeze(['layered-top', 'no-collar']),
+  layeredBottom: Object.freeze(['layered-top', 'waistband', 'pocketed']),
+  softTopBottom: Object.freeze(['sleeved', 'no-collar', 'waistband', 'pocketed']),
+  tshirtShorts: Object.freeze(['tuckable-top', 'sleeved', 'short-sleeve', 'no-collar', 'waistband', 'pocketed']),
+  tshirtPants: Object.freeze(['tuckable-top', 'sleeved', 'short-sleeve', 'no-collar', 'tuckable-top-with-pants', 'waistband', 'pocketed']),
+  trainingTopPants: Object.freeze(['tuckable-top', 'sleeved', 'no-collar', 'tuckable-top-with-pants', 'waistband', 'pocketed']),
+  overshirtNoBottom: Object.freeze(['layered-top', 'buttoned-top', 'sleeved', 'collared', 'tuckable-top']),
+  overshirtBottom: Object.freeze(['layered-top', 'buttoned-top', 'sleeved', 'collared', 'tuckable-top', 'tuckable-top-with-pants', 'waistband', 'pocketed']),
+  poloPants: Object.freeze(['buttoned-top', 'sleeved', 'short-sleeve', 'collared', 'tuckable-top', 'tuckable-top-with-pants', 'waistband', 'pocketed']),
+  vestKnitBottom: Object.freeze(['layered-top', 'no-collar', 'waistband', 'pocketed']),
+  bottom: Object.freeze(['waistband', 'pocketed']),
+  pajama: Object.freeze(['sleeved', 'waistband']),
+  nightThobe: Object.freeze(['long-garment', 'no-collar']),
+  robe: Object.freeze(['sleeved', 'long-garment', 'no-collar'])
+});
+
+const garmentTagEntries = (values, tags) => values.map((value) => [value, tags]);
+
+const GENERAL_GARMENT_TAGS_BY_VALUE = new Map([
+  ...garmentTagEntries(['white_thobe','navy_thobe','charcoal_thobe','beige_thobe','olive_thobe','winter_thobe','bisht_thobe','offwhite_thobe','skyblue_thobe','stone_thobe','darkgreen_thobe','brown_winter_thobe','grey_winter_thobe'], GARMENT_TAG_PROFILES.thobe),
+  ...garmentTagEntries(['white_thobe_red_shemagh','white_thobe_white_ghutra','navy_thobe_red_shemagh'], GARMENT_TAG_PROFILES.thobeHeadwear),
+  ...garmentTagEntries(['black_abaya','embroidered_abaya','abaya_hijab'], GARMENT_TAG_PROFILES.abaya),
+  ...garmentTagEntries(['red_shemagh_agal','white_ghutra_agal','red_shemagh_no_agal','white_ghutra_no_agal'], GARMENT_TAG_PROFILES.headwear),
+  ...garmentTagEntries(['black_tshirt','white_tshirt','navy_tshirt','grey_tshirt'], GARMENT_TAG_PROFILES.tshirt),
+  ...garmentTagEntries(['navy_polo','white_polo','charcoal_polo'], GARMENT_TAG_PROFILES.polo),
+  ...garmentTagEntries(['hoodie','crewneck_sweatshirt'], GARMENT_TAG_PROFILES.softLongSleeve),
+  ...garmentTagEntries(['denim_jacket','olive_field_jacket_tshirt','charcoal_blazer_white_tshirt','charcoal_wool_jacket'], GARMENT_TAG_PROFILES.layeredSleevedCollared),
+  ...garmentTagEntries(['light_jacket'], GARMENT_TAG_PROFILES.layeredCollared),
+  ...garmentTagEntries(['black_bomber_tshirt'], GARMENT_TAG_PROFILES.layeredNoCollar),
+  ...garmentTagEntries(['lightweight_track_jacket','sand_light_jacket'], GARMENT_TAG_PROFILES.layeredBottom),
+  ...garmentTagEntries(['charcoal_hoodie_joggers','navy_crewneck_jeans','sand_knit_sweater_dark_trousers'], GARMENT_TAG_PROFILES.softTopBottom),
+  ...garmentTagEntries(['black_overshirt_grey_tshirt','denim_overshirt_white_tshirt'], GARMENT_TAG_PROFILES.overshirtNoBottom),
+  ...garmentTagEntries(['black_gym_tshirt_shorts'], GARMENT_TAG_PROFILES.tshirtShorts),
+  ...garmentTagEntries(['navy_gym_tshirt_joggers'], GARMENT_TAG_PROFILES.tshirtPants),
+  ...garmentTagEntries(['grey_training_top_black_pants'], GARMENT_TAG_PROFILES.trainingTopPants),
+  ...garmentTagEntries(['beige_overshirt_black_tshirt'], GARMENT_TAG_PROFILES.overshirtBottom),
+  ...garmentTagEntries(['navy_polo_beige_chinos','white_polo_olive_chinos'], GARMENT_TAG_PROFILES.poloPants),
+  ...garmentTagEntries(['quilted_vest_knit'], GARMENT_TAG_PROFILES.vestKnitBottom),
+  ...garmentTagEntries(['lightblue_oxford_beige_chinos','beige_linen_shirt_offwhite_trousers','navy_henley_chinos'], GARMENT_TAG_PROFILES.formalLook),
+  ...garmentTagEntries(['navy_blazer_blue_shirt','dark_brown_blazer_cream_shirt'], GARMENT_TAG_PROFILES.formalSuit)
+]);
+
+function garmentTagsForCatalogItem(item) {
+  if (FORMAL_SUIT_VALUES.has(item.value)) return [...GARMENT_TAG_PROFILES.formalSuit];
+  if (FORMAL_LOOK_VALUES.has(item.value)) return [...GARMENT_TAG_PROFILES.formalLook];
+  const tags = GENERAL_GARMENT_TAGS_BY_VALUE.get(item.value);
+  if (!tags?.length) throw new Error(`Missing garmentTags for CLOTHING_CATALOG item: ${item.value}`);
+  return [...tags];
+}
+
+function garmentTagsForHomeItem(item) {
+  if (item.group === 'تيشيرت') return [...GARMENT_TAG_PROFILES.tshirt];
+  if (item.group === 'شورت' || item.group === 'بنطال بيت') return [...GARMENT_TAG_PROFILES.bottom];
+  if (item.group === 'طقم تيشيرت + شورت') return [...GARMENT_TAG_PROFILES.tshirtShorts];
+  if (item.group === 'بيجاما') return [...GARMENT_TAG_PROFILES.pajama];
+  if (item.group === 'ثوب نوم') return [...GARMENT_TAG_PROFILES.nightThobe];
+  if (item.group === 'روب') return [...GARMENT_TAG_PROFILES.robe];
+  throw new Error(`Missing garmentTags for HOME_CLOTHING item: ${item.value}`);
+}
 
 const normalizeClothingCatalogItem = (item) => ({
   ...item,
   group: FORMAL_SUIT_VALUES.has(item.value) ? 'بدلات رسمية كاملة' : item.group,
-  prompt: CLOTHING_PROMPT_OVERRIDES.get(item.value) || item.prompt
+  prompt: CLOTHING_PROMPT_OVERRIDES.get(item.value) || item.prompt,
+  garmentTags: garmentTagsForCatalogItem(item)
 });
 
 export const CLOTHING_CATALOG = [
@@ -507,7 +581,7 @@ export const HOME_CLOTHING = [
 { group:'بنطال بيت', value:'lounge-black', label:'بنطال بيت أسود', prompt:'black cotton lounge pants with matte finish and natural folds' },
 { group:'بنطال بيت', value:'lounge-charcoal', label:'بنطال بيت فحمي', prompt:'charcoal cotton joggers with visible texture and ribbed cuffs' },
 { group:'بنطال بيت', value:'lounge-beige', label:'بنطال بيت بيج', prompt:'beige cotton lounge pants with warm neutral tone' }
-];
+].map((item) => ({ ...item, garmentTags: garmentTagsForHomeItem(item) }));
 
 export const BEDROOM_POSES = [
 { group:'استلقاء على السرير', value:'bed-lying-back', label:'مستلقٍ على ظهره على السرير', prompt:'lying flat on his back on the bed, head on the pillow, arm holding the phone above the face, mattress compression visible under shoulders and hips', cameraHint:'front camera held directly above the face, lens pointing downward, arm extended' },

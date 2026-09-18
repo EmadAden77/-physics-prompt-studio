@@ -1,7 +1,7 @@
 import { buildRealismPacket, renderRealismGuidance } from './realistic-image-generator.js';
 import { baseSceneTypeFor, sceneMeta } from './scene-type-expansion.js';
 import { resolveContextAwareConstraints, getPoseCameraHint } from './scene-compatibility.js';
-import { BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_POSES, SAUDI_CULTURAL_DRESS_LOCK, SAUDI_SIGNAGE_RULE, CLOTHING_STYLING, HAND_INTERACTIONS } from './scene-builder.js';
+import { BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_POSES, SAUDI_CULTURAL_DRESS_LOCK, SAUDI_SIGNAGE_RULE, CLOTHING_STYLING, HAND_INTERACTIONS, CLOTHING_CATALOG, HOME_CLOTHING } from './scene-builder.js';
 import { resolveCameraAngle } from './camera-angle-resolver.js';
 
 export const SCENE_TYPES = [
@@ -74,6 +74,15 @@ export const FRAMING_OPTIONS = [
 ];
 
 const DEFAULTS = { sceneType:SCENE_TYPES[0], camera:CAMERA_PROFILES[0], aspectRatio:ASPECT_RATIOS[0], expression:EXPRESSIONS[0], background:BACKGROUND_ACTIVITY[1], realism:REALISM_LEVELS[1], framing:FRAMING_OPTIONS[1] };
+const ALL_CLOTHING = Object.freeze([...CLOTHING_CATALOG, ...HOME_CLOTHING]);
+const CLOTHING_BY_VALUE = new Map(ALL_CLOTHING.map((item) => [item.value, item]));
+const CLOTHING_STYLING_SCENE_TYPES = new Set([
+  'front_selfie','standing_selfie','seated_selfie','walking_selfie',
+  'office_selfie','cafe_selfie','majlis_selfie','outdoor_selfie',
+  'inside_car_selfie','military_meal_selfie',
+  'bedroom_selfie','bedroom_third_person',
+  'third_person_portrait','full_body_third_person','candid_third_person'
+]);
 const CANONICAL_SECTIONS = ['GOAL','ACTION-DRIVEN AUTHENTICITY','CAPTURE TYPE LOCK — CRITICAL','IDENTITY / SUBJECT','SCENE','SAUDI CULTURAL DRESS','OBSERVABLE BACKGROUND ELEMENTS','CLOTHING','CONTEXTUAL ACCESSORIES','POSE & BODY MECHANICS','CAMERA GEOMETRY','PHYSICAL LIGHTING','MIRROR RULES','PRODUCT INTEGRATION','PHYSICAL / MATERIAL REALISM','SMARTPHONE IMAGE BEHAVIOR','LENS_PHYSICS','BIOLOGICAL_MICRO_REALISM','CAMERA_METADATA_HINT','AUTHENTIC IMPERFECTIONS','USER CONSTRAINTS','NEGATIVE CONSTRAINTS','FINAL VERIFICATION'];
 const HAIR_LOCK = 'Hair length, density, hairline shape, and hair thickness remain EXACTLY as in the reference image when a reference image is attached. Only the visible direction, part line, clumping, and strand orientation may change. Do not shorten, lengthen, thin, thicken, or recede the hairline. If no reference image is attached, keep the chosen baseline hair length and density stable and do not invent extra length or density solely to satisfy a hairstyle.';
 const HAIR_DIRECTION_LOCK = "HAIR DIRECTION LOCK: The chosen hairstyle direction (backward / forward / side / center / messy) must be unmistakably visible in the final image. If the selected hairstyle says 'combed backward', no strands may fall forward onto the forehead. If 'parted on the left', the parting line must be clearly visible on the left side. Ignore generic 'natural look' instructions that contradict the selected direction.";
@@ -84,6 +93,35 @@ const CAPTURE_IMPERFECTIONS = 'Allow capture-level imperfections only: tiny hand
 const BACKGROUND_HUMAN_INTEGRITY_RULE = 'Background humans must have distinct identities, intact anatomy with correctly formed limbs and hands, perspective-consistent scale relative to camera distance, real ground contact, correct occlusion by foreground objects, and independent silhouettes. No fused bodies, no cloned faces, no deformed background hands.';
 
 function clean(value){ return typeof value === 'string' ? value.trim() : ''; }
+function normalizedClothingDescriptor(value) {
+  return clean(value).replace(/(?:\.\.\.|…)+$/u, '').trim().toLowerCase();
+}
+function resolveClothingItem(input) {
+  const explicitValue = clean(input.clothingValue);
+  if (explicitValue && CLOTHING_BY_VALUE.has(explicitValue)) return CLOTHING_BY_VALUE.get(explicitValue);
+  const raw = clean(input.clothing);
+  if (!raw) return null;
+  if (CLOTHING_BY_VALUE.has(raw)) return CLOTHING_BY_VALUE.get(raw);
+  const probe = normalizedClothingDescriptor(raw);
+  let best = null;
+  let bestScore = -1;
+  for (const item of ALL_CLOTHING) {
+    const itemPrompt = normalizedClothingDescriptor(item.prompt);
+    if (!itemPrompt) continue;
+    if (itemPrompt === probe || itemPrompt.startsWith(probe) || probe.startsWith(itemPrompt)) {
+      const score = Math.min(itemPrompt.length, probe.length);
+      if (score > bestScore) {
+        best = item;
+        bestScore = score;
+      }
+    }
+  }
+  return best;
+}
+function optionAppliesToGarment(option, garmentTags) {
+  const applicableTo = option?.applicableTo || [];
+  return applicableTo.includes('all') || applicableTo.some((tag) => garmentTags.has(tag));
+}
 function pick(options,value,fallback){ return options.find((item)=>item.value===value) || fallback; }
 function section(title,body){ return `[${title}]\n${clean(body)}`; }
 function isSaudi(location){ return SAUDI_CONTEXT.test(clean(location)); }
@@ -180,8 +218,13 @@ export function generateImagePrompt(input={}){
   const framing=pick(FRAMING_OPTIONS,input.framing,DEFAULTS.framing);
   const location=clean(input.location)||'a generic, ordinary Saudi Arabian setting appropriate to the scene, without inventing a specific city or landmark';
   const clothing=clean(input.clothing)||'realistic context-appropriate clothing with believable textile weight, seams, folds and material response';
+  const clothingItem=resolveClothingItem(input);
+  const garmentTags=new Set(clothingItem?.garmentTags || []);
   const clothingStyling=pick(CLOTHING_STYLING,input.clothingStyling,CLOTHING_STYLING[0]);
   const handInteraction=pick(HAND_INTERACTIONS,input.handInteraction,HAND_INTERACTIONS[0]);
+  const stylingSceneSupported=CLOTHING_STYLING_SCENE_TYPES.has(requested) && requested!=='supermarket_selfie';
+  const clothingStylingPrompt=stylingSceneSupported && optionAppliesToGarment(clothingStyling,garmentTags) ? clothingStyling.prompt : '';
+  const handInteractionPrompt=optionAppliesToGarment(handInteraction,garmentTags) ? handInteraction.prompt : '';
   const hair=clean(input.hairStyle), poseInput=clean(input.pose), angleInput=clean(input.angle);
   const bedroomPoseCameraEnabled=requested==='bedroom_selfie' || requested==='bedroom_mirror_selfie';
   const selectedBedroomPose=bedroomPoseCameraEnabled
@@ -248,7 +291,7 @@ export function generateImagePrompt(input={}){
   }
 
   const poseText=pose ? `${pose}. ` : '';
-  const poseModifiers=[clothingStyling.prompt,handInteraction.prompt].filter(Boolean).join(' ');
+  const poseModifiers=[clothingStylingPrompt,handInteractionPrompt].filter(Boolean).join(' ');
   const poseBody=`${poseText}Body mechanics must respect balance, support, joint limits, body weight, seat or ground contact, and natural asymmetric posture.${poseModifiers ? ` ${poseModifiers}` : ''}`;
   const sections=[
     section('GOAL',`Generate ONE highly photorealistic ${ratio.prompt} image. ${description?`User scene intent: ${description}. `:''}The result must look like a genuine smartphone photograph rather than advertising, polished commercial photography, CGI or AI-stylized imagery.`),

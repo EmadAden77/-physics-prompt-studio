@@ -195,6 +195,24 @@ export const CLOTHING_OPTIONS = grouped([
 ['كاجوال','light_jacket','جاكيت خفيف','a simple lightweight casual jacket with realistic shell fabric, zipper structure, cuff tension, and natural folds']
 ]);
 
+export const CLOTHING_STYLING = Object.freeze([
+  { value: 'default', label: 'افتراضي', prompt: '' },
+  { value: 'top-buttons-open', label: 'مفتوح من الأعلى', prompt: 'Top 2-3 buttons unbuttoned, revealing collarbone shadow. Fabric stretched across the chest with natural tension lines.' },
+  { value: 'sleeves-rolled', label: 'مطوي الأكمام', prompt: 'Sleeves neatly rolled up to the elbows, creating tight folded fabric tension at the biceps.' },
+  { value: 'untucked', label: 'غير مدخل', prompt: 'Shirt hem untucked, resting naturally over the hips with gravity-driven folds and asymmetric wrinkles.' },
+  { value: 'french-tuck', label: 'مدخل من الأمام فقط', prompt: 'Shirt front hem tucked into the waistband, back hem left untucked. Fabric gathers naturally at the waist.' },
+  { value: 'fully-open', label: 'مفتوح بالكامل', prompt: 'Shirt completely unbuttoned, worn open over a plain undershirt, front panels hanging loosely with gravity-driven folds.' }
+]);
+
+export const HAND_INTERACTIONS = Object.freeze([
+  { value: 'none', label: 'لا يوجد', prompt: '' },
+  { value: 'adjust-collar', label: 'تعديل الياقة', prompt: 'Fingers hooked inside the crew neck collar, pulling it slightly away from the neck. Fabric stretches across the chest.' },
+  { value: 'roll-sleeve', label: 'رفع الكم', prompt: 'One hand pulling the short sleeve up towards the shoulder, compressing the fabric at the bicep.' },
+  { value: 'wipe-sweat', label: 'مسح العرق', prompt: 'One hand holding a white towel wiping the forehead, while the other hand naturally pulls up the t-shirt hem. Natural asymmetric posture.' },
+  { value: 'pocket-hands', label: 'وضع اليد في الجيب', prompt: 'Both hands inserted into the side pockets of the joggers. The fabric stretches taut across the pelvis with natural compression at the pocket seams.' },
+  { value: 'adjust-waistband', label: 'تعديل الخصر', prompt: 'One hand pulling the waistband of the joggers up, which inadvertently lifts the bottom of the t-shirt. Natural compression of the jogger fabric at the hips.' }
+]);
+
 export const FORMAL_SUITS = [
   { group:'كلاسيكي', value:'suit-navy-white', label:'بدلة كحلية + قميص أبيض', prompt:'a navy two-piece suit with a crisp white dress shirt, wool-blend texture, natural lapel roll, sleeve break, trouser crease, restrained sheen' },
   { group:'كلاسيكي', value:'suit-navy-lightblue', label:'بدلة كحلية + قميص أزرق فاتح', prompt:'a navy two-piece suit with a light-blue dress shirt, wool-blend texture, matte trouser drape' },

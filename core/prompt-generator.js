@@ -1,6 +1,6 @@
 import { buildRealismPacket, renderRealismGuidance } from './realistic-image-generator.js';
 import { baseSceneTypeFor, sceneMeta } from './scene-type-expansion.js';
-import { resolveContextAwareConstraints, getPoseCameraHint } from './scene-compatibility.js';
+import { clothingSceneCoherence, resolveContextAwareConstraints, getPoseCameraHint } from './scene-compatibility.js';
 import { BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_POSES, SAUDI_CULTURAL_DRESS_LOCK, SAUDI_SIGNAGE_RULE, CLOTHING_STYLING, HAND_INTERACTIONS, CLOTHING_CATALOG, HOME_CLOTHING, getAvailableProps, getRemainingHands, getPropHandUsage } from './scene-builder.js';
 import { resolveCameraAngle } from './camera-angle-resolver.js';
 
@@ -220,6 +220,7 @@ export function generateImagePrompt(input={}){
   const location=clean(input.location)||'a generic, ordinary Saudi Arabian setting appropriate to the scene, without inventing a specific city or landmark';
   const clothing=clean(input.clothing)||'realistic context-appropriate clothing with believable textile weight, seams, folds and material response';
   const clothingItem=resolveClothingItem(input);
+  const clothingWarning=clothingSceneCoherence(clothingItem?.value || clean(input.clothingValue), requested);
   const garmentTags=new Set(clothingItem?.garmentTags || []);
   const clothingStyling=pick(CLOTHING_STYLING,input.clothingStyling,CLOTHING_STYLING[0]);
   const handInteraction=pick(HAND_INTERACTIONS,input.handInteraction,HAND_INTERACTIONS[0]);
@@ -332,6 +333,8 @@ export function generateImagePrompt(input={}){
   ];
   const prompt=sections.join('\n\n'), realismCheck=validateRealism(prompt), validation=validateGeneratedPrompt(prompt,{sceneType:scene,realismPacket:packet,saudiContext:saudi});
   validation.warnings.push(...contextual.warnings);
+  const contextWarnings=[...contextual.warnings];
+  if(clothingWarning) contextWarnings.push(clothingWarning.warning);
   if(realism.value==='strict'&&!realismCheck.valid){ validation.errors.push(...realismCheck.errors.map((e)=>`[REALISM] ${e.message}`)); validation.valid=false; }
   return {
     schema_version:'2.3.0',mode:'auto_generate',prompt,sections,realism_packet:packet,
@@ -339,7 +342,7 @@ export function generateImagePrompt(input={}){
       requested_scene_type:requested,scene_type:scene.value,capture_type:scene.capture,camera:camera.value,aspect_ratio:ratio.value,expression:expression.value,
       background_activity:background.value,background_activity_allowed:[...contextual.backgroundActivityAllowed],realism_level:realism.value,framing:framing.value,
       identity_reference:identity,location,clothing,hair_style:hair,pose,pose_value:poseValue,held_prop:heldProp?.value || 'none',secondary_prop:secondaryProp?.value || 'none',angle:cameraGeometryText,angle_locked_by_pose:angleLockedByPose,lighting,lighting_notes:clean(input.lightingNotes),description,custom_constraints:custom,
-      saudi_context:saudi,context_warnings:[...contextual.warnings]
+      saudi_context:saudi,context_warnings:contextWarnings
     },validation,realism_validation:realismCheck
   };
 }

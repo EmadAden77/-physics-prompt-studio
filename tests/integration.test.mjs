@@ -161,7 +161,7 @@ test('car studio is wired to prompt generation, realism validation and local pho
 const { LOCATION_CATALOG } = await import('../core/scene-builder.js');
 const { HOME_SCENE_TYPES, EXTRA_SCENE_TYPES } = await import('../core/scene-type-expansion.js');
 const { homeClothingForScene, compatibleOptions, getPoseCameraHint, locationsForScene } = await import('../core/scene-compatibility.js');
-const { randomizationOptionsForScene, buildSeededSceneState, resolveHomeSceneInput } = await import('../app.js');
+const { randomizationOptionsForScene, buildSeededSceneState, resolveHomeSceneInput, ensurePersistentClothingSelect, ALL_CLOTHING } = await import('../app.js');
 
 const bedroomPoseValues = BEDROOM_POSES.map((item) => item.value);
 
@@ -282,4 +282,28 @@ test('bedroom selfie screen lighting survives output without inventing a room la
 test('non-bedroom prompt remains free of the bedroom anchor', () => {
   const result = generateImagePrompt({ sceneType: 'inside_car_selfie', location: 'inside a stationary car' });
   assert.doesNotMatch(result.prompt, /ROOM ANCHOR/i);
+});
+
+
+test('clothing value survives three scene changes after the full catalog is built once', () => {
+  assert.equal(ALL_CLOTHING.length, 267);
+  const select = { value:'', options:[{ value:'' }] };
+  let rebuildCount = 0;
+  const rebuild = (target, options) => {
+    rebuildCount += 1;
+    target.options = [{ value:'' }, ...options.map((item) => ({ value:item.value }))];
+    target.value = '';
+  };
+
+  ensurePersistentClothingSelect(select, ALL_CLOTHING, rebuild);
+  assert.equal(select.options.length, 268);
+  select.value = 'white_thobe';
+
+  for (const sceneType of ['front_selfie', 'bedroom_selfie', 'office_selfie']) {
+    assert.ok(sceneType);
+    ensurePersistentClothingSelect(select, ALL_CLOTHING, rebuild);
+    assert.equal(select.value, 'white_thobe', sceneType);
+  }
+
+  assert.equal(rebuildCount, 1);
 });

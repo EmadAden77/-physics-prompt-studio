@@ -1,7 +1,7 @@
 import { buildRealismPacket, renderRealismGuidance } from './realistic-image-generator.js';
 import { baseSceneTypeFor, sceneMeta } from './scene-type-expansion.js';
 import { clothingSceneCoherence, resolveContextAwareConstraints, getPoseCameraHint } from './scene-compatibility.js';
-import { BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_POSES, SAUDI_CULTURAL_DRESS_LOCK, SAUDI_SIGNAGE_RULE, CLOTHING_STYLING, HAND_INTERACTIONS, CLOTHING_CATALOG, HOME_CLOTHING, getAvailableProps, getRemainingHands, getPropHandUsage } from './scene-builder.js';
+import { BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_POSES, SAUDI_CULTURAL_DRESS_LOCK, SAUDI_SIGNAGE_RULE, CLOTHING_STYLING, HAND_INTERACTIONS, CLOTHING_CATALOG, HOME_CLOTHING, getFurnitureGeometryForScene, getAvailableProps, getRemainingHands, getPropHandUsage } from './scene-builder.js';
 import { resolveCameraAngle } from './camera-angle-resolver.js';
 
 export const SCENE_TYPES = [
@@ -175,7 +175,7 @@ function metadata(camera){
 }
 function negatives(scene){
   const capture = scene.capture.includes('third-person') ? 'selfie arm, implied subject-held camera' : scene.capture.includes('mirror') ? 'direct front-camera viewpoint outside the mirror, duplicate phone or hands' : 'third-person viewpoint, floating external camera, mirror capture unless explicitly selected';
-  return `Avoid: plastic skin, waxy or porcelain skin, face reconstruction, artificial symmetry, malformed hands, extra fingers, duplicated limbs, floating objects, impossible body support, incorrect contact shadows, melted textiles, melted fabric, floating clothes, deformed abs, impossible anatomy, morphing sofa, split furniture, merged furniture, disconnected armrest, two sofas merged, repeated background people, cloned props, impossible reflections, invisible artificial key lights, fake rim lights, excessive HDR, aggressive orange-teal grading, DSLR-style bokeh, over-sharpening, oversaturated skin, sterile showroom staging, generic static posing, advertisement-style product placement, artificial lens flare, beauty filtering, symmetric face, missing corneal reflections, uniform fabric without weave or fibers, deformed background people, fused background bodies, cloned background faces, floating background people, mis-scaled background humans, background people without ground contact, gibberish text, pseudo-Arabic script, garbled signs, English-only signage in Saudi scenes, fictional characters on signs. Capture-specific exclusions: ${capture}.`;
+  return `Avoid: plastic skin, waxy or porcelain skin, face reconstruction, artificial symmetry, malformed hands, extra fingers, duplicated limbs, floating objects, impossible body support, incorrect contact shadows, melted textiles, melted fabric, floating clothes, deformed abs, impossible anatomy, morphing sofa, split furniture, merged furniture, disconnected armrest, two sofas merged, furniture with disconnected legs, furniture floating above the ground, repeated background people, cloned props, impossible reflections, invisible artificial key lights, fake rim lights, excessive HDR, aggressive orange-teal grading, DSLR-style bokeh, over-sharpening, oversaturated skin, sterile showroom staging, generic static posing, advertisement-style product placement, artificial lens flare, beauty filtering, symmetric face, missing corneal reflections, uniform fabric without weave or fibers, deformed background people, fused background bodies, cloned background faces, floating background people, mis-scaled background humans, background people without ground contact, gibberish text, pseudo-Arabic script, garbled signs, English-only signage in Saudi scenes, fictional characters on signs. Capture-specific exclusions: ${capture}.`;
 }
 function verification(scene,ratio,guidance){ return `Before finalizing, verify: capture type unmistakably matches “${scene.capture}”; the camera position is physically possible; anatomy and contacts are coherent; selected location, clothing, hair direction, pose, angle and lighting are visible and mutually compatible; lighting can be traced to plausible physical sources; materials respond differently according to their properties; background scale and requested activity level make sense; composition is ${ratio.prompt}; and the realism checklist is satisfied: ${guidance.consistency.replace(/^Before finalizing, verify:\s*/i,'')} If a secondary aesthetic choice conflicts with physical causality or capture geometry, preserve physical plausibility.`; }
 
@@ -308,6 +308,9 @@ export function generateImagePrompt(input={}){
     const clutter=BEDROOM_CLUTTER_LEVELS[input.clutterLevel] || BEDROOM_CLUTTER_LEVELS.moderate;
     sceneText=`${sceneText} ${anchorText} ROOM CLUTTER: ${clutter}`;
   }
+  const furnitureRules=getFurnitureGeometryForScene(requested,location);
+  const furnitureText=furnitureRules.length ? `FURNITURE GEOMETRY: ${furnitureRules.join(' ')}` : '';
+  sceneText=`${sceneText} ${furnitureText}`.trim();
 
   const poseText=pose ? `${pose}. ` : '';
   const poseModifiers=[clothingStylingPrompt,handInteractionPrompt].filter(Boolean).join(' ');

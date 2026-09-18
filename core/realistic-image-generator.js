@@ -148,7 +148,29 @@ export function buildRealismPacket(input = {}) {
   const expression = clean(input.expression) || 'a natural expression that matches the ongoing action';
   const setting = clean(input.location) || 'an ordinary, non-iconic Saudi setting appropriate to the activity';
   const lighting = clean(input.lighting) || 'simple natural or practical light appropriate to the setting';
-  const action = clean(input.action) || profile.action;
+  const heldPropText = clean(input.heldProp) && clean(input.heldProp) !== 'none' ? clean(input.heldProp) : null;
+  const secondaryPropText = clean(input.secondaryProp) && clean(input.secondaryProp) !== 'none' ? clean(input.secondaryProp) : null;
+  let action = clean(input.action) || profile.action;
+
+  if (heldPropText) {
+    action = action
+      .replace(/\s*,?\s*holding a water bottle\s*/gi, ' ')
+      .replace(/\s*,?\s*or gym towel\s*/gi, ' ')
+      .replace(/\s*,?\s*adjusting gear\s*/gi, ' ')
+      .replace(/\s*,\s*,+/g, ',')
+      .replace(/\s*,?\s*or\s+rather\b/gi, ' rather')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!action.endsWith('.') && !action.endsWith(';')) action += '.';
+  }
+
+  let accessoriesProp = heldPropText || profile.accessories.prop;
+  if (heldPropText) {
+    accessoriesProp += '. The object is held with correct grip tension, natural wrist angle, and visible contact shadows between fingers and object.';
+  }
+  if (secondaryPropText) {
+    accessoriesProp += ` ${secondaryPropText}. Both objects are held simultaneously with realistic weight distribution and no hand deformation.`;
+  }
   const backgroundActivity = ['quiet', 'normal', 'lively'].includes(input.backgroundActivity) ? input.backgroundActivity : 'normal';
   const backgroundElements = Array.isArray(input.backgroundElements) && input.backgroundElements.length
     ? input.backgroundElements.map(clean).filter(Boolean)
@@ -170,7 +192,7 @@ export function buildRealismPacket(input = {}) {
       clothing,
       face: 'preserve natural asymmetry, pores, under-eye texture, uneven pigmentation and identity-defining details; no beauty retouching'
     },
-    accessories: { ...profile.accessories, device: deviceForCapture(input, scenario) },
+    accessories: { ...profile.accessories, prop: accessoriesProp, device: deviceForCapture(input, scenario) },
     photography: {
       camera_style: simpleCameraLanguage(input, scenario),
       angle: clean(input.angle) || 'natural eye-level or mildly off-axis angle appropriate to the action',
@@ -195,9 +217,13 @@ export function buildRealismPacket(input = {}) {
 export function renderRealismGuidance(packet) {
   const background = packet.background.elements.map((item) => `- ${item}`).join('\n');
   const imperfections = packet.imperfections.map((item) => `- ${item}`).join('\n');
-  const accessories = Object.entries(packet.accessories).map(([key, value]) => `- ${key}: ${value}`).join('\n');
+  const action = /[.;!?]$/.test(packet.action) ? packet.action : `${packet.action}.`;
+  const accessories = Object.entries(packet.accessories)
+    .filter(([key, value]) => key !== 'device' || !/none held by the subject; photographed by another person/i.test(value))
+    .map(([key, value]) => `- ${key}: ${value}`)
+    .join('\n');
   return {
-    action: `Complete scene action: ${packet.action}. The subject must look occupied by a real moment, not frozen into a generic pose.`,
+    action: `Complete scene action: ${action} The subject must look occupied by a real moment, not frozen into a generic pose.`,
     accessories: `Keep every accessory consistent with the activity and setting:\n${accessories}`,
     background: `Observable background elements:\n${background}\nAtmosphere: ${packet.background.atmosphere}. Background activity: ${packet.background.activity}.`,
     imperfections: `Use subtle authentic contextual imperfections only:\n${imperfections}`,

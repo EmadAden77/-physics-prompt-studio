@@ -66,3 +66,27 @@ test('villa driveway outdoor selfie is not car interior', async () => {
   });
   assert.notEqual(packet.template_type, 'Car Selfie');
 });
+
+test('heldProp overrides gym default action', async () => {
+  const { buildRealismPacket } = await import('../core/realistic-image-generator.js');
+  const packet = buildRealismPacket({
+    sceneType: 'gym_selfie',
+    location: 'inside a modern Saudi gym',
+    clothing: 'a black moisture-wicking gym T-shirt...',
+    heldProp: 'a black iPhone 15 Pro held in one hand, titanium finish with subtle reflections'
+  });
+  assert.doesNotMatch(packet.action, /water bottle/i);
+  assert.match(packet.accessories.prop, /iPhone 15 Pro/i);
+  const guidance = renderRealismGuidance(packet);
+  assert.doesNotMatch(guidance.action, /\.\./);
+});
+
+test('heldProp none preserves gym default prop', async () => {
+  const { buildRealismPacket } = await import('../core/realistic-image-generator.js');
+  const packet = buildRealismPacket({
+    sceneType: 'gym_selfie',
+    location: 'inside a modern Saudi gym',
+    heldProp: 'none'
+  });
+  assert.match(packet.accessories.prop, /water bottle|gym towel/i);
+});

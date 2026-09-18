@@ -85,9 +85,23 @@ export function homeClothingForScene(sceneType) {
   return HOME_CLOTHING;
 }
 
-export function clothingForScene(sceneType, baseOptions = []) {
-  if (HOME_SCENE_TYPES.includes(sceneType)) return [...HOME_CLOTHING];
-  return baseOptions.filter((item) => !HOME_CLOTHING_VALUES.has(item.value));
+export function clothingForScene(_sceneType, baseOptions = []) {
+  const seen = new Set();
+  return [...baseOptions, ...HOME_CLOTHING].filter((item) => {
+    if (!item?.value || seen.has(item.value)) return false;
+    seen.add(item.value);
+    return true;
+  });
+}
+
+export function clothingSceneCoherence(clothingValue, sceneType) {
+  const value = String(clothingValue || '').trim();
+  if (!value || value === 'custom') return null;
+  const isBedroomScene = HOME_SCENE_TYPES.includes(sceneType);
+  const isBedroomClothing = HOME_CLOTHING_VALUES.has(value);
+  if (isBedroomScene && !isBedroomClothing) return { warning:'ملابس غير مناسبة لمشهد غرفة النوم' };
+  if (!isBedroomScene && isBedroomClothing) return { warning:'ملابس غرفة نوم في مشهد عام' };
+  return null;
 }
 
 function bedroomPoseFor(poseValueOrPrompt) {
@@ -230,8 +244,8 @@ export function compatibleOptions(sceneType, kind, baseOptions = []) {
   if (kind === 'hairStyle') return hairStylesForScene(sceneType);
   if (kind === 'clothing') {
     const clothing = clothingForScene(sceneType, baseOptions);
-    if (HOME_SCENE_TYPES.includes(sceneType)) return clothing;
-    return clothing.filter((item) => !item.sceneTypes || item.sceneTypes.includes(sceneType));
+    if (HOME_SCENE_TYPES.includes(sceneType)) return clothing.filter((item) => HOME_CLOTHING_VALUES.has(item.value));
+    return clothing.filter((item) => !HOME_CLOTHING_VALUES.has(item.value) && (!item.sceneTypes || item.sceneTypes.includes(sceneType)));
   }
   const profile = profileFor(sceneType);
   if (kind === 'pose' && profile.poseCatalog) return [...profile.poseCatalog];

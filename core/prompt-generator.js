@@ -258,18 +258,6 @@ export function generateImagePrompt(input={}){
   const background=pick(BACKGROUND_ACTIVITY,contextual.backgroundActivity,DEFAULTS.background);
   const lighting=contextual.lighting;
   const description=clean(input.description)||clean(extra?.prompt), custom=clean(input.customConstraints), identity=input.identityReference!==false, saudi=isSaudi(location);
-  const packet=buildRealismPacket({
-    sceneType:scene.value,requestedSceneType:requested,captureType:scene.capture,location,clothing,hairStyle:hair,expression:expression.prompt,angle:cameraGeometryText,lighting,description,
-    aspectRatio:ratio.prompt,pose,backgroundActivity:background.value,backgroundElements:backgroundElements(background,contextual,saudi)
-  });
-  packet.accessories.device=captureDeviceRule(scene.capture);
-  const guidance=renderRealismGuidance(packet);
-  const hasBackgroundPeople=packet.background.elements.some((item)=>/background people/i.test(item));
-  const backgroundText=hasBackgroundPeople ? `${guidance.background}\n${BACKGROUND_HUMAN_INTEGRITY_RULE}` : guidance.background;
-  const actionText=guidance.action.replace(/\s+The subject must look occupied by a real moment, not frozen into a generic pose\.$/,'');
-  const accessoriesText=guidance.accessories
-    .replace(/^Keep every accessory consistent with the activity and setting:\n/i,'')
-    .replace(/\n- device:[^\n]*/i,'');
   const propLocation=clean(input.locationValue) || clean(input.location);
   const effectiveHandInteraction=handInteractionPrompt ? handInteraction.value : 'none';
   const availableProps=getAvailableProps(requested,scene.capture,propLocation,poseValue,effectiveHandInteraction);
@@ -279,13 +267,16 @@ export function generateImagePrompt(input={}){
   const secondaryProp=secondaryCandidate && secondaryCandidate.grip!=='two-hands' && getPropHandUsage(secondaryCandidate)<=remainingAfterPrimary
     ? secondaryCandidate
     : undefined;
-  let propsText='';
-  if(heldProp){
-    propsText += ` ${heldProp.prompt}. The object is held with correct grip tension, natural wrist angle, and visible contact shadows between fingers and object.`;
-  }
-  if(secondaryProp){
-    propsText += ` ${secondaryProp.prompt}. Both objects are held simultaneously with realistic weight distribution and no hand deformation.`;
-  }
+  const packet=buildRealismPacket({
+    sceneType:scene.value,requestedSceneType:requested,captureType:scene.capture,location,clothing,hairStyle:hair,expression:expression.prompt,angle:cameraGeometryText,lighting,description,
+    aspectRatio:ratio.prompt,pose,backgroundActivity:background.value,backgroundElements:backgroundElements(background,contextual,saudi),
+    heldProp:heldProp?.prompt || 'none',secondaryProp:secondaryProp?.prompt || 'none'
+  });
+  packet.accessories.device=captureDeviceRule(scene.capture);
+  const guidance=renderRealismGuidance(packet);
+  const hasBackgroundPeople=packet.background.elements.some((item)=>/background people/i.test(item));
+  const backgroundText=hasBackgroundPeople ? `${guidance.background}\n${BACKGROUND_HUMAN_INTEGRITY_RULE}` : guidance.background;
+  const actionText=guidance.action.replace(/\s+The subject must look occupied by a real moment, not frozen into a generic pose\.$/,'');
   const productText=/^No product is featured\./i.test(guidance.product) ? 'No product is featured.' : guidance.product;
   const captureLower=scene.capture.toLowerCase();
   const mirrorSection=/mirror selfie/i.test(captureLower)
@@ -323,7 +314,7 @@ export function generateImagePrompt(input={}){
     section('SAUDI CULTURAL DRESS',saudi?`${SAUDI_CULTURAL_DRESS_LOCK} ${SAUDI_SIGNAGE_RULE}`:'Not applicable: the selected scene is outside Saudi context.'),
     section('OBSERVABLE BACKGROUND ELEMENTS',backgroundText),
     section('CLOTHING',clothing),
-    section('CONTEXTUAL ACCESSORIES',`${accessoriesText}${propsText}`), section('POSE & BODY MECHANICS',poseBody),
+    section('CONTEXTUAL ACCESSORIES',guidance.accessories), section('POSE & BODY MECHANICS',poseBody),
     section('CAMERA GEOMETRY',geometryRules(scene,camera,framing,cameraGeometryText,input.cameraDistance)), section('PHYSICAL LIGHTING',lightingRules(lighting,input.lightingNotes,realism.value)),
     section('MIRROR RULES',mirrorSection), section('PRODUCT INTEGRATION',productText),
     section('PHYSICAL / MATERIAL REALISM',`${realism.prompt}. Enforce correct human anatomy; realistic neck, shoulder, arm, hand and finger structure; natural weight distribution; correct support and contact deformation; coherent gravity; realistic cloth drape and seam tension; material-specific reflectance; physically consistent reflections; and scene-specific scale.`),

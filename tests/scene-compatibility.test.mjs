@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { compatibleOptions, compatibilitySnapshot, locationsForScene, recommendedDefaults, resolveCompatibleValue, resolveContextAwareConstraints } from '../core/scene-compatibility.js';
+import { clothingForScene, clothingSceneCoherence, compatibleOptions, compatibilitySnapshot, locationsForScene, recommendedDefaults, resolveCompatibleValue, resolveContextAwareConstraints } from '../core/scene-compatibility.js';
 import { LOCATION_CATALOG, SAUDI_LOCATIONS, CLOTHING_CATALOG, HOME_CLOTHING, BEDROOM_POSES, BEDROOM_ANCHOR, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
 import { CAMERA_PROFILES, FRAMING_OPTIONS, SCENE_TYPES, generateImagePrompt } from '../core/prompt-generator.js';
 import { baseSceneTypeFor, EXTRA_SCENE_TYPES } from '../core/scene-type-expansion.js';
@@ -399,4 +399,51 @@ test('non-bedroom scenes expose no tee-white / tee-black / shorts-* items', asyn
     const leaked = options.filter((item) => forbidden.test(item.value));
     assert.equal(leaked.length, 0, `${scene} leaked: ${leaked.map((item) => item.value).join(', ')}`);
   }
+});
+
+
+test('clothingForScene returns the full 267-item catalog for office and bedroom scenes', () => {
+  const all = [...CLOTHING_CATALOG, ...HOME_CLOTHING];
+  for (const scene of ['office_selfie', 'bedroom_selfie']) {
+    const options = clothingForScene(scene, CLOTHING_CATALOG);
+    assert.equal(options.length, all.length);
+    assert.equal(new Set(options.map((item) => item.value)).size, all.length);
+  }
+});
+
+test('clothingForScene does not duplicate HOME_CLOTHING when base options already include it', () => {
+  const all = [...CLOTHING_CATALOG, ...HOME_CLOTHING];
+  const options = clothingForScene('front_selfie', all);
+  assert.equal(options.length, 267);
+  assert.equal(new Set(options.map((item) => item.value)).size, 267);
+});
+
+test('clothingSceneCoherence warns about bedroom clothing in office scene', () => {
+  const warn = clothingSceneCoherence('tee-white', 'office_selfie');
+  assert.ok(warn);
+  assert.match(warn.warning, /غرفة نوم/i);
+});
+
+test('clothingSceneCoherence warns about thobe in bedroom scene', () => {
+  const warn = clothingSceneCoherence('white_thobe', 'bedroom_selfie');
+  assert.ok(warn);
+  assert.match(warn.warning, /غرفة النوم/i);
+});
+
+test('clothingSceneCoherence returns null for compatible and automatic choices', () => {
+  assert.equal(clothingSceneCoherence('white_thobe', 'front_selfie'), null);
+  assert.equal(clothingSceneCoherence('', 'bedroom_selfie'), null);
+});
+
+test('clothing coherence warning is context-only and never a validation error', () => {
+  const result = generateImagePrompt({ sceneType:'office_selfie', clothing:'tee-white' });
+  assert.ok(result.config.context_warnings.some((warning) => /غرفة نوم/i.test(warning)));
+  assert.equal(result.validation.errors.some((error) => /غرفة نوم|ملابس/i.test(error)), false);
+  assert.equal(result.validation.warnings.some((warning) => /غرفة نوم|ملابس/i.test(warning)), false);
+});
+
+test('23 sections are preserved with persistent clothing warnings', () => {
+  const result = generateImagePrompt({ sceneType:'bedroom_selfie', clothing:'white_thobe' });
+  assert.equal(result.sections.length, 23);
+  assert.ok(result.config.context_warnings.some((warning) => /غرفة النوم/i.test(warning)));
 });

@@ -1,7 +1,7 @@
 import { buildRealismPacket, renderRealismGuidance } from './realistic-image-generator.js';
 import { baseSceneTypeFor, sceneMeta } from './scene-type-expansion.js';
 import { resolveContextAwareConstraints, getPoseCameraHint } from './scene-compatibility.js';
-import { BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_POSES, SAUDI_CULTURAL_DRESS_LOCK, SAUDI_SIGNAGE_RULE, CLOTHING_STYLING, HAND_INTERACTIONS, CLOTHING_CATALOG, HOME_CLOTHING } from './scene-builder.js';
+import { BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_POSES, SAUDI_CULTURAL_DRESS_LOCK, SAUDI_SIGNAGE_RULE, CLOTHING_STYLING, HAND_INTERACTIONS, CLOTHING_CATALOG, HOME_CLOTHING, getAvailableProps, getRemainingHands, getPropHandUsage } from './scene-builder.js';
 import { resolveCameraAngle } from './camera-angle-resolver.js';
 
 export const SCENE_TYPES = [
@@ -91,6 +91,7 @@ const SAUDI_CONTEXT = /(?:^|[^a-z])(saudi(?: arabia)?|riyadh|jeddah|khobar|damma
 // to prefer structured location values over broad regex matching.
 const CAPTURE_IMPERFECTIONS = 'Allow capture-level imperfections only: tiny handheld roll, slight off-center crop, minor exposure or white-balance variation, subtle edge softness, restrained shadow sensor noise, and modest highlight clipping when caused by real practical lights.';
 const BACKGROUND_HUMAN_INTEGRITY_RULE = 'Background humans must have distinct identities, intact anatomy with correctly formed limbs and hands, perspective-consistent scale relative to camera distance, real ground contact, correct occlusion by foreground objects, and independent silhouettes. No fused bodies, no cloned faces, no deformed background hands.';
+const POSE_HAND_USAGE_FALLBACK = new Set([...SELFIE_POSES, ...BEDROOM_POSES].map((item) => item.value));
 
 function clean(value){ return typeof value === 'string' ? value.trim() : ''; }
 function normalizedClothingDescriptor(value) {
@@ -234,6 +235,7 @@ export function generateImagePrompt(input={}){
     ? SELFIE_POSES.find((item)=>item.value===poseInput || item.prompt===poseInput)
     : undefined;
   const pose=selectedBedroomPose?.prompt || selectedGeneralPose?.prompt || poseInput;
+  const poseValue=clean(input.poseValue) || selectedBedroomPose?.value || selectedGeneralPose?.value || (POSE_HAND_USAGE_FALLBACK.has(poseInput) ? poseInput : '');
   const poseHint=bedroomPoseCameraEnabled ? getPoseCameraHint(poseInput || pose) : null;
   const angleLockedByPose=bedroomPoseCameraEnabled && Boolean(poseHint);
   const cameraGeometryText=resolveCameraAngle({
@@ -267,6 +269,22 @@ export function generateImagePrompt(input={}){
   const accessoriesText=guidance.accessories
     .replace(/^Keep every accessory consistent with the activity and setting:\n/i,'')
     .replace(/\n- device:[^\n]*/i,'');
+  const propLocation=clean(input.locationValue) || clean(input.location);
+  const effectiveHandInteraction=handInteractionPrompt ? handInteraction.value : 'none';
+  const availableProps=getAvailableProps(requested,scene.capture,propLocation,poseValue,effectiveHandInteraction);
+  const heldProp=availableProps.find((prop)=>prop.value===clean(input.heldProp));
+  const remainingAfterPrimary=getRemainingHands(requested,scene.capture,heldProp?.value || 'none',poseValue,effectiveHandInteraction);
+  const secondaryCandidate=availableProps.find((prop)=>prop.value===clean(input.secondaryProp) && prop.value!==heldProp?.value);
+  const secondaryProp=secondaryCandidate && secondaryCandidate.grip!=='two-hands' && getPropHandUsage(secondaryCandidate)<=remainingAfterPrimary
+    ? secondaryCandidate
+    : undefined;
+  let propsText='';
+  if(heldProp){
+    propsText += ` ${heldProp.prompt}. The object is held with correct grip tension, natural wrist angle, and visible contact shadows between fingers and object.`;
+  }
+  if(secondaryProp){
+    propsText += ` ${secondaryProp.prompt}. Both objects are held simultaneously with realistic weight distribution and no hand deformation.`;
+  }
   const productText=/^No product is featured\./i.test(guidance.product) ? 'No product is featured.' : guidance.product;
   const captureLower=scene.capture.toLowerCase();
   const mirrorSection=/mirror selfie/i.test(captureLower)
@@ -301,7 +319,7 @@ export function generateImagePrompt(input={}){
     section('SAUDI CULTURAL DRESS',saudi?`${SAUDI_CULTURAL_DRESS_LOCK} ${SAUDI_SIGNAGE_RULE}`:'Not applicable: the selected scene is outside Saudi context.'),
     section('OBSERVABLE BACKGROUND ELEMENTS',backgroundText),
     section('CLOTHING',clothing),
-    section('CONTEXTUAL ACCESSORIES',accessoriesText), section('POSE & BODY MECHANICS',poseBody),
+    section('CONTEXTUAL ACCESSORIES',`${accessoriesText}${propsText}`), section('POSE & BODY MECHANICS',poseBody),
     section('CAMERA GEOMETRY',geometryRules(scene,camera,framing,cameraGeometryText,input.cameraDistance)), section('PHYSICAL LIGHTING',lightingRules(lighting,input.lightingNotes,realism.value)),
     section('MIRROR RULES',mirrorSection), section('PRODUCT INTEGRATION',productText),
     section('PHYSICAL / MATERIAL REALISM',`${realism.prompt}. Enforce correct human anatomy; realistic neck, shoulder, arm, hand and finger structure; natural weight distribution; correct support and contact deformation; coherent gravity; realistic cloth drape and seam tension; material-specific reflectance; physically consistent reflections; and scene-specific scale.`),
@@ -320,7 +338,7 @@ export function generateImagePrompt(input={}){
     config:{
       requested_scene_type:requested,scene_type:scene.value,capture_type:scene.capture,camera:camera.value,aspect_ratio:ratio.value,expression:expression.value,
       background_activity:background.value,background_activity_allowed:[...contextual.backgroundActivityAllowed],realism_level:realism.value,framing:framing.value,
-      identity_reference:identity,location,clothing,hair_style:hair,pose,angle:cameraGeometryText,angle_locked_by_pose:angleLockedByPose,lighting,lighting_notes:clean(input.lightingNotes),description,custom_constraints:custom,
+      identity_reference:identity,location,clothing,hair_style:hair,pose,pose_value:poseValue,held_prop:heldProp?.value || 'none',secondary_prop:secondaryProp?.value || 'none',angle:cameraGeometryText,angle_locked_by_pose:angleLockedByPose,lighting,lighting_notes:clean(input.lightingNotes),description,custom_constraints:custom,
       saudi_context:saudi,context_warnings:[...contextual.warnings]
     },validation,realism_validation:realismCheck
   };

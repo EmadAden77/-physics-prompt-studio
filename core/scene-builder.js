@@ -213,6 +213,139 @@ export const HAND_INTERACTIONS = Object.freeze([
   { value: 'adjust-waistband', label: 'تعديل الخصر', prompt: 'One hand pulling the waistband of the lower garment up, which slightly lifts the bottom of the upper garment. Natural compression of the fabric at the hips.', applicableTo: ['waistband'] }
 ]);
 
+
+export const HAND_PROPS = Object.freeze([
+  { value:'macbook-pro-16', label:'MacBook Pro 16', group:'أجهزة', prompt:'a 16-inch MacBook Pro held with both hands, screen partially visible, aluminum body with realistic reflections, grip tension on fingers', weight:'heavy', grip:'two-hands', categories:['tech'], sceneTypes:['office_selfie','desk_work_selfie','cafe_selfie','restaurant_table_selfie','bedroom_selfie'], locations:['saudi_office','real_estate_office','open_plan_office','executive_office','meeting_room','meeting_room_glass','coworking_space','coworking_lounge','home_office_room','saudi_cafe','specialty_coffee','hotel_business_center'] },
+  { value:'macbook-air-15', label:'MacBook Air 15', group:'أجهزة', prompt:'a 15-inch MacBook Air held with both hands, thin aluminum body, subtle wedge shape', weight:'heavy', grip:'two-hands', categories:['tech'], sceneTypes:['office_selfie','desk_work_selfie','cafe_selfie','restaurant_table_selfie'], locations:['saudi_office','real_estate_office','open_plan_office','executive_office','meeting_room','meeting_room_glass','coworking_space','coworking_lounge','saudi_cafe','specialty_coffee','hotel_business_center'] },
+  { value:'ipad-pro-13', label:'iPad Pro 13', group:'أجهزة', prompt:'a 13-inch iPad Pro held with both hands or one hand on the edge, thin tablet body, screen facing slightly toward the subject', weight:'medium', grip:'one-or-two-hands', categories:['tech'], sceneTypes:['office_selfie','desk_work_selfie','cafe_selfie','restaurant_table_selfie','bedroom_selfie','home_interior_casual_selfie'], locations:['saudi_office','real_estate_office','open_plan_office','executive_office','coworking_space','coworking_lounge','saudi_cafe','specialty_coffee','saudi_bedroom_livedin','home_office_room'] },
+  { value:'ipad-mini', label:'iPad Mini', group:'أجهزة', prompt:'an iPad Mini held in one hand, small tablet body, thumb resting on the bezel', weight:'light', grip:'one-hand', categories:['tech'], sceneTypes:['cafe_selfie','office_selfie','bedroom_selfie','outdoor_selfie','desk_work_selfie','restaurant_table_selfie','rooftop_terrace_selfie'], locations:['saudi_cafe','specialty_coffee','saudi_office','real_estate_office','saudi_bedroom_livedin','home_office_room','rooftop_terrace'] },
+  { value:'iphone-15-pro-black', label:'iPhone 15 Pro — أسود', group:'أجهزة', prompt:'a black iPhone 15 Pro held in one hand, titanium finish with subtle reflections, thumb on the screen', weight:'light', grip:'one-hand', categories:['tech'], sceneTypes:['*'], locations:[], excludedSceneTypes:['mosque_parking_selfie'], excludedLocations:['neighborhood_mosque_parking'] },
+  { value:'iphone-15-pro-titanium', label:'iPhone 15 Pro — تيتانيوم', group:'أجهزة', prompt:'a natural titanium iPhone 15 Pro held in one hand, brushed metal finish', weight:'light', grip:'one-hand', categories:['tech'], sceneTypes:['*'], locations:[], excludedSceneTypes:['mosque_parking_selfie'], excludedLocations:['neighborhood_mosque_parking'] },
+  { value:'iphone-15-pro-blue', label:'iPhone 15 Pro — أزرق', group:'أجهزة', prompt:'a blue titanium iPhone 15 Pro held in one hand', weight:'light', grip:'one-hand', categories:['tech'], sceneTypes:['*'], locations:[], excludedSceneTypes:['mosque_parking_selfie'], excludedLocations:['neighborhood_mosque_parking'] },
+  { value:'galaxy-s24-ultra', label:'Galaxy S24 Ultra', group:'أجهزة', prompt:'a Samsung Galaxy S24 Ultra held in one hand, large screen with subtle bezel reflections', weight:'light', grip:'one-hand', categories:['tech'], sceneTypes:['*'], locations:[], excludedSceneTypes:['mosque_parking_selfie'], excludedLocations:['neighborhood_mosque_parking'] },
+  { value:'nintendo-switch', label:'Nintendo Switch', group:'أجهزة', prompt:'a Nintendo Switch held with both hands or one hand on the side, screen facing slightly away', weight:'medium', grip:'one-or-two-hands', categories:['tech'], sceneTypes:['cafe_selfie','bedroom_selfie','home_interior_casual_selfie','restaurant_table_selfie'], locations:['saudi_cafe','specialty_coffee','saudi_bedroom_livedin','villa_living_room','apartment_living_room'] },
+  { value:'kindle-paperwhite', label:'Kindle Paperwhite', group:'أجهزة', prompt:'a Kindle Paperwhite held in one hand, matte e-ink screen, thumb on the bezel', weight:'light', grip:'one-hand', categories:['tech','book'], sceneTypes:['bedroom_selfie','cafe_selfie','outdoor_selfie','restaurant_table_selfie','rooftop_terrace_selfie'], locations:['saudi_bedroom_livedin','saudi_cafe','specialty_coffee','library_reading_area','public_park','rooftop_terrace'] },
+  { value:'airpods-case', label:'علبة AirPods', group:'أجهزة', prompt:'a small white AirPods case held in one hand, glossy plastic with finger contact', weight:'light', grip:'one-hand', categories:['tech'], sceneTypes:['*'], locations:[], excludedSceneTypes:['mosque_parking_selfie'], excludedLocations:['neighborhood_mosque_parking'] },
+  { value:'airpods-max', label:'AirPods Max', group:'أجهزة', prompt:'over-ear AirPods Max headphones, one hand holding them by the headband, aluminum ear cups', weight:'medium', grip:'one-hand', categories:['tech'], sceneTypes:['cafe_selfie','office_selfie','bedroom_selfie','outdoor_selfie','desk_work_selfie','rooftop_terrace_selfie'], locations:['saudi_cafe','specialty_coffee','saudi_office','real_estate_office','saudi_bedroom_livedin','public_park','rooftop_terrace'] },
+
+  { value:'arabic-coffee-finjan', label:'فنجان قهوة عربية', group:'مشروبات', prompt:'a small handleless Arabic coffee finjan held by the rim in one hand, thin porcelain, subtle steam if hot', weight:'light', grip:'one-hand', categories:['drink-saudi'], sceneTypes:['majlis_selfie','cafe_selfie','majlis_standing_selfie','majlis_seated_selfie','restaurant_table_selfie'], locations:['modern_saudi_majlis','traditional_majlis','saudi_cafe','specialty_coffee'] },
+  { value:'arabic-dallah-cup', label:'كأس قهوة عربية مع دلة', group:'مشروبات', prompt:'a small Arabic coffee cup in one hand, with a brass dallah visible nearby in the background', weight:'light', grip:'one-hand', categories:['drink-saudi'], sceneTypes:['majlis_selfie','cafe_selfie','majlis_standing_selfie','majlis_seated_selfie'], locations:['modern_saudi_majlis','traditional_majlis','saudi_cafe','specialty_coffee'] },
+  { value:'tea-glass-arabic', label:'كأس شاي عربي', group:'مشروبات', prompt:'a small Arabic tea glass with visible dark tea, thin glass, held carefully in one hand', weight:'light', grip:'one-hand', categories:['drink-saudi'], sceneTypes:['majlis_selfie','cafe_selfie','office_selfie','outdoor_selfie','majlis_standing_selfie','majlis_seated_selfie','restaurant_table_selfie','desk_work_selfie'], locations:['modern_saudi_majlis','traditional_majlis','saudi_cafe','specialty_coffee','saudi_office','real_estate_office','rooftop_terrace','villa_courtyard_night'] },
+  { value:'moroccan-tea-glass', label:'كأس شاي مغربي', group:'مشروبات', prompt:'a tall decorative Moroccan tea glass with mint leaves, held in one hand', weight:'light', grip:'one-hand', categories:['drink'], sceneTypes:['cafe_selfie','home_interior_casual_selfie','restaurant_table_selfie'], locations:['saudi_cafe','specialty_coffee','villa_living_room','apartment_living_room'] },
+  { value:'cappuccino-cup', label:'فنجان كابتشينو', group:'مشروبات', prompt:'a white ceramic cappuccino cup with saucer held in one hand, foam visible from a slight angle', weight:'light', grip:'one-hand', categories:['drink'], sceneTypes:['cafe_selfie','office_selfie','home_interior_casual_selfie','restaurant_table_selfie','restaurant_waiting_selfie','desk_work_selfie'], locations:['saudi_cafe','specialty_coffee','bakery_cafe','saudi_office','real_estate_office','office_break_room','villa_living_room','apartment_living_room'] },
+  { value:'espresso-cup', label:'فنجان إسبريسو', group:'مشروبات', prompt:'a small espresso cup held between thumb and index finger, dark espresso visible', weight:'light', grip:'one-hand', categories:['drink'], sceneTypes:['cafe_selfie','office_selfie','restaurant_table_selfie','desk_work_selfie'], locations:['saudi_cafe','specialty_coffee','bakery_cafe','saudi_office','real_estate_office','office_break_room'] },
+  { value:'iced-coffee-cup', label:'كوب قهوة مثلجة', group:'مشروبات', prompt:'a tall clear plastic iced coffee cup with visible ice cubes and straw, condensation on the outside, held in one hand', weight:'light', grip:'one-hand', categories:['drink'], sceneTypes:['cafe_selfie','outdoor_selfie','mall_selfie','restaurant_table_selfie','mall_shopping_selfie','street_night_selfie'], locations:['saudi_cafe','specialty_coffee','bakery_cafe','mall_atrium','boulevard_walkway','storefront_street'] },
+  { value:'water-bottle-plastic', label:'قارورة ماء بلاستيكية', group:'مشروبات', prompt:'a clear plastic water bottle held in one hand, cap on, condensation beads on the surface', weight:'light', grip:'one-hand', categories:['drink'], sceneTypes:['gym_workout_selfie','post_workout_selfie','gym_wash_area_selfie','outdoor_selfie','inside_car_selfie','office_selfie','walking_selfie','airport_walkway_selfie'], locations:['gym','gym_locker_area','gym_sink_mirror_area','saudi_office','open_plan_office','night_parking','day_parking','desert_roadside','public_park'] },
+  { value:'water-bottle-metal', label:'قارورة ماء معدنية', group:'مشروبات', prompt:'a brushed stainless steel water bottle held in one hand, matte finish, subtle condensation at the base', weight:'medium', grip:'one-hand', categories:['drink'], sceneTypes:['gym_workout_selfie','post_workout_selfie','gym_wash_area_selfie','outdoor_selfie','office_selfie','walking_selfie'], locations:['gym','gym_locker_area','gym_sink_mirror_area','saudi_office','open_plan_office','desert_roadside','public_park'] },
+  { value:'energy-drink-can', label:'علبة مشروب طاقة', group:'مشروبات', prompt:'a metallic energy drink can held in one hand, condensation, blue or red branding', weight:'light', grip:'one-hand', categories:['drink'], sceneTypes:['gym_workout_selfie','post_workout_selfie','office_selfie','inside_car_selfie','desk_work_selfie'], locations:['gym','gym_locker_area','saudi_office','open_plan_office','night_parking','day_parking'] },
+  { value:'thermos', label:'ترمس', group:'مشروبات', prompt:'a small stainless steel thermos held in one hand, matte metal finish', weight:'medium', grip:'one-hand', categories:['drink'], sceneTypes:['outdoor_selfie','desert_stop_selfie','inside_car_selfie','rooftop_terrace_selfie','military_coffee_selfie'], locations:['desert_roadside','desert_dunes','rocky_desert','desert_campsite_simple','roadside_rest_area','night_parking','day_parking','rooftop_terrace'] },
+  { value:'smoothie-cup', label:'كوب سموذي', group:'مشروبات', prompt:'a clear plastic smoothie cup with visible layered colors, straw inserted, held in one hand', weight:'light', grip:'one-hand', categories:['drink'], sceneTypes:['cafe_selfie','gym_workout_selfie','post_workout_selfie','mall_selfie','mall_shopping_selfie'], locations:['saudi_cafe','specialty_coffee','gym','mall_atrium','food_court'] },
+
+  { value:'date-arb', label:'تمر', group:'طعام', prompt:'a single date held between thumb and index finger, matte skin with slight oil sheen', weight:'light', grip:'one-hand', categories:['food-saudi'], sceneTypes:['majlis_selfie','home_interior_casual_selfie','office_selfie','cafe_selfie','majlis_seated_selfie','restaurant_table_selfie'], locations:['modern_saudi_majlis','traditional_majlis','villa_living_room','apartment_living_room','saudi_office','saudi_cafe','specialty_coffee'] },
+  { value:'apple-red', label:'تفاحة حمراء', group:'طعام', prompt:'a red apple held in one hand, natural specular highlight, subtle stem visible', weight:'light', grip:'one-hand', categories:['food'], sceneTypes:['home_interior_casual_selfie','office_selfie','outdoor_selfie','gym_workout_selfie','post_workout_selfie'], locations:['villa_living_room','apartment_living_room','saudi_office','open_plan_office','public_park','gym'] },
+  { value:'sandwich-half', label:'نصف ساندويتش', group:'طعام', prompt:'half a sandwich held in one hand, bread texture visible, filling slightly exposed', weight:'light', grip:'one-hand', categories:['food'], sceneTypes:['office_selfie','home_interior_casual_selfie','cafe_selfie','restaurant_table_selfie','desk_work_selfie'], locations:['saudi_office','real_estate_office','office_break_room','villa_living_room','apartment_living_room','saudi_cafe','specialty_coffee'] },
+  { value:'croissant', label:'كرواسون', group:'طعام', prompt:'a croissant held in one hand, flaky layered crust with visible texture', weight:'light', grip:'one-hand', categories:['food'], sceneTypes:['cafe_selfie','office_selfie','home_interior_casual_selfie','restaurant_table_selfie'], locations:['saudi_cafe','specialty_coffee','bakery_cafe','saudi_office','office_break_room','villa_living_room'] },
+  { value:'protein-bar', label:'بروتين بار', group:'طعام', prompt:'a wrapped protein bar held in one hand, matte packaging with subtle wrinkle', weight:'light', grip:'one-hand', categories:['food'], sceneTypes:['gym_workout_selfie','post_workout_selfie','office_selfie','outdoor_selfie'], locations:['gym','gym_locker_area','saudi_office','public_park','desert_roadside'] },
+  { value:'chocolate-bar', label:'قطعة شوكولاتة', group:'طعام', prompt:'a wrapped chocolate bar held in one hand, glossy packaging, minimal folds', weight:'light', grip:'one-hand', categories:['food'], sceneTypes:['home_interior_casual_selfie','cafe_selfie','office_selfie','restaurant_table_selfie'], locations:['villa_living_room','apartment_living_room','saudi_cafe','specialty_coffee','saudi_office'] },
+  { value:'dates-bowl', label:'طبق تمر صغير', group:'طعام', prompt:'a small ceramic bowl of dates held carefully with one hand, dates visible from above', weight:'light', grip:'one-hand', categories:['food-saudi'], sceneTypes:['majlis_selfie','home_interior_casual_selfie','majlis_seated_selfie'], locations:['modern_saudi_majlis','traditional_majlis','villa_living_room','apartment_living_room'] },
+  { value:'cupcake', label:'كب كيك', group:'طعام', prompt:'a small cupcake held in one hand, frosting visible on top, paper liner', weight:'light', grip:'one-hand', categories:['food'], sceneTypes:['cafe_selfie','office_selfie','home_interior_casual_selfie','restaurant_table_selfie'], locations:['saudi_cafe','specialty_coffee','bakery_cafe','saudi_office','villa_living_room'] },
+
+  { value:'book-paperback', label:'كتاب غلاف ورقي', group:'كتب', prompt:'a paperback book held in one hand or both hands, spine visible, slight crease in the cover', weight:'light', grip:'one-or-two-hands', categories:['book'], sceneTypes:['bedroom_selfie','cafe_selfie','home_interior_casual_selfie','outdoor_selfie','office_selfie','restaurant_table_selfie'], locations:['saudi_bedroom_livedin','saudi_cafe','specialty_coffee','villa_living_room','library_reading_area','public_park','saudi_office'] },
+  { value:'book-hardcover', label:'كتاب غلاف مقوى', group:'كتب', prompt:'a hardcover book held with both hands, dust jacket, sharp corners', weight:'medium', grip:'two-hands', categories:['book'], sceneTypes:['bedroom_selfie','home_interior_casual_selfie','office_selfie'], locations:['saudi_bedroom_livedin','villa_living_room','library_reading_area','home_office_room','saudi_office'] },
+  { value:'notebook-moleskine', label:'دفتر Moleskine', group:'كتب', prompt:'a black Moleskine notebook held in one hand, elastic band visible', weight:'light', grip:'one-hand', categories:['stationery'], sceneTypes:['cafe_selfie','office_selfie','home_interior_casual_selfie','desk_work_selfie'], locations:['saudi_cafe','specialty_coffee','saudi_office','real_estate_office','home_office_room','coworking_space'] },
+  { value:'magazine', label:'مجلة', group:'كتب', prompt:'a rolled magazine held loosely in one hand, glossy cover with slight bend', weight:'light', grip:'one-hand', categories:['book'], sceneTypes:['home_interior_casual_selfie','cafe_selfie','outdoor_selfie','restaurant_table_selfie'], locations:['villa_living_room','apartment_living_room','saudi_cafe','specialty_coffee','public_park'] },
+  { value:'pen-fountain', label:'قلم حبر', group:'كتب', prompt:'a fountain pen held between fingers, nib visible, metallic finish', weight:'light', grip:'one-hand', categories:['stationery'], sceneTypes:['office_selfie','cafe_selfie','home_interior_casual_selfie','desk_work_selfie'], locations:['saudi_office','real_estate_office','open_plan_office','saudi_cafe','specialty_coffee','home_office_room'] },
+  { value:'pencil', label:'قلم رصاص', group:'كتب', prompt:'a wooden pencil held between fingers, sharpened tip, subtle wood grain', weight:'light', grip:'one-hand', categories:['stationery'], sceneTypes:['office_selfie','home_interior_casual_selfie','desk_work_selfie'], locations:['saudi_office','real_estate_office','home_office_room'] },
+  { value:'sketchbook', label:'دفتر رسم', group:'كتب', prompt:'a sketchbook held open in one hand, visible pencil drawings on the current page', weight:'light', grip:'one-hand', categories:['stationery'], sceneTypes:['cafe_selfie','home_interior_casual_selfie','outdoor_selfie','restaurant_table_selfie'], locations:['saudi_cafe','specialty_coffee','villa_living_room','public_park','rooftop_terrace'] },
+  { value:'newspaper', label:'صحيفة', group:'كتب', prompt:'a folded newspaper held with one hand, visible Arabic headline typography', weight:'light', grip:'one-hand', categories:['book'], sceneTypes:['home_interior_casual_selfie','cafe_selfie','majlis_selfie','majlis_seated_selfie'], locations:['villa_living_room','apartment_living_room','saudi_cafe','modern_saudi_majlis','traditional_majlis'] },
+
+  { value:'car-keys-fob', label:'مفتاح سيارة', group:'مفاتيح', prompt:'a car key fob with remote buttons held in one hand, small metallic keychain attached', weight:'light', grip:'one-hand', categories:['keys'], sceneTypes:['inside_car_selfie','door_open_car_selfie','outdoor_selfie','parking_lot_night_selfie','third_person_car_adjacent'], locations:['night_parking','day_parking','villa_driveway','villa_garage','office_parking_outdoor','small_commercial_parking'] },
+  { value:'keychain-leather', label:'سلسلة مفاتيح جلدية', group:'مفاتيح', prompt:'a leather keychain with multiple keys held in one hand', weight:'light', grip:'one-hand', categories:['keys'], sceneTypes:['*'], locations:[], excludedSceneTypes:['mosque_parking_selfie'], excludedLocations:['neighborhood_mosque_parking'] },
+  { value:'wallet-leather', label:'محفظة جلدية', group:'مفاتيح', prompt:'a brown leather wallet held in one hand, visible stitching and card slot', weight:'light', grip:'one-hand', categories:['wallet'], sceneTypes:['*'], locations:[], excludedSceneTypes:['mosque_parking_selfie'], excludedLocations:['neighborhood_mosque_parking'] },
+  { value:'card-credit', label:'بطاقة بنكية', group:'مفاتيح', prompt:'a plain bank card held between thumb and index finger, embossed numbers unreadable', weight:'light', grip:'one-hand', categories:['wallet'], sceneTypes:['cafe_selfie','office_selfie','mall_selfie','restaurant_table_selfie','mall_shopping_selfie'], locations:['saudi_cafe','specialty_coffee','saudi_office','real_estate_office','mall_atrium','food_court'] },
+  { value:'sunglasses-folded', label:'نظارة شمسية مطوية', group:'مفاتيح', prompt:'folded sunglasses held in one hand, dark lenses catching a subtle reflection', weight:'light', grip:'one-hand', categories:['accessory'], sceneTypes:['outdoor_selfie','inside_car_selfie','cafe_selfie','beach_corniche_selfie','desert_stop_selfie'], locations:['saudi_cafe','specialty_coffee','night_parking','day_parking','red_sea_beach','gulf_beach','desert_roadside','jeddah_corniche','khobar_corniche'] },
+  { value:'watch-luxury', label:'ساعة فاخرة', group:'مفاتيح', prompt:'a luxury watch held in one hand, metallic bracelet folded over fingers', weight:'light', grip:'one-hand', categories:['accessory'], sceneTypes:['office_selfie','cafe_selfie','desk_work_selfie'], locations:['saudi_office','real_estate_office','executive_office','saudi_cafe','specialty_coffee'] },
+  { value:'rosary-beads', label:'سبحة', group:'مفاتيح', prompt:'a wooden rosary held loosely in one hand, beads visible with subtle wear', weight:'light', grip:'one-hand', categories:['cultural-saudi'], sceneTypes:['majlis_selfie','home_interior_casual_selfie','mosque_parking_selfie','majlis_standing_selfie','majlis_seated_selfie'], locations:['modern_saudi_majlis','traditional_majlis','villa_living_room','apartment_living_room','neighborhood_mosque_parking'] },
+
+  { value:'backpack-shoulder', label:'حقيبة ظهر على كتف واحد', group:'حقائب', prompt:'a backpack worn on one shoulder, one hand holding the strap', weight:'medium', grip:'one-hand-on-strap', categories:['bag'], sceneTypes:['outdoor_selfie','walking_selfie','office_selfie','airport_walkway_selfie','mall_selfie'], locations:['airport_terminal','saudi_office','open_plan_office','ordinary_saudi_street','public_park','mall_atrium'] },
+  { value:'laptop-bag', label:'حقيبة لابتوب', group:'حقائب', prompt:'a laptop messenger bag worn over one shoulder, hand on the strap, bag sagging with weight', weight:'medium', grip:'one-hand-on-strap', categories:['bag'], sceneTypes:['office_selfie','cafe_selfie','outdoor_selfie','desk_work_selfie','airport_walkway_selfie'], locations:['saudi_office','real_estate_office','open_plan_office','saudi_cafe','specialty_coffee','airport_terminal','office_parking_outdoor'] },
+  { value:'shoulder-bag-leather', label:'حقيبة كتف جلدية', group:'حقائب', prompt:'a leather shoulder bag hanging at the side, one hand on the strap', weight:'medium', grip:'one-hand-on-strap', categories:['bag'], sceneTypes:['cafe_selfie','mall_selfie','office_selfie','mall_shopping_selfie','walking_selfie'], locations:['saudi_cafe','specialty_coffee','mall_atrium','saudi_office','real_estate_office'] },
+  { value:'shopping-bag', label:'كيس تسوق', group:'حقائب', prompt:'a shopping bag held by its handles in one hand, slightly stretched from weight', weight:'light', grip:'one-hand', categories:['bag'], sceneTypes:['supermarket_selfie','mall_selfie','mall_shopping_selfie','outdoor_selfie','walking_selfie'], locations:['supermarket_aisle','convenience_store','grocery_store','mall_atrium','storefront_street','small_commercial_parking'] },
+  { value:'coffee-tray', label:'صينية قهوة', group:'حقائب', prompt:'a small tray with two coffee cups held with both hands, balanced carefully', weight:'medium', grip:'two-hands', categories:['drink'], sceneTypes:['office_selfie','cafe_selfie','desk_work_selfie'], locations:['saudi_office','office_break_room','saudi_cafe','specialty_coffee','bakery_cafe'] }
+]);
+
+export const POSE_HAND_USAGE = Object.freeze({
+  standing_relaxed:0, standing_one_hand:0, walking_slow:0, holding_basket:1,
+  seated_sofa:0, seated_chair:0, lean_wall:0, lean_counter:0, driver_seat:0, passenger_seat:0,
+  door_open_car:0, coffee_hand:1, adjust_clothing:1, hand_on_head:1, one_hand_pocket:1, close_relaxed:0,
+  'bed-lying-back':0, 'bed-lying-side':1, 'bed-lying-stomach':1, 'bed-reclining-headboard':0,
+  'bed-propped-pillows':0, 'bed-lying-partial':1, 'bed-lying-diagonal':1, 'bed-lying-reading':1,
+  'bed-lying-back-knees-bent':0, 'bed-sitting-cross':0, 'bed-sitting-edge':0, 'bed-sitting-back-wall':0,
+  'bed-sitting-legs-extended':0, 'bed-sitting-hugging-pillow':1, 'bed-sitting-sideways':0,
+  'sofa-sit-lean-back':0, 'sofa-sit-corner':0, 'sofa-sit-one-knee':0, 'sofa-sit-crossed':0,
+  'armchair-sit-feet-floor':0, 'bedroom-stand-relaxed':0, 'bedroom-stand-one-hand':0,
+  'bedroom-stand-lean-wardrobe':0, 'bedroom-stand-lean-wall':0, 'bedroom-stand-near-bed':0,
+  'bedroom-stand-window':0, 'bedroom-laptop-bed':0, 'bedroom-laptop-armchair':1, 'bedroom-cup-bed':1,
+  'bedroom-tea-sofa':1, 'bedroom-book-bed':1, 'bedroom-phone-only':0, 'bedroom-floor-cross':0,
+  'bedroom-floor-back-wall':0, 'bedroom-floor-knee-up':0, 'bedroom-curtain-touch':1,
+  'bedroom-nightstand-reach':1, 'bedroom-mirror-stand-relaxed':0, 'bedroom-mirror-adjust':1,
+  'bedroom-mirror-seated':0
+});
+
+const HAND_INTERACTION_HAND_USAGE = Object.freeze({
+  none:0, 'adjust-collar':1, 'roll-sleeve':1, 'wipe-sweat':1, 'pocket-hands':2, 'adjust-waistband':1
+});
+
+export function getPropHandUsage(propOrGrip) {
+  const grip = typeof propOrGrip === 'string' && HAND_PROPS.some((prop) => prop.value === propOrGrip)
+    ? HAND_PROPS.find((prop) => prop.value === propOrGrip)?.grip
+    : typeof propOrGrip === 'string' ? propOrGrip : propOrGrip?.grip;
+  if (grip === 'two-hands') return 2;
+  if (grip === 'one-hand' || grip === 'one-or-two-hands' || grip === 'one-hand-on-strap') return 1;
+  return 0;
+}
+
+export function getHandBudgetForScene(captureType) {
+  const capture = String(captureType || '').toLowerCase();
+  if (/third-person/.test(capture)) return 2;
+  if (/mirror/.test(capture)) return 1;
+  if (/selfie/.test(capture)) return 1;
+  return 1;
+}
+
+function resolvePropLocationValue(location) {
+  const raw = String(location || '').trim();
+  if (!raw) return '';
+  const byValue = LOCATION_CATALOG.find((item) => item.value === raw);
+  if (byValue) return byValue.value;
+  const byPrompt = LOCATION_CATALOG.find((item) => item.prompt === raw);
+  return byPrompt?.value || raw;
+}
+
+function propMatchesContext(prop, sceneType, location) {
+  const scene = String(sceneType || '').trim();
+  const locationValue = resolvePropLocationValue(location);
+  if (prop.excludedSceneTypes?.includes(scene)) return false;
+  if (locationValue && prop.excludedLocations?.includes(locationValue)) return false;
+  const sceneMatch = prop.sceneTypes?.includes('*') || prop.sceneTypes?.includes(scene);
+  const locationMatch = Boolean(locationValue && prop.locations?.includes(locationValue));
+  return Boolean(sceneMatch || locationMatch);
+}
+
+export function getRemainingHands(sceneType, captureType, primaryProp = 'none', pose = '', handInteraction = 'none') {
+  const captureHands = getHandBudgetForScene(captureType);
+  const poseHandUsage = POSE_HAND_USAGE[pose] || 0;
+  const interactionHandUsage = HAND_INTERACTION_HAND_USAGE[handInteraction] || 0;
+  const primaryPropUsage = primaryProp && primaryProp !== 'none' ? getPropHandUsage(primaryProp) : 0;
+  return Math.max(0, captureHands - poseHandUsage - interactionHandUsage - primaryPropUsage);
+}
+
+export function getAvailableProps(sceneType, captureType, location = '', pose = '', handInteraction = 'none') {
+  const remaining = getRemainingHands(sceneType, captureType, 'none', pose, handInteraction);
+  if (remaining <= 0) return [];
+  return HAND_PROPS.filter((prop) => getPropHandUsage(prop) <= remaining && propMatchesContext(prop, sceneType, location));
+}
+
 export const FORMAL_SUITS = [
   { group:'كلاسيكي', value:'suit-navy-white', label:'بدلة كحلية + قميص أبيض', prompt:'a navy two-piece suit with a crisp white dress shirt, wool-blend texture, natural lapel roll, sleeve break, trouser crease, restrained sheen' },
   { group:'كلاسيكي', value:'suit-navy-lightblue', label:'بدلة كحلية + قميص أزرق فاتح', prompt:'a navy two-piece suit with a light-blue dress shirt, wool-blend texture, matte trouser drape' },

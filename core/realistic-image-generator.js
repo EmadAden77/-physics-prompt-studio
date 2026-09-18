@@ -217,12 +217,13 @@ export function buildRealismPacket(input = {}) {
 export function renderRealismGuidance(packet) {
   const background = packet.background.elements.map((item) => `- ${item}`).join('\n');
   const imperfections = packet.imperfections.map((item) => `- ${item}`).join('\n');
+  const action = /[.;!?]$/.test(packet.action) ? packet.action : `${packet.action}.`;
   const accessories = Object.entries(packet.accessories)
     .filter(([key, value]) => key !== 'device' || !/none held by the subject; photographed by another person/i.test(value))
     .map(([key, value]) => `- ${key}: ${value}`)
     .join('\n');
   return {
-    action: `Complete scene action: ${packet.action}. The subject must look occupied by a real moment, not frozen into a generic pose.`,
+    action: `Complete scene action: ${action} The subject must look occupied by a real moment, not frozen into a generic pose.`,
     accessories: `Keep every accessory consistent with the activity and setting:\n${accessories}`,
     background: `Observable background elements:\n${background}\nAtmosphere: ${packet.background.atmosphere}. Background activity: ${packet.background.activity}.`,
     imperfections: `Use subtle authentic contextual imperfections only:\n${imperfections}`,

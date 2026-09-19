@@ -294,7 +294,7 @@ export function generateImagePrompt(input={}){
     : undefined;
   const packet=buildRealismPacket({
     sceneType:scene.value,requestedSceneType:requested,captureType:scene.capture,location,clothing,hairStyle:hair,expression:expression.prompt,angle:cameraGeometryText,lighting,description,
-    aspectRatio:ratio.prompt,pose,backgroundActivity:background.value,backgroundElements:backgroundElements(background,contextual,saudi),
+    aspectRatio:ratio.prompt,pose,poseValue,backgroundActivity:background.value,backgroundElements:backgroundElements(background,contextual,saudi),
     heldProp:heldProp?.prompt || 'none',secondaryProp:secondaryProp?.prompt || 'none'
   });
   packet.accessories.device=captureDeviceRule(scene.capture);

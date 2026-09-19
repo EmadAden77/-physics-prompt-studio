@@ -140,6 +140,30 @@ function contextualChecklist(scenario, backgroundActivity) {
   ];
 }
 
+// mirror_one_hand_pocket & third_one_hand_pocket
+// are treated as standing because their names carry
+// standing context. The general one_hand_pocket lacks such context and intentionally falls back to profile.
+// TODO-SCENE-CAR-STATIONARY: Move stationary-vehicle context into [SCENE] for inside-car scenes, then drop stationary-car wording from driver/passenger ACTION.
+const POSE_ACTION_SEMANTICS = Object.freeze({
+  standing:{ action:'stand naturally with relaxed weight distribution', poses:new Set(['standing_relaxed','standing_one_hand','door_open_car','bedroom-stand-relaxed','bedroom-stand-one-hand','bedroom-stand-near-bed','bedroom-stand-window','bedroom-curtain-touch','bedroom-mirror-stand-relaxed','mirror_standing_relaxed','mirror_one_hand_pocket','mirror_full_length','third_standing_relaxed','third_one_hand_pocket']) },
+  seated:{ action:'remain naturally seated with a relaxed posture', poses:new Set(['seated_sofa','seated_chair','bed-sitting-cross','bed-sitting-edge','bed-sitting-back-wall','bed-sitting-legs-extended','bed-sitting-hugging-pillow','bed-sitting-sideways','armchair-sit-lean-back','armchair-sit-corner','armchair-sit-one-knee','armchair-sit-crossed','armchair-sit-feet-floor','bedroom-laptop-bed','bedroom-laptop-armchair','bedroom-cup-bed','bedroom-tea-armchair','bedroom-book-bed','bedroom-floor-cross','bedroom-floor-back-wall','bedroom-floor-knee-up','bedroom-nightstand-reach','bedroom-mirror-seated','mirror_seated','third_seated_relaxed']) },
+  walking:{ action:'walk naturally through a real gait phase', poses:new Set(['walking_slow','third_walking_candid']) },
+  leaning:{ action:'lean lightly to one side with natural weight transfer', poses:new Set(['lean_wall','lean_counter','bedroom-stand-lean-wardrobe','bedroom-stand-lean-wall','third_lean_wall']) },
+  adjusting_clothing:{ action:'gently adjust a small section of clothing', poses:new Set(['adjust_clothing','bedroom-mirror-adjust','mirror_adjust_clothing']) },
+  driver:{ action:'remain naturally positioned as the driver in a stationary car', poses:new Set(['driver_seat']) },
+  passenger:{ action:'remain naturally positioned as the front passenger in a stationary car', poses:new Set(['passenger_seat']) },
+  lying:{ action:'lie naturally with a relaxed posture', poses:new Set(['bed-lying-back','bed-lying-side','bed-lying-stomach','bed-lying-partial','bed-lying-diagonal','bed-lying-reading','bed-lying-back-knees-bent']) }
+});
+
+function deriveActionFromPose({ pose = '', poseValue = '', scene = '', captureType = '' } = {}) {
+  const value=clean(poseValue) || clean(pose);
+  const entry=Object.values(POSE_ACTION_SEMANTICS).find((item)=>item.poses.has(value));
+  if(!entry) return '';
+  const context=`${clean(scene)} ${clean(captureType)}`.toLowerCase();
+  const modifier=context.includes('third-person') ? 'while another person photographs the subject' : context.includes('mirror') ? 'while taking the mirror selfie' : 'while taking the selfie';
+  return `${entry.action} ${modifier}`;
+}
+
 export function buildRealismPacket(input = {}) {
   const scenario = detectScenario(input);
   const profile = SCENARIO_PROFILES[scenario];
@@ -150,7 +174,10 @@ export function buildRealismPacket(input = {}) {
   const lighting = clean(input.lighting) || 'simple natural or practical light appropriate to the setting';
   const heldPropText = clean(input.heldProp) && clean(input.heldProp) !== 'none' ? clean(input.heldProp) : null;
   const secondaryPropText = clean(input.secondaryProp) && clean(input.secondaryProp) !== 'none' ? clean(input.secondaryProp) : null;
-  let action = clean(input.action) || profile.action;
+  // Priority: explicit action > pose-derived > profile fallback.
+  // UI currently never passes input.action; direct API callers may.
+  const poseDerivedAction=deriveActionFromPose({ pose:input.pose, poseValue:input.poseValue, scene:input.requestedSceneType || input.sceneType, captureType:input.captureType });
+  let action = clean(input.action) || poseDerivedAction || profile.action;
 
   if (heldPropText) {
     action = action

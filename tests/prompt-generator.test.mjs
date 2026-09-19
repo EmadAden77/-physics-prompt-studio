@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateImagePrompt, validateGeneratedPrompt, validateRealism } from '../core/prompt-generator.js';
 import { CLOTHING_CATALOG, HOME_CLOTHING, CLOTHING_STYLING, HAND_INTERACTIONS, HAND_PROPS, getAvailableProps, getRemainingHands } from '../core/scene-builder.js';
+import { buildRealismPacket } from '../core/realistic-image-generator.js';
 
 const canonical = [
   'GOAL','ACTION-DRIVEN AUTHENTICITY','CAPTURE TYPE LOCK — CRITICAL','IDENTITY / SUBJECT','SCENE','SAUDI CULTURAL DRESS',
@@ -24,6 +25,9 @@ function observableBackground(prompt) {
 }
 function lensPhysics(prompt) {
   return prompt.split('[LENS_PHYSICS]\n')[1].split('\n\n[BIOLOGICAL_MICRO_REALISM]')[0];
+}
+function actionSection(prompt) {
+  return prompt.split('[ACTION-DRIVEN AUTHENTICITY]\n')[1].split('\n\n[CAPTURE TYPE LOCK — CRITICAL]')[0];
 }
 
 
@@ -322,6 +326,81 @@ test('field verification matrix generates ten valid prompts across lens contexts
     assert.match(lens, /barrel distortion/i, name);
     console.log(`LENS_FIELD ${JSON.stringify({ name, lens })}`);
   }
+});
+
+test('pose-derived action field matrix covers ten scene capture combinations', () => {
+  const cases = [
+    ['standing-selfie',{ sceneType:'front_selfie', pose:'standing_relaxed', poseValue:'standing_relaxed' },/stand naturally.*while taking the selfie/i],
+    ['walking-selfie',{ sceneType:'outdoor_selfie', pose:'walking_slow', poseValue:'walking_slow' },/walk naturally.*while taking the selfie/i],
+    ['seated-cafe',{ sceneType:'cafe_selfie', pose:'seated_chair', poseValue:'seated_chair' },/remain naturally seated.*while taking the selfie/i],
+    ['mirror-standing',{ sceneType:'mirror_selfie', pose:'mirror_standing_relaxed', poseValue:'mirror_standing_relaxed' },/stand naturally.*while taking the mirror selfie/i],
+    ['mirror-adjust',{ sceneType:'mirror_selfie', pose:'mirror_adjust_clothing', poseValue:'mirror_adjust_clothing' },/gently adjust a small section of clothing.*while taking the mirror selfie/i],
+    ['driver',{ sceneType:'inside_car_selfie', pose:'driver_seat', poseValue:'driver_seat' },/driver in a stationary car.*while taking the selfie/i],
+    ['passenger',{ sceneType:'inside_car_selfie', pose:'passenger_seat', poseValue:'passenger_seat' },/front passenger in a stationary car.*while taking the selfie/i],
+    ['third-walking',{ sceneType:'third_person_portrait', pose:'third_walking_candid', poseValue:'third_walking_candid' },/walk naturally.*while another person photographs the subject/i],
+    ['bed-lying',{ sceneType:'bedroom_selfie', pose:'bed-lying-back', poseValue:'bed-lying-back' },/lie naturally with a relaxed posture.*while taking the selfie/i],
+    ['armchair-seated',{ sceneType:'bedroom_selfie', pose:'armchair-sit-lean-back', poseValue:'armchair-sit-lean-back' },/remain naturally seated.*while taking the selfie/i]
+  ];
+  for (const [name,input,expected] of cases) {
+    const result=generateImagePrompt(input);
+    const action=actionSection(result.prompt);
+    assert.match(action,expected,name);
+    assert.equal(result.sections.length,23,name);
+    assert.equal(headings(result.prompt).filter((heading)=>heading==='ACTION-DRIVEN AUTHENTICITY').length,1,name);
+    assert.equal(result.validation.valid,true,`${name}: ${result.validation.errors.join(' | ')}`);
+    console.log(`ACTION_FIELD ${JSON.stringify({ name, action })}`);
+  }
+});
+
+test('different poses in the same selfie scene produce different actions', () => {
+  const standing=actionSection(generateImagePrompt({ sceneType:'outdoor_selfie', pose:'standing_relaxed', poseValue:'standing_relaxed' }).prompt);
+  const walking=actionSection(generateImagePrompt({ sceneType:'outdoor_selfie', pose:'walking_slow', poseValue:'walking_slow' }).prompt);
+  assert.notEqual(standing,walking);
+});
+
+test('mirror seated and clothing-adjust poses produce different actions', () => {
+  const seated=actionSection(generateImagePrompt({ sceneType:'mirror_selfie', pose:'mirror_seated', poseValue:'mirror_seated' }).prompt);
+  const adjust=actionSection(generateImagePrompt({ sceneType:'mirror_selfie', pose:'mirror_adjust_clothing', poseValue:'mirror_adjust_clothing' }).prompt);
+  assert.notEqual(seated,adjust);
+});
+
+test('driver and passenger poses keep distinct stationary-car actions', () => {
+  const driver=actionSection(generateImagePrompt({ sceneType:'inside_car_selfie', pose:'driver_seat', poseValue:'driver_seat' }).prompt);
+  const passenger=actionSection(generateImagePrompt({ sceneType:'inside_car_selfie', pose:'passenger_seat', poseValue:'passenger_seat' }).prompt);
+  assert.match(driver,/driver in a stationary car/i);
+  assert.match(passenger,/front passenger in a stationary car/i);
+  assert.notEqual(driver,passenger);
+});
+
+test('all intentionally unmapped poses fall back to the scenario profile action', () => {
+  const unmapped=['holding_basket','coffee_hand','hand_on_head','one_hand_pocket','close_relaxed','bedroom-phone-only','third_interaction','bed-reclining-headboard','bed-propped-pillows'];
+  for (const poseValue of unmapped) {
+    const sceneType=poseValue.startsWith('bed-') || poseValue.startsWith('bedroom-') ? 'bedroom_selfie' : poseValue.startsWith('third_') ? 'third_person_portrait' : 'cafe_selfie';
+    const result=generateImagePrompt({ sceneType, pose:poseValue, poseValue });
+    const action=actionSection(result.prompt);
+    assert.match(action,/capture a real in-between moment while sitting, standing, talking, waiting, drinking, or moving naturally/i,poseValue);
+  }
+});
+
+test('pose-derived action does not leak visibility-sensitive face detail', () => {
+  const sensitive=/eyes|gaze|pupils|pores|skin|sweat|flushed|cheeks|mouth|lips|smile|grin|teeth|expression/i;
+  const mapped=['standing_relaxed','seated_chair','walking_slow','lean_wall','adjust_clothing','driver_seat','passenger_seat','bed-lying-back','mirror_adjust_clothing','third_walking_candid'];
+  for (const poseValue of mapped) {
+    const sceneType=poseValue.startsWith('mirror_') ? 'mirror_selfie' : poseValue.startsWith('third_') ? 'third_person_portrait' : poseValue==='driver_seat' || poseValue==='passenger_seat' ? 'inside_car_selfie' : poseValue.startsWith('bed-') ? 'bedroom_selfie' : 'outdoor_selfie';
+    assert.doesNotMatch(actionSection(generateImagePrompt({ sceneType, pose:poseValue, poseValue }).prompt),sensitive,poseValue);
+  }
+});
+
+test('explicit API action remains higher priority than pose-derived action', () => {
+  const packet=buildRealismPacket({
+    sceneType:'front_selfie',
+    requestedSceneType:'front_selfie',
+    captureType:'subject-held front-camera smartphone selfie',
+    pose:'walking_slow',
+    poseValue:'walking_slow',
+    action:'capture an explicitly requested action'
+  });
+  assert.equal(packet.action,'capture an explicitly requested action');
 });
 
 test('negatives include anti-AI-tell bans', () => {

@@ -1258,6 +1258,52 @@ test('23 sections preserved with held props', () => {
   assert.equal(result.sections.length, 23);
 });
 
+test('explicit chest-up framing replaces the scene default in camera geometry', () => {
+  const result=generateImagePrompt({ sceneType:'office_selfie', location:'home_office_room', framing:'chest_up' });
+  const geometry=cameraGeometry(result.prompt);
+  assert.equal((geometry.match(/chest-up/gi) || []).length,1);
+  assert.match(geometry,/chest-up framing/i);
+  assert.doesNotMatch(geometry,/chest-up to waist-up framing/i);
+});
+
+test('lean_counter falls back to generic furniture outside counter context', () => {
+  const result=generateImagePrompt({ sceneType:'office_selfie', location:'home_office_room', poseValue:'lean_counter' });
+  assert.deepEqual(furnitureKinds(result.prompt),['generic']);
+});
+
+test('lean_counter preserves counter furniture in canonical cafe context', () => {
+  const result=generateImagePrompt({ sceneType:'cafe_selfie', location:'saudi_cafe', poseValue:'lean_counter' });
+  assert.deepEqual(furnitureKinds(result.prompt),['counter']);
+});
+
+test('driver_seat bypasses legacy office-parking furniture matching', () => {
+  const result=generateImagePrompt({ sceneType:'inside_car_driver_selfie', location:'office_parking_outdoor', poseValue:'driver_seat' });
+  assert.deepEqual(furnitureKinds(result.prompt),['generic']);
+  assert.doesNotMatch(sceneSection(result.prompt),/The (?:desk|chair|counter)\b/i);
+});
+
+test('passenger_seat bypasses legacy office-parking furniture matching', () => {
+  const result=generateImagePrompt({ sceneType:'inside_car_passenger_selfie', location:'office_parking_outdoor', poseValue:'passenger_seat' });
+  assert.deepEqual(furnitureKinds(result.prompt),['generic']);
+  assert.doesNotMatch(sceneSection(result.prompt),/The (?:desk|chair|counter)\b/i);
+});
+
+test('PR 8 field matrix preserves 23 sections and validation for five cases', () => {
+  const cases=[
+    ['office-standing',{ sceneType:'office_selfie',location:'home_office_room',poseValue:'standing_relaxed',framing:'chest_up' }],
+    ['office-lean-counter',{ sceneType:'office_selfie',location:'home_office_room',poseValue:'lean_counter',framing:'chest_up' }],
+    ['cafe-lean-counter',{ sceneType:'cafe_selfie',location:'saudi_cafe',poseValue:'lean_counter',framing:'chest_up' }],
+    ['car-driver',{ sceneType:'inside_car_driver_selfie',location:'office_parking_outdoor',poseValue:'driver_seat',framing:'chest_up' }],
+    ['car-passenger',{ sceneType:'inside_car_passenger_selfie',location:'office_parking_outdoor',poseValue:'passenger_seat',framing:'chest_up' }]
+  ];
+  for(const [name,input] of cases){
+    const result=generateImagePrompt(input);
+    assert.equal(result.sections.length,23,name);
+    assert.equal(result.validation.valid,true,`${name}: ${result.validation.errors.join(' | ')}`);
+    console.log(`PR8_FIELD ${JSON.stringify({name,cameraGeometry:cameraGeometry(result.prompt),scene:sceneSection(result.prompt)})}`);
+  }
+});
+
 test('pose-aware office furniture distinguishes seated chair from standing and keeps desk-work exception', () => {
   const seated=generateImagePrompt({ sceneType:'office_selfie', location:'saudi_office', poseValue:'seated_chair' });
   const standing=generateImagePrompt({ sceneType:'office_selfie', location:'saudi_office', poseValue:'standing_relaxed' });

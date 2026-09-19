@@ -35,7 +35,7 @@ function allFiles(dir = '.') {
 }
 
 function cryptoRandomUsageErrors(file, source) {
-  const matches = [...source.matchAll(/(?:globalThis\.)?crypto\.getRandomValues\s*\(/g)];
+  const matches = [...source.matchAll(/(?:globalThis\.)?crypto\.getRandomValues\s*\(\s*[^)]/g)];
   if (file !== 'app.js') {
     return matches.map(() => `${file} uses crypto.getRandomValues() outside the approved newSeed() exception`);
   }

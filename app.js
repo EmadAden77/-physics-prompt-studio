@@ -465,6 +465,7 @@ function autoInput() {
     angle: selectedPrompt(controls.angle),
     seed: currentSeed,
     lighting: selectedPrompt(controls.lighting),
+    lightingValue: controls.lighting.value,
     lightingNotes: controls.lightingNotes.value,
     cameraDistance: controls.cameraDistance.value,
     description: controls.description.value,

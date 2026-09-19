@@ -244,15 +244,20 @@ test('canonical lighting values map deterministically to metadata exposure class
   const expected = {
     day_direct_sun:'midday',day_open_shade:'soft_day',day_overcast:'soft_day',day_window:'window_day',golden_hour:'golden',blue_sky_noon:'midday',car_daylight:'window_day',
     supermarket_fluorescent:'bright_indoor',retail_ceiling_led:'bright_indoor',mixed_retail:'bright_indoor',night_led_street:'night',night_parking_led:'night',night_storefront:'night',night_gas_station:'night',night_corniche:'night',night_desert_vehicle:'night',
-    night_majlis_warm:'warm_indoor',night_cafe_mixed:'warm_indoor',night_office_led:'bright_indoor',night_home_warm:'warm_indoor',night_phone_screen:'very_low',night_car_practicals:'night',night_car_screen_only:'very_low',screen_flash_only:'very_low',phone_led_flash_only:'unknown',low_key_bedroom:'very_low'
+    night_majlis_warm:'warm_indoor',night_cafe_mixed:'warm_indoor',night_office_led:'bright_indoor',night_home_warm:'warm_indoor',night_phone_screen:'very_low',night_car_practicals:'night',night_car_screen_only:'very_low',screen_flash_only:'very_low',phone_led_flash_only:'flash',low_key_bedroom:'very_low'
   };
   const patterns = {
     midday:/ISO 50-100.*1\/500-1\/1000s/i,golden:/ISO 100-200.*1\/250-1\/500s/i,soft_day:/ISO 100-250.*1\/125-1\/250s/i,window_day:/ISO 100-320.*1\/100-1\/200s/i,
-    warm_indoor:/ISO 400-800.*1\/60-1\/100s/i,bright_indoor:/ISO 200-500.*1\/100-1\/125s/i,night:/ISO 800-1600.*1\/30-1\/60s/i,very_low:/ISO 1600-3200.*1\/15-1\/30s/i,unknown:/plausible automatic ISO and shutter behavior/i
+    warm_indoor:/ISO 400-800.*1\/60-1\/100s/i,bright_indoor:/ISO 200-500.*1\/100-1\/125s/i,night:/ISO 800-1600.*1\/30-1\/60s/i,very_low:/ISO 1600-3200.*1\/15-1\/30s/i,flash:/ISO 100-400.*1\/60-1\/120s/i,unknown:/plausible automatic ISO and shutter behavior/i
   };
   assert.equal(LIGHTING_PROFILES.length,26);
   assert.deepEqual(new Set(LIGHTING_PROFILES.map((item)=>item.value)),new Set(Object.keys(expected)));
   for (const profile of LIGHTING_PROFILES) assert.match(metadataSection(generateImagePrompt({ sceneType:'front_selfie', lighting:profile.prompt, lightingValue:profile.value }).prompt),patterns[expected[profile.value]],profile.value);
+});
+
+test('phone LED flash uses the dedicated flash exposure range', () => {
+  const metadata=metadataSection(generateImagePrompt({ sceneType:'bedroom_third_person', camera:'smartphone_rear', lightingValue:'phone_led_flash_only', lighting:'pitch-dark bedroom with the phone rear LED flash as the ONLY light source' }).prompt);
+  assert.match(metadata,/ISO 100-400.*1\/60-1\/120s/i);
 });
 
 test('Xiaomi midday and night metadata differ by lighting', () => {

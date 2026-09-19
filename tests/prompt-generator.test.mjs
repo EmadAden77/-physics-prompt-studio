@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateImagePrompt, validateGeneratedPrompt, validateRealism } from '../core/prompt-generator.js';
-import { CLOTHING_CATALOG, HOME_CLOTHING, CLOTHING_STYLING, HAND_INTERACTIONS, HAND_PROPS, getAvailableProps, getRemainingHands } from '../core/scene-builder.js';
+import { CLOTHING_CATALOG, HOME_CLOTHING, CLOTHING_STYLING, HAND_INTERACTIONS, HAND_PROPS, LIGHTING_PROFILES, getAvailableProps, getRemainingHands } from '../core/scene-builder.js';
 import { buildRealismPacket } from '../core/realistic-image-generator.js';
 
 const canonical = [
@@ -28,6 +28,9 @@ function lensPhysics(prompt) {
 }
 function actionSection(prompt) {
   return prompt.split('[ACTION-DRIVEN AUTHENTICITY]\n')[1].split('\n\n[CAPTURE TYPE LOCK — CRITICAL]')[0];
+}
+function metadataSection(prompt) {
+  return prompt.split('[CAMERA_METADATA_HINT]\n')[1].split('\n\n[AUTHENTIC IMPERFECTIONS]')[0];
 }
 
 
@@ -230,10 +233,92 @@ test('camera wording is simpler while physical geometry remains enforced separat
 });
 
 test('camera metadata follows the selected camera instead of always claiming Xiaomi', () => {
-  const iphone = generateImagePrompt({ sceneType: 'front_selfie', camera: 'iphone15pm_front' });
-  const metadata = iphone.prompt.split('[CAMERA_METADATA_HINT]\n')[1].split('\n\n[AUTHENTIC IMPERFECTIONS]')[0];
+  const iphone = generateImagePrompt({ sceneType: 'front_selfie', camera: 'iphone15pm_front', lightingValue:'day_direct_sun', lighting:'direct daytime sunlight' });
+  const metadata = metadataSection(iphone.prompt);
   assert.match(metadata, /iPhone 15 Pro Max/i);
   assert.doesNotMatch(metadata, /Xiaomi 15 Ultra/i);
+  assert.match(metadata, /ISO 50-100.*1\/500-1\/1000s/i);
+});
+
+test('canonical lighting values map deterministically to metadata exposure classes', () => {
+  const expected = {
+    day_direct_sun:'midday',day_open_shade:'soft_day',day_overcast:'soft_day',day_window:'window_day',golden_hour:'golden',blue_sky_noon:'midday',car_daylight:'window_day',
+    supermarket_fluorescent:'bright_indoor',retail_ceiling_led:'bright_indoor',mixed_retail:'bright_indoor',night_led_street:'night',night_parking_led:'night',night_storefront:'night',night_gas_station:'night',night_corniche:'night',night_desert_vehicle:'night',
+    night_majlis_warm:'warm_indoor',night_cafe_mixed:'warm_indoor',night_office_led:'bright_indoor',night_home_warm:'warm_indoor',night_phone_screen:'very_low',night_car_practicals:'night',night_car_screen_only:'very_low',screen_flash_only:'very_low',phone_led_flash_only:'unknown',low_key_bedroom:'very_low'
+  };
+  const patterns = {
+    midday:/ISO 50-100.*1\/500-1\/1000s/i,golden:/ISO 100-200.*1\/250-1\/500s/i,soft_day:/ISO 100-250.*1\/125-1\/250s/i,window_day:/ISO 100-320.*1\/100-1\/200s/i,
+    warm_indoor:/ISO 400-800.*1\/60-1\/100s/i,bright_indoor:/ISO 200-500.*1\/100-1\/125s/i,night:/ISO 800-1600.*1\/30-1\/60s/i,very_low:/ISO 1600-3200.*1\/15-1\/30s/i,unknown:/plausible automatic ISO and shutter behavior/i
+  };
+  assert.equal(LIGHTING_PROFILES.length,26);
+  assert.deepEqual(new Set(LIGHTING_PROFILES.map((item)=>item.value)),new Set(Object.keys(expected)));
+  for (const profile of LIGHTING_PROFILES) assert.match(metadataSection(generateImagePrompt({ sceneType:'front_selfie', lighting:profile.prompt, lightingValue:profile.value }).prompt),patterns[expected[profile.value]],profile.value);
+});
+
+test('Xiaomi midday and night metadata differ by lighting', () => {
+  const midday=metadataSection(generateImagePrompt({ sceneType:'outdoor_selfie', camera:'xiaomi15_front', lightingValue:'blue_sky_noon', lighting:'strong high-elevation midday sun' }).prompt);
+  const night=metadataSection(generateImagePrompt({ sceneType:'inside_car_selfie', camera:'xiaomi15_front', lightingValue:'night_car_practicals', lighting:'stationary car interior at night' }).prompt);
+  assert.notEqual(midday,night);
+  assert.match(midday,/ISO 50-100.*1\/500-1\/1000s/i);
+  assert.match(night,/ISO 800-1600.*1\/30-1\/60s/i);
+});
+
+test('free-text metadata fallback keeps explicit priority and does not treat car as night', () => {
+  const cases=[
+    ['phone screen only in darkness',/ISO 1600-3200.*1\/15-1\/30s/i],
+    ['night street practical lighting',/ISO 800-1600.*1\/30-1\/60s/i],
+    ['direct midday sun outdoors',/ISO 50-100.*1\/500-1\/1000s/i],
+    ['ordinary office fluorescent ceiling lighting',/ISO 200-800.*1\/60-1\/125s/i],
+    ['ambiguous available light',/plausible automatic ISO and shutter behavior/i]
+  ];
+  for(const [lighting,expected] of cases) assert.match(metadataSection(generateImagePrompt({ sceneType:'front_selfie', lighting }).prompt),expected,lighting);
+  const carDay=metadataSection(generateImagePrompt({ sceneType:'inside_car_selfie', lighting:'daylight through car windows' }).prompt);
+  assert.match(carDay,/ISO 200-800.*1\/60-1\/125s/i);
+  assert.doesNotMatch(carDay,/ISO 800-1600.*1\/30-1\/60s/i);
+});
+
+test('unknown canonical lighting value never falls back to free-text classification', () => {
+  const unknownCanonical=metadataSection(generateImagePrompt({ sceneType:'outdoor_selfie', lighting:'direct midday sun outdoors', lightingValue:'future_unmapped_profile' }).prompt);
+  const missing=metadataSection(generateImagePrompt({ sceneType:'front_selfie' }).prompt);
+  for(const metadata of [unknownCanonical,missing]) {
+    assert.match(metadata,/plausible automatic ISO and shutter behavior/i);
+    assert.doesNotMatch(metadata,/ISO \d/i);
+  }
+});
+
+test('all camera types use lighting-consistent metadata without file references', () => {
+  const cameras=['xiaomi15_front','iphone15pm_front','generic_front','smartphone_rear'];
+  for(const camera of cameras) {
+    const day=metadataSection(generateImagePrompt({ sceneType:camera==='smartphone_rear'?'third_person_portrait':'outdoor_selfie', camera, lighting:'direct daytime sunlight', lightingValue:'day_direct_sun' }).prompt);
+    const night=metadataSection(generateImagePrompt({ sceneType:camera==='smartphone_rear'?'third_person_portrait':'front_selfie', camera, lighting:'night scene with practical fixtures', lightingValue:'night_led_street' }).prompt);
+    assert.match(day,/ISO 50-100.*1\/500-1\/1000s/i,camera);
+    assert.match(night,/ISO 800-1600.*1\/30-1\/60s/i,camera);
+    assert.doesNotMatch(day+night,/File reference|IMG_20250915_143022/i,camera);
+  }
+});
+
+test('camera metadata field verification matrix covers ten representative cases', () => {
+  const byValue=new Map(LIGHTING_PROFILES.map((item)=>[item.value,item.prompt]));
+  const cases=[
+    ['midday-xiaomi','outdoor_selfie','xiaomi15_front','blue_sky_noon'],
+    ['golden-xiaomi','outdoor_selfie','xiaomi15_front','golden_hour'],
+    ['overcast-iphone','outdoor_selfie','iphone15pm_front','day_overcast'],
+    ['window-generic','office_selfie','generic_front','day_window'],
+    ['warm-majlis','majlis_selfie','xiaomi15_front','night_home_warm'],
+    ['car-night-xiaomi','inside_car_selfie','xiaomi15_front','night_car_practicals'],
+    ['screen-bedroom','bedroom_selfie','xiaomi15_front','night_phone_screen'],
+    ['office-iphone','office_selfie','iphone15pm_front','night_office_led'],
+    ['sun-rear','third_person_portrait','smartphone_rear','day_direct_sun'],
+    ['unknown-generic','front_selfie','generic_front','']
+  ];
+  for(const [name,sceneType,camera,lightingValue] of cases) {
+    const result=generateImagePrompt({ sceneType,camera,lightingValue,lighting:lightingValue ? byValue.get(lightingValue) : '' });
+    const metadata=metadataSection(result.prompt);
+    assert.equal(result.sections.length,23,name);
+    assert.equal(result.validation.valid,true,`${name}: ${result.validation.errors.join(' | ')}`);
+    assert.doesNotMatch(metadata,/File reference|IMG_20250915_143022/i,name);
+    console.log(`METADATA_FIELD ${JSON.stringify({name,sceneType,camera,lightingValue:lightingValue||'absent',metadata})}`);
+  }
 });
 
 test('every generated prompt contains the three mandatory realism sections', () => {

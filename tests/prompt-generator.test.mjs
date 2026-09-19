@@ -1088,7 +1088,7 @@ test('two-hand flexible primary drops a requested one-hand secondary prop', () =
 test('one-hand primary leaves one hand for a flexible secondary prop', () => {
   const result=generateImagePrompt({ sceneType:'third_person_portrait', location:'saudi_office', heldProp:'iphone-15-pro-black', secondaryProp:'ipad-pro-13' });
   assert.equal(result.config.secondary_prop,'ipad-pro-13');
-  assert.match(result.prompt,/iPad Pro 13/i);
+  assert.match(result.prompt,/13-inch iPad Pro/i);
   assert.match(result.prompt,/hand-count alternatives[^\n]*exactly one hand/i);
 });
 

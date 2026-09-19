@@ -34,6 +34,33 @@ function allFiles(dir = '.') {
   return output.sort();
 }
 
+function cryptoRandomUsageErrors(file, source) {
+  const matches = [...source.matchAll(/(?:globalThis\.)?crypto\.getRandomValues\s*\(/g)];
+  if (file !== 'app.js') {
+    return matches.map(() => `${file} uses crypto.getRandomValues() outside the approved newSeed() exception`);
+  }
+
+  const errors = [];
+  if (matches.length !== 1) {
+    errors.push(`app.js must contain exactly one crypto.getRandomValues() call inside newSeed(); found ${matches.length}`);
+  }
+
+  const newSeedStart = source.indexOf('export function newSeed');
+  if (newSeedStart < 0) {
+    errors.push('app.js is missing export function newSeed()');
+    return errors;
+  }
+
+  const nextExport = source.indexOf('\nexport function ', newSeedStart + 1);
+  const newSeedEnd = nextExport < 0 ? source.length : nextExport;
+  for (const match of matches) {
+    if (match.index < newSeedStart || match.index >= newSeedEnd) {
+      errors.push('app.js uses crypto.getRandomValues() outside newSeed()');
+    }
+  }
+  return errors;
+}
+
 function uniqueValues(name, items) {
   const values = items.map((item) => item.value);
   assert.equal(new Set(values).size, values.length, `${name} contains duplicate values`);
@@ -145,7 +172,30 @@ test('unified location catalog remains complete and the legacy alias stays deriv
   );
 });
 
-test('production JavaScript contains no nondeterministic clock or random APIs', () => {
+test('crypto.getRandomValues exception guard rejects scope drift', () => {
+  const validApp = `export function newSeed() {
+  globalThis.crypto.getRandomValues(new Uint32Array(1));
+}
+export function seededRandom() {}`;
+  const outsideNewSeed = `export function newSeed() {
+  return 42;
+}
+export function seededRandom() {
+  globalThis.crypto.getRandomValues(new Uint32Array(1));
+}`;
+  const duplicateInsideNewSeed = `export function newSeed() {
+  globalThis.crypto.getRandomValues(new Uint32Array(1));
+  globalThis.crypto.getRandomValues(new Uint32Array(1));
+}
+export function seededRandom() {}`;
+
+  assert.deepEqual(cryptoRandomUsageErrors('app.js', validApp), []);
+  assert.ok(cryptoRandomUsageErrors('app.js', outsideNewSeed).length > 0);
+  assert.ok(cryptoRandomUsageErrors('app.js', duplicateInsideNewSeed).length > 0);
+  assert.ok(cryptoRandomUsageErrors('core/example.js', validApp).length > 0);
+});
+
+test('production JavaScript contains no nondeterministic clock or random APIs except newSeed entropy', () => {
   const files = allFiles().filter((file) => file.endsWith('.js') && !file.startsWith('tests/'));
   const patterns = [
     [/Math\.random\s*\(/, 'Math.random()'],
@@ -156,5 +206,6 @@ test('production JavaScript contains no nondeterministic clock or random APIs', 
   for (const file of files) {
     const source = fs.readFileSync(file, 'utf8');
     for (const [pattern, label] of patterns) assert.doesNotMatch(source, pattern, `${file} uses ${label}`);
+    assert.deepEqual(cryptoRandomUsageErrors(file, source), [], `${file} violates the crypto.getRandomValues() exception contract`);
   }
 });

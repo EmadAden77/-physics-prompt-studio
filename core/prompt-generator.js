@@ -156,13 +156,14 @@ export function resolveLensPhysics({ scene = '', captureType = '', camera = '', 
   const mirror = capture.includes('mirror') || sceneValue.includes('mirror');
   const thirdPerson = capture.includes('third-person');
   const nearThirdPerson = thirdPerson && /(?:close|near|\b0\.\d+\s*m\b|\b1(?:\.\d+)?\s*m\b)/.test(distance);
+  // Fallback profile is reserved for unknown or forward-compatible camera values.
   let focal = 24, fov = 84, distortion = '1.5-2.5%', vignette = '8-12%';
   if (thirdPerson) {
     [focal, fov, distortion, vignette] = nearThirdPerson ? [26, 80, '1-1.5%', '6-10%'] : [28, 75, '0.5-1%', '4-8%'];
-  } else if (mirror && cameraValue === 'smartphone_rear') {
-    [focal, fov, distortion, vignette] = [26, 80, '1-1.5%', '6-10%'];
   } else if (cameraValue === 'xiaomi15_front') {
     [focal, fov, distortion, vignette] = [23, 86, '2-3%', '10-15%'];
+  } else if (cameraValue === 'iphone15pm_front' || cameraValue === 'generic_front') {
+    [focal, fov, distortion, vignette] = [24, 84, '1.5-2.5%', '8-12%'];
   } else if (cameraValue === 'smartphone_rear') {
     [focal, fov, distortion, vignette] = [26, 80, '1-1.5%', '6-10%'];
   }

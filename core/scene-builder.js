@@ -41,7 +41,25 @@ export const FURNITURE_GEOMETRY_RULES = Object.freeze({
   generic: 'All furniture maintains a coherent 3D structure: no morphing, no merging, no splitting, no floating pieces. All supports, legs, and bases contact the ground. Contact shadows are consistent with the light source direction. Surfaces show weight-driven compression at contact points.'
 });
 
-export function getFurnitureGeometryForScene(sceneType, location = '') {
+// FURNITURE_GEOMETRY_RULES describe furniture physics,
+// not subject-support. They are applied when the furniture
+// type is in scene regardless of subject pose.
+// Explicit pose semantics also protect API callers whose scene context does not name the furniture type (for example bedroom-mirror-seated -> bed).
+const POSE_FURNITURE_SEMANTICS = Object.freeze({
+  bed:new Set(['bed-lying-back','bed-lying-side','bed-lying-stomach','bed-reclining-headboard','bed-propped-pillows','bed-lying-partial','bed-lying-diagonal','bed-lying-reading','bed-lying-back-knees-bent','bed-sitting-cross','bed-sitting-edge','bed-sitting-back-wall','bed-sitting-legs-extended','bed-sitting-hugging-pillow','bed-sitting-sideways','bedroom-laptop-bed','bedroom-cup-bed','bedroom-book-bed','bedroom-nightstand-reach','bedroom-mirror-seated']),
+  armchair:new Set(['armchair-sit-lean-back','armchair-sit-corner','armchair-sit-one-knee','armchair-sit-crossed','armchair-sit-feet-floor','bedroom-laptop-armchair','bedroom-tea-armchair']),
+  sofa:new Set(['seated_sofa']), chair:new Set(['seated_chair']), counter:new Set(['lean_counter']),
+  none:new Set(['standing_relaxed','standing_one_hand','walking_slow','bedroom-stand-relaxed','bedroom-floor-cross','bedroom-floor-back-wall','bedroom-floor-knee-up'])
+});
+function furnitureSemanticForPose(poseValue){ return Object.entries(POSE_FURNITURE_SEMANTICS).find(([,poses])=>poses.has(poseValue))?.[0] || ''; }
+
+export function getFurnitureGeometryForScene(sceneType, location = '', poseValue = '') {
+  const semantic=furnitureSemanticForPose(poseValue);
+  if(semantic==='none') return [FURNITURE_GEOMETRY_RULES.generic];
+  // desk_work_selfie explicitly keeps desk geometry because the work surface is part of the subject action, not background furniture.
+  if(semantic==='chair' && sceneType==='desk_work_selfie') return [FURNITURE_GEOMETRY_RULES.chair,FURNITURE_GEOMETRY_RULES.desk];
+  if(semantic) return [FURNITURE_GEOMETRY_RULES[semantic]];
+  // TODO-53-LOCATIONS: canonical locations with multi-match furniture rules remain a separate issue from pose-aware coupling.
   const context = `${sceneType} ${location}`.toLowerCase();
   const rules = [];
 

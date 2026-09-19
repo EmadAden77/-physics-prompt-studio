@@ -335,7 +335,10 @@ export const POSE_HAND_USAGE = Object.freeze({
   'bedroom-tea-armchair':1, 'bedroom-book-bed':1, 'bedroom-phone-only':0, 'bedroom-floor-cross':0,
   'bedroom-floor-back-wall':0, 'bedroom-floor-knee-up':0, 'bedroom-curtain-touch':1,
   'bedroom-nightstand-reach':1, 'bedroom-mirror-stand-relaxed':0, 'bedroom-mirror-adjust':1,
-  'bedroom-mirror-seated':0
+  'bedroom-mirror-seated':0,
+  // Mirror poses mirror bedroom-mirror equivalents
+  // but use underscore keys.
+  mirror_standing_relaxed:0, mirror_one_hand_pocket:1, mirror_adjust_clothing:1, mirror_seated:0, mirror_full_length:0
 });
 
 const HAND_INTERACTION_HAND_USAGE = Object.freeze({

@@ -143,9 +143,9 @@ function identityRules(enabled,hair){
   const hairDirection = hair ? `Selected hair styling direction: ${hair}. ${HAIR_DIRECTION_LOCK}` : 'Hair styling direction: keep the visible hair naturally arranged unless a specific style is selected.';
   return `${identity} ${hairDirection} ${HAIR_LOCK}`;
 }
-function geometryRules(scene,camera,framing,angle,distance){
+function geometryRules(scene,camera,framing,angle,distance,hasExplicitFraming){
   const d = clean(distance) || (scene.capture.includes('selfie') ? 'natural arm-reach distance, approximately 40–60 cm unless the selected angle requires a minor physically plausible adjustment' : 'a natural third-person smartphone shooting distance appropriate to the framing');
-  return `${camera.prompt}. ${scene.framing}. ${framing.prompt}. ${angle || 'Use a natural eye-level or slightly off-axis camera angle.'} Camera distance: ${d}. Preserve realistic wide-angle perspective and human scale; no impossible camera placement.`;
+  return `${camera.prompt}. ${hasExplicitFraming ? framing.prompt : scene.framing}. ${angle || 'Use a natural eye-level or slightly off-axis camera angle.'} Camera distance: ${d}. Preserve realistic wide-angle perspective and human scale; no impossible camera placement.`;
 }
 export function resolveLensPhysics({ scene = '', captureType = '', camera = '', framing = '', cameraDistance = '' } = {}) {
   const sceneValue = clean(typeof scene === 'string' ? scene : scene?.value).toLowerCase();
@@ -260,6 +260,7 @@ export function generateImagePrompt(input={}){
   const expression=pick(EXPRESSIONS,input.expression,DEFAULTS.expression);
   const realism=pick(REALISM_LEVELS,input.realismLevel,DEFAULTS.realism);
   const framing=pick(FRAMING_OPTIONS,input.framing,DEFAULTS.framing);
+  const hasExplicitFraming=FRAMING_OPTIONS.some((item)=>item.value===input.framing);
   const location=clean(input.location)||'a generic, ordinary Saudi Arabian setting appropriate to the scene, without inventing a specific city or landmark';
   const clothing=clean(input.clothing)||'realistic context-appropriate clothing with believable textile weight, seams, folds and material response';
   const clothingItem=resolveClothingItem(input);
@@ -369,7 +370,7 @@ export function generateImagePrompt(input={}){
     section('OBSERVABLE BACKGROUND ELEMENTS',backgroundText),
     section('CLOTHING',clothing),
     section('CONTEXTUAL ACCESSORIES',guidance.accessories), section('POSE & BODY MECHANICS',poseBody),
-    section('CAMERA GEOMETRY',geometryRules(scene,camera,framing,cameraGeometryText,input.cameraDistance)), section('PHYSICAL LIGHTING',lightingRules(lighting,input.lightingNotes,realism.value)),
+    section('CAMERA GEOMETRY',geometryRules(scene,camera,framing,cameraGeometryText,input.cameraDistance,hasExplicitFraming)), section('PHYSICAL LIGHTING',lightingRules(lighting,input.lightingNotes,realism.value)),
     section('MIRROR RULES',mirrorSection), section('PRODUCT INTEGRATION',productText),
     section('PHYSICAL / MATERIAL REALISM',`${realism.prompt}. Enforce correct human anatomy; realistic neck, shoulder, arm, hand and finger structure; natural weight distribution; correct support and contact deformation; coherent gravity; realistic cloth drape and seam tension; material-specific reflectance; physically consistent reflections; and scene-specific scale.`),
     section('SMARTPHONE IMAGE BEHAVIOR','Use broad smartphone focus, restrained computational sharpening, realistic local contrast, modest dynamic range, plausible white balance, mild sensor/noise-reduction texture in darker areas, and natural clipping of strong practical lights when appropriate.'),

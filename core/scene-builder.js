@@ -345,12 +345,18 @@ const HAND_INTERACTION_HAND_USAGE = Object.freeze({
   none:0, 'adjust-collar':1, 'roll-sleeve':1, 'wipe-sweat':1, 'pocket-hands':2, 'adjust-waistband':1
 });
 
-export function getPropHandUsage(propOrGrip) {
+// TODO-MULTI-FLEXIBLE: The current 2-hand cap prevents
+// two flexible props from being accepted together. If hand
+// capacity ever expands (e.g., additional support sources),
+// ensure each accepted flexible prop emits its own clause.
+// Current logic handles this correctly, but the invariant
+// should be re-verified.
+export function getPropHandUsage(propOrGrip, availableHands = 1) {
   const grip = typeof propOrGrip === 'string' && HAND_PROPS.some((prop) => prop.value === propOrGrip)
     ? HAND_PROPS.find((prop) => prop.value === propOrGrip)?.grip
     : typeof propOrGrip === 'string' ? propOrGrip : propOrGrip?.grip;
-  if (grip === 'two-hands') return 2;
-  if (grip === 'one-hand' || grip === 'one-or-two-hands' || grip === 'one-hand-on-strap') return 1;
+  if (grip === 'two-hands') return 2; if (grip === 'one-or-two-hands') return availableHands >= 2 ? 2 : 1;
+  if (grip === 'one-hand' || grip === 'one-hand-on-strap') return 1;
   return 0;
 }
 
@@ -385,14 +391,14 @@ export function getRemainingHands(sceneType, captureType, primaryProp = 'none', 
   const captureHands = getHandBudgetForScene(captureType);
   const poseHandUsage = POSE_HAND_USAGE[pose] || 0;
   const interactionHandUsage = HAND_INTERACTION_HAND_USAGE[handInteraction] || 0;
-  const primaryPropUsage = primaryProp && primaryProp !== 'none' ? getPropHandUsage(primaryProp) : 0;
-  return Math.max(0, captureHands - poseHandUsage - interactionHandUsage - primaryPropUsage);
+  const availableHands = Math.max(0, captureHands - poseHandUsage - interactionHandUsage), primaryPropUsage = primaryProp && primaryProp !== 'none' ? getPropHandUsage(primaryProp, availableHands) : 0;
+  return Math.max(0, availableHands - primaryPropUsage);
 }
 
 export function getAvailableProps(sceneType, captureType, location = '', pose = '', handInteraction = 'none') {
   const remaining = getRemainingHands(sceneType, captureType, 'none', pose, handInteraction);
   if (remaining <= 0) return [];
-  return HAND_PROPS.filter((prop) => getPropHandUsage(prop) <= remaining && propMatchesContext(prop, sceneType, location));
+  return HAND_PROPS.filter((prop) => getPropHandUsage(prop, remaining) <= remaining && propMatchesContext(prop, sceneType, location));
 }
 
 export const FORMAL_SUITS = [

@@ -1062,6 +1062,75 @@ test('unmapped pose preserves the existing zero-usage fallback', () => {
   assert.ok(props.some((prop) => prop.value === 'iphone-15-pro-black'));
 });
 
+
+test('flexible primary resolves to one hand in selfie and two hands in third-person', () => {
+  const selfie=generateImagePrompt({ sceneType:'office_selfie', location:'saudi_office', heldProp:'ipad-pro-13' });
+  const third=generateImagePrompt({ sceneType:'third_person_portrait', location:'saudi_office', heldProp:'ipad-pro-13' });
+  assert.match(selfie.prompt,/hand-count alternatives[^\n]*exactly one hand/i);
+  assert.match(third.prompt,/hand-count alternatives[^\n]*exactly two hands/i);
+  assert.equal(selfie.sections.length,23);
+  assert.equal(third.sections.length,23);
+});
+
+test('third-person pose consuming one hand resolves flexible primary to one hand', () => {
+  const result=generateImagePrompt({ sceneType:'third_person_portrait', location:'saudi_cafe', poseValue:'one_hand_pocket', heldProp:'nintendo-switch' });
+  assert.match(result.prompt,/Nintendo Switch/i);
+  assert.match(result.prompt,/hand-count alternatives[^\n]*exactly one hand/i);
+});
+
+test('two-hand flexible primary drops a requested one-hand secondary prop', () => {
+  const result=generateImagePrompt({ sceneType:'third_person_portrait', location:'saudi_office', heldProp:'ipad-pro-13', secondaryProp:'iphone-15-pro-black' });
+  assert.equal(result.config.held_prop,'ipad-pro-13');
+  assert.equal(result.config.secondary_prop,'none');
+  assert.doesNotMatch(result.prompt,/iPhone 15 Pro/i);
+});
+
+test('one-hand primary leaves one hand for a flexible secondary prop', () => {
+  const result=generateImagePrompt({ sceneType:'third_person_portrait', location:'saudi_office', heldProp:'iphone-15-pro-black', secondaryProp:'ipad-pro-13' });
+  assert.equal(result.config.secondary_prop,'ipad-pro-13');
+  assert.match(result.prompt,/13-inch iPad Pro/i);
+  assert.match(result.prompt,/hand-count alternatives[^\n]*exactly one hand/i);
+});
+
+test('zero hand budget silently drops a flexible prop without an error', () => {
+  const cases=[
+    { sceneType:'mirror_selfie', location:'saudi_office', poseValue:'mirror_one_hand_pocket', heldProp:'ipad-pro-13' },
+    { sceneType:'third_person_portrait', location:'saudi_office', poseValue:'third_standing_relaxed', handInteraction:'pocket-hands', clothing:'a navy two-piece suit with a light-blue dress shirt...', heldProp:'ipad-pro-13' }
+  ];
+  for(const input of cases){
+    const result=generateImagePrompt(input);
+    assert.equal(result.config.held_prop,'none');
+    assert.doesNotMatch(result.prompt,/iPad Pro 13/i);
+    assert.equal(result.validation.valid,true,result.validation.errors.join(' | '));
+  }
+});
+
+test('flexible grip field matrix covers ten cases and preserves the 23-section schema', () => {
+  const cases=[
+    ['selfie-ipad',{sceneType:'office_selfie',location:'saudi_office',poseValue:'standing_relaxed',heldProp:'ipad-pro-13'},'1','1',/exactly one hand/i],
+    ['mirror-ipad',{sceneType:'mirror_selfie',location:'saudi_office',poseValue:'mirror_standing_relaxed',heldProp:'ipad-pro-13'},'1','1',/exactly one hand/i],
+    ['third-ipad',{sceneType:'third_person_portrait',location:'saudi_office',heldProp:'ipad-pro-13'},'1','2',/exactly two hands/i],
+    ['third-pose-switch',{sceneType:'third_person_portrait',location:'saudi_cafe',poseValue:'one_hand_pocket',heldProp:'nintendo-switch'},'1','1',/exactly one hand/i],
+    ['third-exhausted',{sceneType:'third_person_portrait',location:'saudi_office',poseValue:'third_standing_relaxed',handInteraction:'pocket-hands',clothing:'a navy two-piece suit with a light-blue dress shirt...',heldProp:'ipad-pro-13'},'dropped','dropped',null],
+    ['third-flex-primary-secondary',{sceneType:'third_person_portrait',location:'saudi_office',heldProp:'ipad-pro-13',secondaryProp:'iphone-15-pro-black'},'1+1','2+dropped',/exactly two hands/i],
+    ['third-one-primary-flex-secondary',{sceneType:'third_person_portrait',location:'saudi_office',heldProp:'iphone-15-pro-black',secondaryProp:'ipad-pro-13'},'1+1','1+1',/exactly one hand/i],
+    ['selfie-pose-paperback',{sceneType:'office_selfie',location:'saudi_office',poseValue:'one_hand_pocket',heldProp:'book-paperback'},'dropped','dropped',null],
+    ['mirror-pose-paperback',{sceneType:'mirror_selfie',location:'saudi_office',poseValue:'mirror_one_hand_pocket',heldProp:'book-paperback'},'dropped','dropped',null],
+    ['third-iphone-control',{sceneType:'third_person_portrait',location:'saudi_office',heldProp:'iphone-15-pro-black'},'1','1',null]
+  ];
+  for(const [name,input,before,after,clause] of cases){
+    const result=generateImagePrompt(input);
+    if(clause) assert.match(result.prompt,clause,name);
+    if(after==='dropped') assert.equal(result.config.held_prop,'none',name);
+    if(name==='third-flex-primary-secondary') assert.equal(result.config.secondary_prop,'none',name);
+    if(name==='third-one-primary-flex-secondary') assert.equal(result.config.secondary_prop,'ipad-pro-13',name);
+    if(name==='third-iphone-control') assert.equal(getRemainingHands('third_person_portrait','third-person smartphone photograph','iphone-15-pro-black'),1,name);
+    assert.equal(result.sections.length,23,name);
+    assert.equal(result.validation.valid,true,`${name}: ${result.validation.errors.join(' | ')}`);
+    console.log(`FLEX_GRIP_FIELD ${JSON.stringify({name,scene:input.sceneType,pose:input.poseValue||'',prop:input.heldProp,secondary:input.secondaryProp||'none',before,after})}`);
+  }
+});
+
 test('no alcohol, tobacco, or pork in props', () => {
   for (const prop of HAND_PROPS) {
     const text = `${prop.value} ${prop.label} ${prop.prompt}`.toLowerCase();

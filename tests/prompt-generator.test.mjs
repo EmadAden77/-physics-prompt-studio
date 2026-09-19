@@ -338,7 +338,7 @@ test('pose-derived action field matrix covers ten scene capture combinations', (
     ['driver',{ sceneType:'inside_car_selfie', pose:'driver_seat', poseValue:'driver_seat' },/driver in a stationary car.*while taking the selfie/i],
     ['passenger',{ sceneType:'inside_car_selfie', pose:'passenger_seat', poseValue:'passenger_seat' },/front passenger in a stationary car.*while taking the selfie/i],
     ['third-walking',{ sceneType:'third_person_portrait', pose:'third_walking_candid', poseValue:'third_walking_candid' },/walk naturally.*while another person photographs the subject/i],
-    ['bed-lying',{ sceneType:'bedroom_selfie', pose:'bed-lying-back', poseValue:'bed-lying-back' },/lie naturally in the selected body orientation.*while taking the selfie/i],
+    ['bed-lying',{ sceneType:'bedroom_selfie', pose:'bed-lying-back', poseValue:'bed-lying-back' },/lie naturally with a relaxed posture.*while taking the selfie/i],
     ['armchair-seated',{ sceneType:'bedroom_selfie', pose:'armchair-sit-lean-back', poseValue:'armchair-sit-lean-back' },/remain naturally seated.*while taking the selfie/i]
   ];
   for (const [name,input,expected] of cases) {

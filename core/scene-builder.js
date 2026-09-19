@@ -44,6 +44,7 @@ export const FURNITURE_GEOMETRY_RULES = Object.freeze({
 // FURNITURE_GEOMETRY_RULES describe furniture physics,
 // not subject-support. They are applied when the furniture
 // type is in scene regardless of subject pose.
+// Explicit pose semantics also protect API callers whose scene context does not name the furniture type (for example bedroom-mirror-seated -> bed).
 const POSE_FURNITURE_SEMANTICS = Object.freeze({
   bed:new Set(['bed-lying-back','bed-lying-side','bed-lying-stomach','bed-reclining-headboard','bed-propped-pillows','bed-lying-partial','bed-lying-diagonal','bed-lying-reading','bed-lying-back-knees-bent','bed-sitting-cross','bed-sitting-edge','bed-sitting-back-wall','bed-sitting-legs-extended','bed-sitting-hugging-pillow','bed-sitting-sideways','bedroom-laptop-bed','bedroom-cup-bed','bedroom-book-bed','bedroom-nightstand-reach','bedroom-mirror-seated']),
   armchair:new Set(['armchair-sit-lean-back','armchair-sit-corner','armchair-sit-one-knee','armchair-sit-crossed','armchair-sit-feet-floor','bedroom-laptop-armchair','bedroom-tea-armchair']),

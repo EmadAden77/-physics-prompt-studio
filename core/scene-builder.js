@@ -355,8 +355,7 @@ export function getPropHandUsage(propOrGrip, availableHands = 1) {
   const grip = typeof propOrGrip === 'string' && HAND_PROPS.some((prop) => prop.value === propOrGrip)
     ? HAND_PROPS.find((prop) => prop.value === propOrGrip)?.grip
     : typeof propOrGrip === 'string' ? propOrGrip : propOrGrip?.grip;
-  if (grip === 'two-hands') return 2;
-  if (grip === 'one-or-two-hands') return availableHands >= 2 ? 2 : 1;
+  if (grip === 'two-hands') return 2; if (grip === 'one-or-two-hands') return availableHands >= 2 ? 2 : 1;
   if (grip === 'one-hand' || grip === 'one-hand-on-strap') return 1;
   return 0;
 }
@@ -392,8 +391,7 @@ export function getRemainingHands(sceneType, captureType, primaryProp = 'none', 
   const captureHands = getHandBudgetForScene(captureType);
   const poseHandUsage = POSE_HAND_USAGE[pose] || 0;
   const interactionHandUsage = HAND_INTERACTION_HAND_USAGE[handInteraction] || 0;
-  const availableHands = Math.max(0, captureHands - poseHandUsage - interactionHandUsage);
-  const primaryPropUsage = primaryProp && primaryProp !== 'none' ? getPropHandUsage(primaryProp, availableHands) : 0;
+  const availableHands = Math.max(0, captureHands - poseHandUsage - interactionHandUsage), primaryPropUsage = primaryProp && primaryProp !== 'none' ? getPropHandUsage(primaryProp, availableHands) : 0;
   return Math.max(0, availableHands - primaryPropUsage);
 }
 

@@ -1288,6 +1288,37 @@ test('passenger_seat bypasses legacy office-parking furniture matching', () => {
   assert.doesNotMatch(sceneSection(result.prompt),/The (?:desk|chair|counter)\b/i);
 });
 
+test('door_open_car bypasses legacy office-parking furniture matching', () => {
+  const result=generateImagePrompt({ sceneType:'door_open_car_selfie', location:'office_parking_outdoor', poseValue:'door_open_car' });
+  assert.deepEqual(furnitureKinds(result.prompt),['generic']);
+  assert.doesNotMatch(sceneSection(result.prompt),/The (?:desk|chair|counter)\b/i);
+});
+
+test('PR 9 field matrix covers six vehicle and bedroom cases', () => {
+  const cases=[
+    ['door-villa-garage',{ sceneType:'door_open_car_selfie',location:'villa_garage',poseValue:'door_open_car' },['generic']],
+    ['door-office-parking',{ sceneType:'door_open_car_selfie',location:'office_parking_outdoor',poseValue:'door_open_car' },['generic']],
+    ['driver-office-parking',{ sceneType:'inside_car_driver_selfie',location:'office_parking_outdoor',poseValue:'driver_seat' },['generic']],
+    ['bedroom-selfie',{ sceneType:'bedroom_selfie',location:'saudi_bedroom_livedin' },['bed']],
+    ['bedroom-mirror',{ sceneType:'bedroom_mirror_selfie',location:'saudi_bedroom_livedin' },['bed']],
+    ['bedroom-third-person',{ sceneType:'bedroom_third_person',location:'saudi_bedroom_livedin' },['bed']]
+  ];
+  for(const [name,input,expectedFurniture] of cases){
+    const result=generateImagePrompt(input);
+    const scene=sceneSection(result.prompt);
+    assert.equal(result.sections.length,23,name);
+    assert.equal(result.validation.valid,true,`${name}: ${result.validation.errors.join(' | ')}`);
+    assert.deepEqual(furnitureKinds(result.prompt),expectedFurniture,name);
+    if(name.startsWith('bedroom-')){
+      assert.match(scene,/bed[^.]*LEFT wall/i,name);
+      assert.match(scene,/sliding mirrored or glass doors/i,name);
+      assert.match(scene,/CURTAINS \/ BACK WALL:/i,name);
+      assert.match(scene,/Do not add an armchair, a visible window, or a second nightstand/i,name);
+    }
+    console.log(`PR9_FIELD ${JSON.stringify({name,furniture:furnitureKinds(result.prompt),scene})}`);
+  }
+});
+
 test('PR 8 field matrix preserves 23 sections and validation for five cases', () => {
   const cases=[
     ['office-standing',{ sceneType:'office_selfie',location:'home_office_room',poseValue:'standing_relaxed',framing:'chest_up' }],

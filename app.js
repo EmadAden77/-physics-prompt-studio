@@ -569,6 +569,8 @@ export function normalizeSeed(value) {
   return Math.min(999999, Math.max(1, Math.trunc(numeric)));
 }
 
+// Intentional determinism exception: entropy is used only when the user explicitly requests a new seed.
+// Once a seed is fixed, the same inputs must produce the same generated scene state.
 export function newSeed() {
   if (!globalThis.crypto?.getRandomValues) throw new Error('crypto.getRandomValues() is required to generate a new seed');
   const buffer = new Uint32Array(1);

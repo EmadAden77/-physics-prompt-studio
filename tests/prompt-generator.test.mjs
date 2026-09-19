@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateImagePrompt, validateGeneratedPrompt, validateRealism } from '../core/prompt-generator.js';
-import { CLOTHING_CATALOG, HOME_CLOTHING, CLOTHING_STYLING, HAND_INTERACTIONS, HAND_PROPS, LIGHTING_PROFILES, getAvailableProps, getRemainingHands } from '../core/scene-builder.js';
+import { CLOTHING_CATALOG, HOME_CLOTHING, CLOTHING_STYLING, HAND_INTERACTIONS, HAND_PROPS, LIGHTING_PROFILES, POSE_HAND_USAGE, getAvailableProps, getRemainingHands } from '../core/scene-builder.js';
+import { MIRROR_POSES } from '../core/scene-compatibility.js';
 import { buildRealismPacket } from '../core/realistic-image-generator.js';
 
 const canonical = [
@@ -1014,6 +1015,51 @@ test('two-hands primary disables secondary budget', () => {
 
 test('pocket-hands consumes both subject hands', () => {
   assert.equal(getRemainingHands('third_person_portrait', 'third-person smartphone photograph', 'none', '', 'pocket-hands'), 0);
+});
+
+
+test('mirror poses have explicit hand-usage entries with expected values', () => {
+  const expected = {
+    mirror_standing_relaxed:0,
+    mirror_one_hand_pocket:1,
+    mirror_adjust_clothing:1,
+    mirror_seated:0,
+    mirror_full_length:0
+  };
+  assert.deepEqual(MIRROR_POSES.map(({ value }) => [value, POSE_HAND_USAGE[value]]), Object.entries(expected));
+});
+
+test('mirror hand conflicts silently drop the requested held prop', () => {
+  for (const poseValue of ['mirror_one_hand_pocket', 'mirror_adjust_clothing']) {
+    const result = generateImagePrompt({
+      sceneType:'mirror_selfie',
+      poseValue,
+      heldProp:'iphone-15-pro-black',
+      camera:'xiaomi15_front'
+    });
+    assert.doesNotMatch(result.prompt, /iPhone 15 Pro/i, poseValue);
+    assert.equal(result.sections.length, 23, poseValue);
+    assert.equal(result.validation.valid, true, `${poseValue}: ${result.validation.errors.join(' | ')}`);
+  }
+});
+
+test('zero-use mirror poses keep one held-prop hand available', () => {
+  for (const poseValue of ['mirror_standing_relaxed', 'mirror_seated', 'mirror_full_length']) {
+    const result = generateImagePrompt({
+      sceneType:'mirror_selfie',
+      poseValue,
+      heldProp:'iphone-15-pro-black',
+      camera:'xiaomi15_front'
+    });
+    assert.match(result.prompt, /iPhone 15 Pro/i, poseValue);
+  }
+});
+
+test('unmapped pose preserves the existing zero-usage fallback', () => {
+  const capture = 'mirror selfie using a smartphone visible in the reflection';
+  assert.equal(getRemainingHands('mirror_selfie', capture, 'none', 'future_pose_value'), 1);
+  const props = getAvailableProps('mirror_selfie', capture, '', 'future_pose_value');
+  assert.ok(props.some((prop) => prop.value === 'iphone-15-pro-black'));
 });
 
 test('no alcohol, tobacco, or pork in props', () => {

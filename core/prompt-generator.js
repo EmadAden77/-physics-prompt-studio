@@ -192,11 +192,29 @@ function lightingRules(lighting,notes,realismLevel){
   const raw = realismLevel === 'raw' ? ' Deliberately underexposed in midtones and shadows. Accept visible noise in shadow regions. Do not lift shadows with HDR. Slight motion blur from handheld capture is acceptable. White balance may be slightly off-neutral.' : '';
   return `${selected}${note} Physical illumination alone determines which surfaces receive light, shadow direction and softness, highlights, reflections, material brightness and local contrast. Exposure, ISO, HDR, tone mapping and noise reduction may only reveal or process captured signal; they must never create illumination that no physical source provides. Respect realistic falloff for nearby weak lights, occlusion, bounce light, practical fixture direction and realistic background falloff.${raw}`;
 }
-function metadata(camera){
-  if(camera.value==='xiaomi15_front') return 'CAPTURE METADATA (for scene fidelity): Shot on Xiaomi 15 Ultra front camera, approximately 23mm equivalent, f/1.63-class smartphone capture behavior, ISO 800, 1/60s, handheld. File reference: IMG_20250915_143022.HEIC.';
-  if(camera.value==='iphone15pm_front') return 'CAPTURE METADATA (for scene fidelity): Shot on iPhone 15 Pro Max front camera with a natural wide selfie field of view, plausible automatic ISO and shutter behavior, handheld. Do not fabricate unsupported exact EXIF values.';
-  if(camera.value==='smartphone_rear') return 'CAPTURE METADATA (for scene fidelity): Shot on a modern smartphone rear camera with a natural wide field of view, plausible automatic ISO and shutter behavior, handheld. Do not fabricate unsupported exact EXIF values.';
-  return 'CAPTURE METADATA (for scene fidelity): Shot on a modern smartphone front camera with a natural wide selfie field of view, plausible automatic ISO and shutter behavior, handheld. Do not fabricate unsupported exact EXIF values.';
+const METADATA_EXPOSURE=Object.freeze({
+  midday:'approx. ISO 50-100, approx. 1/500-1/1000s',golden:'approx. ISO 100-200, approx. 1/250-1/500s',soft_day:'approx. ISO 100-250, approx. 1/125-1/250s',window_day:'approx. ISO 100-320, approx. 1/100-1/200s',
+  warm_indoor:'approx. ISO 400-800, approx. 1/60-1/100s',bright_indoor:'approx. ISO 200-500, approx. 1/100-1/125s',night:'approx. ISO 800-1600, approx. 1/30-1/60s',very_low:'approx. ISO 1600-3200, approx. 1/15-1/30s',flash:'approx. ISO 100-400, approx. 1/60-1/120s',
+  indoor:'approx. ISO 200-800, approx. 1/60-1/125s',unknown:'plausible automatic ISO and shutter behavior appropriate to the available light; no exact EXIF values are asserted'
+});
+// At any future lighting profile addition, update this mapping.
+const LIGHTING_METADATA_CLASS=Object.freeze({
+  day_direct_sun:'midday',day_open_shade:'soft_day',day_overcast:'soft_day',day_window:'window_day',golden_hour:'golden',blue_sky_noon:'midday',car_daylight:'window_day',
+  supermarket_fluorescent:'bright_indoor',retail_ceiling_led:'bright_indoor',mixed_retail:'bright_indoor',night_led_street:'night',night_parking_led:'night',night_storefront:'night',night_gas_station:'night',night_corniche:'night',night_desert_vehicle:'night',
+  night_majlis_warm:'warm_indoor',night_cafe_mixed:'warm_indoor',night_office_led:'bright_indoor',night_home_warm:'warm_indoor',night_phone_screen:'very_low',night_car_practicals:'night',night_car_screen_only:'very_low',screen_flash_only:'very_low',phone_led_flash_only:'flash',low_key_bedroom:'very_low'
+});
+function fallbackMetadataClass(lighting){
+  const text=clean(lighting).toLowerCase();
+  if(['phone screen','screen only','screen-only'].some((term)=>text.includes(term))) return 'very_low';
+  if(['night','pitch-dark','near-dark'].some((term)=>text.includes(term))) return 'night';
+  if(['direct daytime sunlight','direct sun','midday sun','high-elevation midday'].some((term)=>text.includes(term))) return 'midday';
+  if(['indoor','window','ceiling','lamp','fluorescent','office','retail'].some((term)=>text.includes(term))) return 'indoor';
+  return 'unknown';
+}
+function resolveCameraMetadata(camera,lighting,lightingValue=''){
+  const canonical=clean(lightingValue), exposure=METADATA_EXPOSURE[canonical ? (LIGHTING_METADATA_CLASS[canonical] || 'unknown') : fallbackMetadataClass(lighting)];
+  const capture=camera.value==='xiaomi15_front' ? 'Shot on Xiaomi 15 Ultra front camera, approximately 23mm equivalent, f/1.63-class smartphone capture behavior' : camera.value==='iphone15pm_front' ? 'Shot on iPhone 15 Pro Max front camera with a natural wide selfie field of view' : camera.value==='smartphone_rear' ? 'Shot on a modern smartphone rear camera with a natural wide field of view' : 'Shot on a modern smartphone front camera with a natural wide selfie field of view';
+  return `CAPTURE METADATA (for scene fidelity): ${capture}, ${exposure}, handheld.`;
 }
 function negatives(scene){
   const capture = scene.capture.includes('third-person') ? 'selfie arm, implied subject-held camera' : scene.capture.includes('mirror') ? 'direct front-camera viewpoint outside the mirror, duplicate phone or hands' : 'third-person viewpoint, floating external camera, mirror capture unless explicitly selected';
@@ -346,7 +364,7 @@ export function generateImagePrompt(input={}){
     section('SMARTPHONE IMAGE BEHAVIOR','Use broad smartphone focus, restrained computational sharpening, realistic local contrast, modest dynamic range, plausible white balance, mild sensor/noise-reduction texture in darker areas, and natural clipping of strong practical lights when appropriate.'),
     section('LENS_PHYSICS',resolveLensPhysics({ scene:requested, captureType:scene.capture, camera, framing, cameraDistance:input.cameraDistance })),
     section('BIOLOGICAL_MICRO_REALISM','BIOLOGICAL MICRO-REALISM (mandatory, apply only where resolvable): Preserve visible skin pores with non-uniform spatial distribution. Preserve fine vellus facial hair where the visible cheek, temple or jaw region is close enough and lit enough to register such detail. Preserve 5-12 stray hairs near the silhouette or hairline of the visible hair mass. Preserve source-consistent corneal reflections showing the actual scene. Preserve slight natural asymmetry in eyebrows, eyelids and jawline. Preserve individual fabric fibers visible at realistic viewing distance. Do not beautify, smooth, symmetrize or sterilize. If a region is cropped, occluded, too dark, too soft, too distant or out of focus, do not invent micro-detail merely to satisfy this section.'),
-    section('CAMERA_METADATA_HINT',metadata(camera)),
+    section('CAMERA_METADATA_HINT',resolveCameraMetadata(camera,lighting,input.lightingValue)),
     section('AUTHENTIC IMPERFECTIONS',`${guidance.imperfections}\n${CAPTURE_IMPERFECTIONS}`),
     section('USER CONSTRAINTS',custom||'None.'), section('NEGATIVE CONSTRAINTS',negatives(scene)), section('FINAL VERIFICATION',verification(scene,ratio,guidance))
   ];

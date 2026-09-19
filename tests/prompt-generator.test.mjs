@@ -32,6 +32,14 @@ function actionSection(prompt) {
 function metadataSection(prompt) {
   return prompt.split('[CAMERA_METADATA_HINT]\n')[1].split('\n\n[AUTHENTIC IMPERFECTIONS]')[0];
 }
+function sceneSection(prompt) {
+  return prompt.split('[SCENE]\n')[1].split('\n\n[SAUDI CULTURAL DRESS]')[0];
+}
+function furnitureKinds(prompt) {
+  const scene=sceneSection(prompt);
+  const patterns={ sofa:/The sofa maintains/i, armchair:/The armchair is a single-seat/i, chair:/The chair has four legs/i, table:/The table has a continuous top/i, desk:/The desk has a flat working surface/i, bed:/The bed has a continuous frame/i, counter:/The counter is a continuous solid structure/i, generic:/All furniture maintains a coherent 3D structure/i };
+  return Object.entries(patterns).filter(([,pattern])=>pattern.test(scene)).map(([kind])=>kind);
+}
 
 
 test('generates a complete prompt without free-form source text', () => {
@@ -1034,6 +1042,83 @@ test('MacBook injects for third-person office context', () => {
 test('23 sections preserved with held props', () => {
   const result = generateImagePrompt({ sceneType: 'cafe_selfie', heldProp: 'cappuccino-cup' });
   assert.equal(result.sections.length, 23);
+});
+
+test('pose-aware office furniture distinguishes seated chair from standing and keeps desk-work exception', () => {
+  const seated=generateImagePrompt({ sceneType:'office_selfie', location:'saudi_office', poseValue:'seated_chair' });
+  const standing=generateImagePrompt({ sceneType:'office_selfie', location:'saudi_office', poseValue:'standing_relaxed' });
+  const deskWork=generateImagePrompt({ sceneType:'desk_work_selfie', location:'saudi_office', poseValue:'seated_chair' });
+  assert.deepEqual(furnitureKinds(seated.prompt),['chair']);
+  assert.deepEqual(furnitureKinds(standing.prompt),['generic']);
+  assert.deepEqual(furnitureKinds(deskWork.prompt),['chair','desk']);
+});
+
+test('pose-aware majlis furniture distinguishes sofa support from chair support', () => {
+  const sofa=generateImagePrompt({ sceneType:'majlis_selfie', location:'modern_saudi_majlis', poseValue:'seated_sofa' });
+  const chair=generateImagePrompt({ sceneType:'majlis_selfie', location:'modern_saudi_majlis', poseValue:'seated_chair' });
+  assert.deepEqual(furnitureKinds(sofa.prompt),['sofa']);
+  assert.deepEqual(furnitureKinds(chair.prompt),['chair']);
+});
+
+test('pose-aware cafe furniture removes table and counter for non-interacting poses', () => {
+  const chair=generateImagePrompt({ sceneType:'cafe_selfie', location:'saudi_cafe', poseValue:'seated_chair' });
+  const standing=generateImagePrompt({ sceneType:'cafe_selfie', location:'saudi_cafe', poseValue:'standing_relaxed' });
+  assert.deepEqual(furnitureKinds(chair.prompt),['chair']);
+  assert.deepEqual(furnitureKinds(standing.prompt),['generic']);
+});
+
+test('pose-aware bedroom furniture selects bed, floor-generic, and armchair semantics', () => {
+  const bed=generateImagePrompt({ sceneType:'bedroom_selfie', poseValue:'bed-lying-back' });
+  const floor=generateImagePrompt({ sceneType:'bedroom_selfie', poseValue:'bedroom-floor-cross' });
+  const armchair=generateImagePrompt({ sceneType:'bedroom_selfie', poseValue:'armchair-sit-lean-back' });
+  assert.deepEqual(furnitureKinds(bed.prompt),['bed']);
+  assert.deepEqual(furnitureKinds(floor.prompt),['generic']);
+  assert.deepEqual(furnitureKinds(armchair.prompt),['armchair']);
+});
+
+test('missing and unmapped poses preserve legacy furniture behavior', () => {
+  const missing=generateImagePrompt({ sceneType:'office_selfie', location:'saudi_office' });
+  const unknown=generateImagePrompt({ sceneType:'office_selfie', location:'saudi_office', poseValue:'future_pose_value' });
+  const mirrorSeated=generateImagePrompt({ sceneType:'bedroom_mirror_selfie', poseValue:'mirror_seated' });
+  const thirdSeated=generateImagePrompt({ sceneType:'third_person_portrait', location:'saudi_office', poseValue:'third_seated_relaxed' });
+  assert.deepEqual(furnitureKinds(missing.prompt),['chair','desk']);
+  assert.deepEqual(furnitureKinds(unknown.prompt),['chair','desk']);
+  assert.deepEqual(furnitureKinds(mirrorSeated.prompt),['bed']);
+  assert.deepEqual(furnitureKinds(thirdSeated.prompt),['chair','desk']);
+});
+
+test('pose-aware furniture keeps the 23-section schema and validation', () => {
+  for(const input of [
+    { sceneType:'office_selfie', location:'saudi_office', poseValue:'standing_relaxed' },
+    { sceneType:'bedroom_selfie', poseValue:'armchair-sit-feet-floor' },
+    { sceneType:'majlis_selfie', location:'modern_saudi_majlis', poseValue:'seated_sofa' }
+  ]){
+    const result=generateImagePrompt(input);
+    assert.equal(result.sections.length,23);
+    assert.equal(result.validation.valid,true,result.validation.errors.join(' | '));
+  }
+});
+
+test('furniture geometry field verification matrix covers ten pose-aware cases', () => {
+  const cases=[
+    ['office-chair','office_selfie','saudi_office','seated_chair',['chair','desk'],['chair']],
+    ['office-standing','office_selfie','saudi_office','standing_relaxed',['chair','desk'],['generic']],
+    ['desk-work-chair','desk_work_selfie','saudi_office','seated_chair',['table','desk'],['chair','desk']],
+    ['majlis-sofa','majlis_selfie','modern_saudi_majlis','seated_sofa',['sofa'],['sofa']],
+    ['majlis-chair','majlis_selfie','modern_saudi_majlis','seated_chair',['sofa'],['chair']],
+    ['cafe-standing','cafe_selfie','saudi_cafe','standing_relaxed',['table','counter'],['generic']],
+    ['bedroom-bed','bedroom_selfie','', 'bed-lying-back',['bed'],['bed']],
+    ['bedroom-floor','bedroom_selfie','', 'bedroom-floor-cross',['bed'],['generic']],
+    ['bedroom-armchair','bedroom_selfie','', 'armchair-sit-lean-back',['bed'],['armchair']],
+    ['office-unknown','office_selfie','saudi_office','future_pose_value',['chair','desk'],['chair','desk']]
+  ];
+  for(const [name,sceneType,location,poseValue,before,after] of cases){
+    const result=generateImagePrompt({ sceneType,location,poseValue });
+    assert.deepEqual(furnitureKinds(result.prompt),after,name);
+    assert.equal(result.sections.length,23,name);
+    assert.equal(result.validation.valid,true,`${name}: ${result.validation.errors.join(' | ')}`);
+    console.log(`FURNITURE_FIELD ${JSON.stringify({name,sceneType,poseValue,before,after})}`);
+  }
 });
 
 test('bedroom prompt contains furniture geometry rule', () => {

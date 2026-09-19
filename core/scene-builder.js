@@ -338,7 +338,9 @@ export const POSE_HAND_USAGE = Object.freeze({
   'bedroom-mirror-seated':0,
   // Mirror poses mirror bedroom-mirror equivalents
   // but use underscore keys.
-  mirror_standing_relaxed:0, mirror_one_hand_pocket:1, mirror_adjust_clothing:1, mirror_seated:0, mirror_full_length:0
+  mirror_standing_relaxed:0, mirror_one_hand_pocket:1, mirror_adjust_clothing:1, mirror_seated:0, mirror_full_length:0,
+  third_standing_relaxed:0, third_seated_relaxed:0, third_walking_candid:0, third_lean_wall:0,
+  third_one_hand_pocket:1, third_interaction:1
 });
 
 const HAND_INTERACTION_HAND_USAGE = Object.freeze({
@@ -391,7 +393,10 @@ export function getRemainingHands(sceneType, captureType, primaryProp = 'none', 
   const captureHands = getHandBudgetForScene(captureType);
   const poseHandUsage = POSE_HAND_USAGE[pose] || 0;
   const interactionHandUsage = HAND_INTERACTION_HAND_USAGE[handInteraction] || 0;
-  const availableHands = Math.max(0, captureHands - poseHandUsage - interactionHandUsage), primaryPropUsage = primaryProp && primaryProp !== 'none' ? getPropHandUsage(primaryProp, availableHands) : 0;
+  const availableHands = Math.max(0, captureHands - poseHandUsage - interactionHandUsage);
+  const primaryPropUsage = primaryProp && primaryProp !== 'none'
+    ? getPropHandUsage(primaryProp, availableHands)
+    : 0;
   return Math.max(0, availableHands - primaryPropUsage);
 }
 

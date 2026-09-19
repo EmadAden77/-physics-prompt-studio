@@ -310,7 +310,7 @@ export function generateImagePrompt(input={}){
   const secondaryProp=secondaryCandidate && secondaryCandidate.grip!=='two-hands' && getPropHandUsage(secondaryCandidate,remainingAfterPrimary)<=remainingAfterPrimary
     ? secondaryCandidate
     : undefined;
-  const propPrompt=(prop,hands)=>!prop ? 'none' : prop.grip==='one-or-two-hands' ? `${prop.prompt}. Ignore the hand-count alternatives in the prop description: for this capture, use exactly ${hands>=2?'two hands':'one hand'}.` : prop.prompt;
+  const propPrompt=(prop,hands)=>!prop ? 'none' : prop.grip==='one-or-two-hands' ? `${prop.prompt}. Ignore the hand-count alternatives in the prop description: for this capture, use exactly ${hands>=2?'two hands':'one hand'}` : prop.prompt;
   const packet=buildRealismPacket({
     sceneType:scene.value,requestedSceneType:requested,captureType:scene.capture,location,clothing,hairStyle:hair,expression:expression.prompt,angle:cameraGeometryText,lighting,description,
     aspectRatio:ratio.prompt,pose,poseValue,backgroundActivity:background.value,backgroundElements:backgroundElements(background,contextual,saudi),

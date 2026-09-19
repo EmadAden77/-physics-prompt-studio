@@ -50,7 +50,7 @@ const POSE_FURNITURE_SEMANTICS = Object.freeze({
   bed:new Set(['bed-lying-back','bed-lying-side','bed-lying-stomach','bed-reclining-headboard','bed-propped-pillows','bed-lying-partial','bed-lying-diagonal','bed-lying-reading','bed-lying-back-knees-bent','bed-sitting-cross','bed-sitting-edge','bed-sitting-back-wall','bed-sitting-legs-extended','bed-sitting-hugging-pillow','bed-sitting-sideways','bedroom-laptop-bed','bedroom-cup-bed','bedroom-book-bed','bedroom-nightstand-reach','bedroom-mirror-seated']),
   armchair:new Set(['armchair-sit-lean-back','armchair-sit-corner','armchair-sit-one-knee','armchair-sit-crossed','armchair-sit-feet-floor','bedroom-laptop-armchair','bedroom-tea-armchair']),
   sofa:new Set(['seated_sofa']), chair:new Set(['seated_chair']), counter:new Set(['lean_counter']),
-  none:new Set(['standing_relaxed','standing_one_hand','walking_slow','driver_seat','passenger_seat','bedroom-stand-relaxed','bedroom-floor-cross','bedroom-floor-back-wall','bedroom-floor-knee-up'])
+  none:new Set(['standing_relaxed','standing_one_hand','walking_slow','driver_seat','passenger_seat','door_open_car','bedroom-stand-relaxed','bedroom-floor-cross','bedroom-floor-back-wall','bedroom-floor-knee-up'])
 });
 function furnitureSemanticForPose(poseValue){ return Object.entries(POSE_FURNITURE_SEMANTICS).find(([,poses])=>poses.has(poseValue))?.[0] || ''; }
 
@@ -132,7 +132,7 @@ export const LOCATION_CATALOG = locationCatalog([
 ['طبيعة ورحلات','red_sea_beach','شاطئ البحر الأحمر','on a Saudi Red Sea beach with physically plausible shoreline, wet-sand reflectance, sea haze, wind, and ordinary recreational context',['standing_selfie','walking_selfie','outdoor_selfie','third_person_portrait','full_body_third_person','beach_corniche_selfie','wind_interactive_outdoor_scene','harsh_noon_outdoor_selfie','open_shade_outdoor_selfie']],
 ['طبيعة ورحلات','gulf_beach','شاطئ الخليج','on a Saudi Arabian Gulf beach with calm coastal water, humidity haze, realistic sand, shoreline reflections, and ordinary waterfront context',['standing_selfie','walking_selfie','outdoor_selfie','third_person_portrait','full_body_third_person','beach_corniche_selfie','wind_interactive_outdoor_scene','harsh_noon_outdoor_selfie','open_shade_outdoor_selfie']],
 ['طبيعة ورحلات','public_park','حديقة عامة','inside a Saudi public park with practical paths, benches, irrigation-aware landscaping, family-use context, and realistic lighting',['front_selfie','standing_selfie','seated_selfie','walking_selfie','outdoor_selfie','third_person_portrait','full_body_third_person','candid_third_person','family_group_selfie','crowd_light_background_scene']],
-['مجالس ومنازل','saudi_bedroom_livedin','غرفة نوم سعودية واقعية','inside a lived-in Saudi bedroom with a normal bed, slightly imperfect bedding, two bedside tables (one on each side of the bed), chargers, curtains, wardrobe surfaces, a few personal items, and ordinary residential proportions',['front_selfie','standing_selfie','seated_selfie','mirror_selfie','third_person_portrait','full_body_third_person','candid_third_person','home_interior_casual_selfie','mirror_bedroom_selfie','reclining_bed_selfie','lying_bed_selfie','phone_screen_only_selfie']],
+['مجالس ومنازل','saudi_bedroom_livedin','غرفة نوم سعودية واقعية','inside a lived-in Saudi bedroom with the bed against the left wall, one nightstand, sliding mirrored wardrobe doors on the right wall, fully closed black curtains across the back wall, a chest of drawers, wall-mounted air conditioning, glossy light tile flooring, a large central rug, scattered shoes, and ordinary signs of daily use',['front_selfie','standing_selfie','seated_selfie','mirror_selfie','third_person_portrait','full_body_third_person','candid_third_person','home_interior_casual_selfie','mirror_bedroom_selfie','reclining_bed_selfie','lying_bed_selfie','phone_screen_only_selfie']],
 ['مجالس ومنازل','apartment_living_room','صالة شقة سكنية','inside an ordinary Saudi apartment living room with realistically sized sofa seating, side tables, television wall, mixed household objects, slight furniture wear, and plausible circulation space',['front_selfie','standing_selfie','seated_selfie','mirror_selfie','third_person_portrait','full_body_third_person','candid_third_person','home_interior_casual_selfie','family_group_selfie']],
 ['مجالس ومنازل','family_dining_room','غرفة طعام منزلية','inside a Saudi family dining area with a practical dining table, mismatched small everyday items, chair spacing that allows movement, used table surfaces, and non-staged domestic context',['front_selfie','standing_selfie','seated_selfie','third_person_portrait','full_body_third_person','candid_third_person','family_group_selfie','third_person_dining_candid']],
 ['مجالس ومنازل','home_kitchen_breakfast','مطبخ منزلي وقت الفطور','inside a realistic Saudi home kitchen during an ordinary meal period, with countertops, cabinets, a few used cups or containers, practical appliances, subtle clutter, and believable working-space clearances',['front_selfie','standing_selfie','candid_third_person','home_kitchen_selfie','interaction_shot']],
@@ -698,23 +698,23 @@ export const CLOTHING_CATALOG = [
 ].map(normalizeClothingCatalogItem);
 
 export const BEDROOM_ANCHOR = Object.freeze({
-  room: 'A single fixed master bedroom, roughly 4m x 5m, with cream-painted walls, a large window with beige curtains on the RIGHT wall, a wooden door on the LEFT wall, and warm wooden flooring. This layout is locked and identical in every image.',
-  bed: 'A queen-size bed with a dark wooden frame and a beige tufted headboard, positioned against the BACK wall, centered, with two matching nightstands total, one on each side of the bed, one on the left and one on the right. The bed is always in the same position.',
-  wardrobe: 'A tall wooden wardrobe with three doors, positioned on the LEFT wall near the door, always in the same position.',
-  mirror: 'A full-length framed mirror attached to the wardrobe door, always visible when the camera faces the wardrobe side.',
-  armchair: 'A single upholstered armchair in the far RIGHT corner near the window, with a folded throw blanket on its backrest. It is a chair, not a sofa — no more than one adult can sit in it.',
-  nightstand: 'Two matching wooden nightstands on either side of the bed, each with a small lamp and one or two personal items.',
-  window: 'A large window on the RIGHT wall with beige curtains, always at the same position.',
-  rug: 'A rectangular rug (beige or grey) partially under the bed, extending toward the center of the room.',
-  fixed_layout_rule: 'IMPORTANT: This is a locked room layout. In every image, regardless of the pose, angle, or lighting, the bed is in the same position against the back wall, the wardrobe is on the left wall, the window is on the right wall, the armchair is in the far right corner, the mirror is on the wardrobe door, and the rug is partially under the bed. Do not move, add, remove, or duplicate any of these pieces. Do not change the wall colors, the flooring, or the curtain color. Do not add any new furniture.'
+  room: 'A single fixed master bedroom, roughly 4m x 5m, with cream-painted walls, a wooden door on the LEFT wall in its existing fixed position, crown molding, recessed ceiling spotlights, a wall-mounted split air conditioner, and glossy light-colored tile flooring. This layout is locked and identical in every image.',
+  bed: 'A queen-size bed with a dark tufted headboard, positioned against the LEFT wall, with exactly one nightstand on the bed’s left side. Never use the old two matching nightstands total arrangement. The bed and nightstand always remain in the same positions.',
+  wardrobe: 'A wide wardrobe with sliding mirrored or glass doors, positioned on the RIGHT wall and always kept in the same position.',
+  mirror: 'There is no separate framed mirror. Mirror reflections come only from the wardrobe’s sliding mirrored or reflective glass doors on the RIGHT wall, visible only when the camera faces them.',
+  dresser: 'A chest of drawers is positioned on the RIGHT side of the room near the wardrobe and remains fixed in place.',
+  nightstand: 'Exactly one nightstand exists, on the left side of the bed, with a small lamp or ordinary personal items. Do not add a second nightstand.',
+  curtains: 'Fully closed black curtains cover the BACK wall. No window is visible through or beside the curtains.',
+  rug: 'A large rug lies across the open center of the room on the glossy light tile floor, with realistic clearance from the fixed furniture.',
+  fixed_layout_rule: 'IMPORTANT: This is a locked room layout. In every image, regardless of pose, angle, lighting, or capture type, keep the bed on the left wall, the sliding mirrored wardrobe on the right wall, the closed black curtains on the back wall, the single left-side nightstand, the right-side chest of drawers, the wall-mounted air conditioner, crown molding, ceiling spotlights, glossy light tile flooring, and the large central rug in their fixed positions. Do not move, add, remove, or duplicate these elements. Do not add an armchair, a visible window, or a second nightstand. Camera framing may hide an element but must never relocate it.'
 });
 
 export const BEDROOM_CLUTTER_LEVELS = Object.freeze({
   clean: 'A neatly made bed with straight sheets, minimal items, no visible clutter.',
-  minimal: 'Slightly rumpled bedding, one folded towel on the armchair, a single mug on the nightstand.',
-  light: 'Slightly rumpled bedding, a charging cable on the nightstand, one mug, one open book, a folded throw on the armchair.',
-  moderate: 'Rumpled bedding, scattered pillows, a couple of mugs, an open book, folded clothes on the armchair, a phone charger on the floor, headphones on the nightstand.',
-  heavy: 'Heavily rumpled bedding, scattered pillows and blankets on the floor, clothes draped over the armchair, two mugs, plates, an open book, tangled chargers, headphones, a backpack on the floor, and visible personal items everywhere.'
+  minimal: 'Slightly rumpled bedding, a single mug on the lone left nightstand, and one pair of shoes placed casually near the central rug.',
+  light: 'Slightly rumpled bedding, a charging cable on the lone left nightstand, one mug, one open book on the chest of drawers, and one or two pairs of shoes near the rug edge.',
+  moderate: 'Rumpled bedding, scattered pillows, a couple of mugs, an open book and folded clothes on the chest of drawers, a phone charger on the floor, headphones on the lone left nightstand, and several casually scattered shoes near the central rug.',
+  heavy: 'Heavily rumpled bedding, scattered pillows and blankets on the floor, clothes resting on the bed edge or chest of drawers, two mugs, plates, an open book, tangled chargers, headphones, a backpack on the floor, several scattered shoes around the central rug, and visible personal items throughout the room.'
 });
 
 export const HOME_CLOTHING = [
@@ -794,6 +794,10 @@ export const BEDROOM_POSES = [
 { group:'جلوس على السرير', value:'bed-sitting-legs-extended', label:'جالس ومدد ساقيه', prompt:'seated on the bed with legs extended forward, back slightly reclined, phone at arm length', cameraHint:'front camera at eye level with legs extended forward' },
 { group:'جلوس على السرير', value:'bed-sitting-hugging-pillow', label:'جالس يحتضن وسادة', prompt:'sitting on the bed hugging a pillow against the chest, natural relaxed posture', cameraHint:'front camera at eye level, pillow visible in the frame lower area' },
 { group:'جلوس على السرير', value:'bed-sitting-sideways', label:'جالس جانبيًا على السرير', prompt:'sitting sideways on the bed edge with both feet grounded, torso mildly rotated toward the phone and visible mattress compression under the hips', cameraHint:'front camera at eye level while seated sideways on the bed edge' },
+// TODO-BEDROOM-POSES-COMPAT: These poses assume
+// armchair/window that no longer exist in the bedroom
+// anchor. If selected, prompt may contradict itself.
+// Follow-up PR should either remove or remap them.
 { group:'جلوس على الكرسي المفرد', value:'armchair-sit-lean-back', label:'متكئ على الكرسي المفرد', prompt:'seated in the bedroom armchair with back against the backrest, legs relaxed, natural cushion compression', cameraHint:'front camera at eye level while leaning back in the armchair' },
 { group:'جلوس على الكرسي المفرد', value:'armchair-sit-corner', label:'في زاوية الكرسي المفرد', prompt:'seated in the bedroom armchair with elbow resting on the armrest, natural asymmetric posture', cameraHint:'front camera at eye level in the armchair corner' },
 { group:'جلوس على الكرسي المفرد', value:'armchair-sit-one-knee', label:'على الكرسي المفرد بركبة مرفوعة', prompt:'seated in the bedroom armchair with one knee raised, foot planted, casual relaxed posture', cameraHint:'front camera at eye level with one knee raised' },

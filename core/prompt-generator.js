@@ -345,9 +345,9 @@ export function generateImagePrompt(input={}){
       `BED: ${BEDROOM_ANCHOR.bed}`,
       `WARDROBE: ${BEDROOM_ANCHOR.wardrobe}`,
       `MIRROR: ${BEDROOM_ANCHOR.mirror}`,
-      `ARMCHAIR: ${BEDROOM_ANCHOR.armchair}`,
+      `DRESSER: ${BEDROOM_ANCHOR.dresser}`,
       `NIGHTSTAND: ${BEDROOM_ANCHOR.nightstand}`,
-      `WINDOW: ${BEDROOM_ANCHOR.window}`,
+      `CURTAINS / BACK WALL: ${BEDROOM_ANCHOR.curtains}`,
       `RUG: ${BEDROOM_ANCHOR.rug}`,
       BEDROOM_ANCHOR.fixed_layout_rule
     ].join(' ');

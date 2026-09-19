@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { clothingForScene, clothingSceneCoherence, compatibleOptions, compatibilitySnapshot, locationsForScene, recommendedDefaults, resolveCompatibleValue, resolveContextAwareConstraints } from '../core/scene-compatibility.js';
-import { LOCATION_CATALOG, SAUDI_LOCATIONS, CLOTHING_CATALOG, HOME_CLOTHING, BEDROOM_POSES, BEDROOM_ANCHOR, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
+import { LOCATION_CATALOG, SAUDI_LOCATIONS, CLOTHING_CATALOG, HOME_CLOTHING, BEDROOM_POSES, BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
 import { CAMERA_PROFILES, FRAMING_OPTIONS, SCENE_TYPES, generateImagePrompt } from '../core/prompt-generator.js';
 import { baseSceneTypeFor, EXTRA_SCENE_TYPES } from '../core/scene-type-expansion.js';
 
@@ -282,7 +282,7 @@ test('recommended defaults switch camera and framing by capture type', () => {
 });
 
 test('BEDROOM_ANCHOR is complete', () => {
-  for (const key of ['room', 'bed', 'wardrobe', 'mirror', 'armchair', 'nightstand', 'window', 'rug', 'fixed_layout_rule']) {
+  for (const key of ['room', 'bed', 'wardrobe', 'mirror', 'dresser', 'nightstand', 'curtains', 'rug', 'fixed_layout_rule']) {
     assert.ok(BEDROOM_ANCHOR[key], `missing BEDROOM_ANCHOR.${key}`);
     assert.ok(BEDROOM_ANCHOR[key].length > 20, `${key} is too short`);
   }
@@ -315,14 +315,25 @@ test('bedroom scenes are only 3 and old bedroom/home-relaxation scenes are gone'
   for (const value of removed) assert.equal(sceneValues.has(value), false, `${value} still exists`);
 });
 
-test('every bedroom prompt contains the locked room anchor', () => {
+test('every bedroom prompt contains the rewritten locked room anchor', () => {
   for (const sceneType of ['bedroom_selfie', 'bedroom_mirror_selfie', 'bedroom_third_person']) {
     const result = generateImagePrompt({ sceneType });
     assert.match(result.prompt, /ROOM ANCHOR/i);
-    assert.match(result.prompt, /tufted headboard/i);
-    assert.match(result.prompt, /wooden wardrobe/i);
-    assert.match(result.prompt, /armchair/i);
+    assert.match(result.prompt, /bed[^.]*LEFT wall/i);
+    assert.match(result.prompt, /sliding mirrored or glass doors/i);
+    assert.match(result.prompt, /DRESSER:/i);
+    assert.match(result.prompt, /CURTAINS \/ BACK WALL:/i);
+    assert.match(result.prompt, /Fully closed black curtains/i);
+    assert.match(result.prompt, /Exactly one nightstand exists/i);
+    assert.match(result.prompt, /Do not add an armchair, a visible window, or a second nightstand/i);
+    assert.doesNotMatch(result.prompt, /ARMCHAIR:|WINDOW:/i);
     assert.match(result.prompt, /ROOM CLUTTER:/i);
+  }
+});
+
+test('bedroom clutter levels do not reintroduce armchair or window assumptions', () => {
+  for (const level of ['minimal', 'light', 'moderate', 'heavy']) {
+    assert.doesNotMatch(BEDROOM_CLUTTER_LEVELS[level], /armchair|window/i, level);
   }
 });
 

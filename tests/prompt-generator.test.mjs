@@ -300,6 +300,30 @@ test('camera distance can narrow a third-person profile without using framing as
   assert.notEqual(near, far);
 });
 
+test('field verification matrix generates ten valid prompts across lens contexts', () => {
+  const cases = [
+    ['car-xiaomi-medium',{ sceneType:'inside_car_selfie', camera:'xiaomi15_front', framing:'chest_up', cameraDistance:'50 cm' }],
+    ['car-iphone-close',{ sceneType:'inside_car_selfie', camera:'iphone15pm_front', framing:'close', cameraDistance:'45 cm' }],
+    ['mirror-rear-medium',{ sceneType:'mirror_selfie', camera:'smartphone_rear', framing:'three_quarter', cameraDistance:'1 m from the mirror' }],
+    ['mirror-xiaomi-medium',{ sceneType:'mirror_selfie', camera:'xiaomi15_front', framing:'waist_up', cameraDistance:'80 cm from the mirror' }],
+    ['outdoor-third-full',{ sceneType:'full_body_third_person', location:'an ordinary outdoor Saudi walkway', camera:'smartphone_rear', framing:'full_body', cameraDistance:'3 m' }],
+    ['outdoor-third-close',{ sceneType:'third_person_portrait', location:'an ordinary outdoor Saudi walkway', camera:'smartphone_rear', framing:'close', cameraDistance:'1 m' }],
+    ['cafe-generic-close',{ sceneType:'cafe_selfie', camera:'generic_front', framing:'close', cameraDistance:'45 cm' }],
+    ['cafe-xiaomi-medium',{ sceneType:'cafe_selfie', camera:'xiaomi15_front', framing:'waist_up', cameraDistance:'55 cm' }],
+    ['bedroom-xiaomi-medium',{ sceneType:'bedroom_selfie', camera:'xiaomi15_front', framing:'chest_up', cameraDistance:'50 cm' }],
+    ['bedroom-mirror-rear-full',{ sceneType:'bedroom_mirror_selfie', camera:'smartphone_rear', framing:'full_body', cameraDistance:'1.2 m from the mirror' }]
+  ];
+  for (const [name,input] of cases) {
+    const result = generateImagePrompt(input);
+    const lens = lensPhysics(result.prompt);
+    assert.equal(result.validation.valid, true, `${name}: ${result.validation.errors.join(' | ')}`);
+    assert.match(lens, /chromatic aberration/i, name);
+    assert.match(lens, /vignetting/i, name);
+    assert.match(lens, /barrel distortion/i, name);
+    console.log(`LENS_FIELD ${JSON.stringify({ name, lens })}`);
+  }
+});
+
 test('negatives include anti-AI-tell bans', () => {
   const result = generateImagePrompt({ sceneType: 'front_selfie' });
   const negativeSection = result.prompt.split('[NEGATIVE CONSTRAINTS]')[1]?.split('[FINAL VERIFICATION]')[0] || '';

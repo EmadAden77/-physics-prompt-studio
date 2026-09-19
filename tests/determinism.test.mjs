@@ -84,7 +84,10 @@ test('normalizeSeed clamps invalid and out-of-range values', () => {
   assert.equal(normalizeSeed(1000000), 999999);
 });
 
-test('newSeed uses crypto.getRandomValues and maps into the supported range', (t) => {
+// Intentional determinism exception:
+// crypto.getRandomValues() is allowed only to create a new user-requested seed.
+// Once a seed is fixed, scene generation must remain fully deterministic.
+test('newSeed intentionally uses crypto.getRandomValues only to create a user-requested seed', (t) => {
   const sourceValue = 1234567890;
   const mockedGetRandomValues = t.mock.method(globalThis.crypto, 'getRandomValues', (buffer) => {
     buffer[0] = sourceValue;
@@ -96,6 +99,20 @@ test('newSeed uses crypto.getRandomValues and maps into the supported range', (t
   assert.ok(seed >= 1 && seed <= 999999);
   assert.equal(mockedGetRandomValues.mock.callCount(), 1);
   assert.equal(mockedGetRandomValues.mock.calls[0].arguments[0] instanceof Uint32Array, true);
+});
+
+test('newSeed entropy does not affect fixed-seed scene generation', async (t) => {
+  const before = await randomizeWithSeed(42, testEnvironment());
+  const mockedGetRandomValues = t.mock.method(globalThis.crypto, 'getRandomValues', (buffer) => {
+    buffer[0] = 987654321;
+    return buffer;
+  });
+
+  newSeed();
+  const after = await randomizeWithSeed(42, testEnvironment());
+
+  assert.deepEqual(after, before);
+  assert.equal(mockedGetRandomValues.mock.callCount(), 1);
 });
 
 test('new scene button persists the visible seed input without Math.random', () => {

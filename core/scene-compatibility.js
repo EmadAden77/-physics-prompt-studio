@@ -94,6 +94,8 @@ export function clothingForScene(_sceneType, baseOptions = []) {
   });
 }
 
+// Manual clothing mismatches are warning-by-design: preserve the user's explicit selection and report context only.
+// Do not auto-replace manual clothing or promote this warning to a validation failure.
 export function clothingSceneCoherence(clothingValue, sceneType) {
   const value = String(clothingValue || '').trim();
   if (!value || value === 'custom') return null;

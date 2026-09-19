@@ -310,11 +310,21 @@ export function generateImagePrompt(input={}){
   const secondaryProp=secondaryCandidate && secondaryCandidate.grip!=='two-hands' && getPropHandUsage(secondaryCandidate,remainingAfterPrimary)<=remainingAfterPrimary
     ? secondaryCandidate
     : undefined;
-  const propPrompt=(prop,hands)=>!prop ? 'none' : prop.grip==='one-or-two-hands' ? `${prop.prompt}. Ignore the hand-count alternatives in the prop description: for this capture, use exactly ${hands>=2?'two hands':'one hand'}` : prop.prompt;
+  const propPrompt=(prop,hands)=>{
+    if(!prop) return 'none';
+    if(prop.grip!=='one-or-two-hands') return prop.prompt;
+    return `${prop.prompt}. Ignore the hand-count alternatives in the prop description: for this capture, use exactly ${hands>=2?'two hands':'one hand'}`;
+  };
+  const heldPropHands=getPropHandUsage(
+    heldProp,
+    getRemainingHands(requested,scene.capture,'none',poseValue,effectiveHandInteraction)
+  );
+  const secondaryPropHands=getPropHandUsage(secondaryProp,remainingAfterPrimary);
   const packet=buildRealismPacket({
     sceneType:scene.value,requestedSceneType:requested,captureType:scene.capture,location,clothing,hairStyle:hair,expression:expression.prompt,angle:cameraGeometryText,lighting,description,
     aspectRatio:ratio.prompt,pose,poseValue,backgroundActivity:background.value,backgroundElements:backgroundElements(background,contextual,saudi),
-    heldProp:propPrompt(heldProp,getPropHandUsage(heldProp,getRemainingHands(requested,scene.capture,'none',poseValue,effectiveHandInteraction))),secondaryProp:propPrompt(secondaryProp,getPropHandUsage(secondaryProp,remainingAfterPrimary))
+    heldProp:propPrompt(heldProp,heldPropHands),
+    secondaryProp:propPrompt(secondaryProp,secondaryPropHands)
   });
   packet.accessories.device=captureDeviceRule(scene.capture);
   const guidance=renderRealismGuidance(packet);

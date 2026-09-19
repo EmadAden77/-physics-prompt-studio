@@ -147,6 +147,30 @@ function geometryRules(scene,camera,framing,angle,distance){
   const d = clean(distance) || (scene.capture.includes('selfie') ? 'natural arm-reach distance, approximately 40–60 cm unless the selected angle requires a minor physically plausible adjustment' : 'a natural third-person smartphone shooting distance appropriate to the framing');
   return `${camera.prompt}. ${scene.framing}. ${framing.prompt}. ${angle || 'Use a natural eye-level or slightly off-axis camera angle.'} Camera distance: ${d}. Preserve realistic wide-angle perspective and human scale; no impossible camera placement.`;
 }
+export function resolveLensPhysics({ scene = '', captureType = '', camera = '', framing = '', cameraDistance = '' } = {}) {
+  const sceneValue = clean(typeof scene === 'string' ? scene : scene?.value).toLowerCase();
+  const capture = clean(captureType || (typeof scene === 'object' ? scene?.capture : '')).toLowerCase();
+  const cameraValue = clean(typeof camera === 'string' ? camera : camera?.value).toLowerCase();
+  const frame = clean(typeof framing === 'string' ? framing : framing?.value).toLowerCase();
+  const distance = clean(cameraDistance).toLowerCase();
+  const mirror = capture.includes('mirror') || sceneValue.includes('mirror');
+  const thirdPerson = capture.includes('third-person');
+  const nearThirdPerson = thirdPerson && /(?:close|near|\b0\.\d+\s*m\b|\b1(?:\.\d+)?\s*m\b)/.test(distance);
+  let focal = 24, fov = 84, distortion = '1.5-2.5%', vignette = '8-12%';
+  if (thirdPerson) {
+    [focal, fov, distortion, vignette] = nearThirdPerson ? [26, 80, '1-1.5%', '6-10%'] : [28, 75, '0.5-1%', '4-8%'];
+  } else if (mirror && cameraValue === 'smartphone_rear') {
+    [focal, fov, distortion, vignette] = [26, 80, '1-1.5%', '6-10%'];
+  } else if (cameraValue === 'xiaomi15_front') {
+    [focal, fov, distortion, vignette] = [23, 86, '2-3%', '10-15%'];
+  } else if (cameraValue === 'smartphone_rear') {
+    [focal, fov, distortion, vignette] = [26, 80, '1-1.5%', '6-10%'];
+  }
+  const edge = frame === 'close' ? 'Close framing may crop some outer-edge falloff, so keep visible vignetting near the low end of that range.' : frame === 'full_body' ? 'Full-body framing retains more of the image circle, so keep the full natural edge falloff visible without exaggeration.' : 'Keep edge falloff gradual and non-decorative.';
+  const flare = thirdPerson ? 'Keep lens flare and ghosting minimal and only when a bright source is actually in or near the frame.' : mirror ? 'Allow only restrained off-axis lens flare and ghosting when a bright source is actually in or near the frame.' : 'Preserve natural lens flare and ghosting only when a bright source is actually in or near the frame.';
+  return `LENS PHYSICS (mandatory): Use an approximately ${focal}mm-equivalent smartphone field of view (~${fov}° diagonal). Preserve mild lateral chromatic aberration on high-contrast edges near frame corners. Preserve approximately ${distortion} barrel distortion appropriate to this optical profile. Preserve mild vignetting with roughly ${vignette} corner falloff relative to center. ${edge} ${flare} Do not add artificial or decorative lens effects.`;
+}
+
 function backgroundRules(background,contextual,saudi){
   if (contextual.privateContext || background.value === 'quiet') return 'no background people; no other people appear in this frame. Preserve only context-appropriate environmental detail and ordinary objects.';
   if (background.value === 'normal') return 'ordinary background activity with 1-2 independently behaving background people where people are contextually appropriate, kept secondary to the subject.';
@@ -319,7 +343,7 @@ export function generateImagePrompt(input={}){
     section('MIRROR RULES',mirrorSection), section('PRODUCT INTEGRATION',productText),
     section('PHYSICAL / MATERIAL REALISM',`${realism.prompt}. Enforce correct human anatomy; realistic neck, shoulder, arm, hand and finger structure; natural weight distribution; correct support and contact deformation; coherent gravity; realistic cloth drape and seam tension; material-specific reflectance; physically consistent reflections; and scene-specific scale.`),
     section('SMARTPHONE IMAGE BEHAVIOR','Use broad smartphone focus, restrained computational sharpening, realistic local contrast, modest dynamic range, plausible white balance, mild sensor/noise-reduction texture in darker areas, and natural clipping of strong practical lights when appropriate.'),
-    section('LENS_PHYSICS','LENS PHYSICS (mandatory): Preserve mild lateral chromatic aberration on high-contrast edges, visible as faint color fringing near frame corners. Preserve mild vignetting consistent with a wide smartphone lens, corners 15-20% darker than center. Preserve 2-3% barrel distortion typical of a 23mm-equivalent smartphone wide-angle lens. Preserve natural lens flare and ghosting only when a bright source is in or near the frame. Do not add artificial or decorative lens effects.'),
+    section('LENS_PHYSICS',resolveLensPhysics({ scene:requested, captureType:scene.capture, camera, framing, cameraDistance:input.cameraDistance })),
     section('BIOLOGICAL_MICRO_REALISM','BIOLOGICAL MICRO-REALISM (mandatory, apply only where resolvable): Preserve visible skin pores with non-uniform spatial distribution. Preserve fine vellus facial hair where the visible cheek, temple or jaw region is close enough and lit enough to register such detail. Preserve 5-12 stray hairs near the silhouette or hairline of the visible hair mass. Preserve source-consistent corneal reflections showing the actual scene. Preserve slight natural asymmetry in eyebrows, eyelids and jawline. Preserve individual fabric fibers visible at realistic viewing distance. Do not beautify, smooth, symmetrize or sterilize. If a region is cropped, occluded, too dark, too soft, too distant or out of focus, do not invent micro-detail merely to satisfy this section.'),
     section('CAMERA_METADATA_HINT',metadata(camera)),
     section('AUTHENTIC IMPERFECTIONS',`${guidance.imperfections}\n${CAPTURE_IMPERFECTIONS}`),

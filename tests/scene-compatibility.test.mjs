@@ -445,5 +445,6 @@ test('clothing coherence warning is context-only and never a validation error', 
 test('23 sections are preserved with persistent clothing warnings', () => {
   const result = generateImagePrompt({ sceneType:'bedroom_selfie', clothing:'white_thobe' });
   assert.equal(result.sections.length, 23);
+  assert.equal(result.config.clothing, 'white_thobe');
   assert.ok(result.config.context_warnings.some((warning) => /غرفة النوم/i.test(warning)));
 });

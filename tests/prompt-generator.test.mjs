@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateImagePrompt, validateGeneratedPrompt, validateRealism } from '../core/prompt-generator.js';
 import { CLOTHING_CATALOG, HOME_CLOTHING, CLOTHING_STYLING, HAND_INTERACTIONS, HAND_PROPS, LIGHTING_PROFILES, POSE_HAND_USAGE, getAvailableProps, getRemainingHands } from '../core/scene-builder.js';
-import { MIRROR_POSES } from '../core/scene-compatibility.js';
+import { MIRROR_POSES, THIRD_PERSON_POSES } from '../core/scene-compatibility.js';
 import { buildRealismPacket } from '../core/realistic-image-generator.js';
 
 const canonical = [
@@ -1128,6 +1128,105 @@ test('flexible grip field matrix covers ten cases and preserves the 23-section s
     assert.equal(result.sections.length,23,name);
     assert.equal(result.validation.valid,true,`${name}: ${result.validation.errors.join(' | ')}`);
     console.log(`FLEX_GRIP_FIELD ${JSON.stringify({name,scene:input.sceneType,pose:input.poseValue||'',prop:input.heldProp,secondary:input.secondaryProp||'none',before,after})}`);
+  }
+});
+
+test('third-person poses have explicit hand-usage entries with expected values', () => {
+  const expected = {
+    third_standing_relaxed:0,
+    third_seated_relaxed:0,
+    third_walking_candid:0,
+    third_lean_wall:0,
+    third_one_hand_pocket:1,
+    third_interaction:1
+  };
+  assert.deepEqual(THIRD_PERSON_POSES.map(({ value }) => [value, POSE_HAND_USAGE[value]]), Object.entries(expected));
+});
+
+test('third one-hand-pocket pose prevents primary plus secondary from creating a third hand', () => {
+  const result=generateImagePrompt({
+    sceneType:'third_person_portrait',
+    location:'saudi_office',
+    poseValue:'third_one_hand_pocket',
+    heldProp:'iphone-15-pro-black',
+    secondaryProp:'pen-fountain'
+  });
+  assert.equal(result.config.held_prop,'iphone-15-pro-black');
+  assert.equal(result.config.secondary_prop,'none');
+  assert.match(result.prompt,/iPhone 15 Pro/i);
+  assert.doesNotMatch(result.prompt,/fountain pen/i);
+  assert.equal(result.sections.length,23);
+});
+
+test('third interaction pose consumes one hand and stacks with a separate hand interaction', () => {
+  const collared=CLOTHING_CATALOG.find((item)=>item.garmentTags.includes('collared'));
+  assert.ok(collared);
+  const poseOnly=generateImagePrompt({
+    sceneType:'third_person_portrait',
+    location:'saudi_office',
+    poseValue:'third_interaction',
+    clothing:collared.prompt,
+    heldProp:'ipad-pro-13'
+  });
+  assert.equal(poseOnly.config.held_prop,'ipad-pro-13');
+  assert.match(poseOnly.prompt,/hand-count alternatives[^\n]*exactly one hand/i);
+
+  const stacked=generateImagePrompt({
+    sceneType:'third_person_portrait',
+    location:'saudi_office',
+    poseValue:'third_interaction',
+    clothing:collared.prompt,
+    handInteraction:'adjust-collar',
+    heldProp:'ipad-pro-13'
+  });
+  assert.equal(stacked.config.held_prop,'none');
+  assert.doesNotMatch(stacked.prompt,/13-inch iPad Pro/i);
+  assert.match(stacked.prompt,/Fingers hooked inside the collar/i);
+});
+
+test('zero-use third standing pose keeps both hands available for a flexible prop', () => {
+  const result=generateImagePrompt({
+    sceneType:'third_person_portrait',
+    location:'saudi_office',
+    poseValue:'third_standing_relaxed',
+    heldProp:'ipad-pro-13'
+  });
+  assert.equal(result.config.held_prop,'ipad-pro-13');
+  assert.match(result.prompt,/hand-count alternatives[^\n]*exactly two hands/i);
+  assert.equal(result.sections.length,23);
+  assert.equal(result.validation.valid,true,result.validation.errors.join(' | '));
+});
+
+test('all six third-person poses generate valid 23-section prompts with correct hand budgets', () => {
+  const fieldCases={
+    third_standing_relaxed:{ heldProp:'ipad-pro-13', expectedHeld:'ipad-pro-13', expectedRemaining:0, clause:/exactly two hands/i },
+    third_seated_relaxed:{ heldProp:'iphone-15-pro-black', expectedHeld:'iphone-15-pro-black', expectedRemaining:1 },
+    third_walking_candid:{ heldProp:'iphone-15-pro-black', expectedHeld:'iphone-15-pro-black', expectedRemaining:1 },
+    third_lean_wall:{ heldProp:'ipad-pro-13', expectedHeld:'ipad-pro-13', expectedRemaining:0, clause:/exactly two hands/i },
+    third_one_hand_pocket:{ heldProp:'iphone-15-pro-black', secondaryProp:'pen-fountain', expectedHeld:'iphone-15-pro-black', expectedSecondary:'none', expectedRemaining:0 },
+    third_interaction:{ heldProp:'ipad-pro-13', expectedHeld:'ipad-pro-13', expectedRemaining:0, clause:/exactly one hand/i }
+  };
+  for(const pose of THIRD_PERSON_POSES){
+    const expected=fieldCases[pose.value];
+    assert.ok(expected,pose.value);
+    const result=generateImagePrompt({
+      sceneType:'third_person_portrait',
+      location:'saudi_office',
+      poseValue:pose.value,
+      heldProp:expected.heldProp,
+      secondaryProp:expected.secondaryProp
+    });
+    assert.equal(result.config.held_prop,expected.expectedHeld,pose.value);
+    if(expected.expectedSecondary) assert.equal(result.config.secondary_prop,expected.expectedSecondary,pose.value);
+    if(expected.clause) assert.match(result.prompt,expected.clause,pose.value);
+    assert.equal(
+      getRemainingHands('third_person_portrait','third-person smartphone photograph',result.config.held_prop,pose.value),
+      expected.expectedRemaining,
+      pose.value
+    );
+    assert.equal(result.sections.length,23,pose.value);
+    assert.equal(result.validation.valid,true,pose.value + ': ' + result.validation.errors.join(' | '));
+    console.log(`THIRD_HAND_FIELD ${JSON.stringify({pose:pose.value,held:result.config.held_prop,secondary:result.config.secondary_prop,remaining:expected.expectedRemaining})}`);
   }
 });
 

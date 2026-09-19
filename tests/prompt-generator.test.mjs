@@ -22,6 +22,10 @@ function cameraGeometry(prompt) {
 function observableBackground(prompt) {
   return prompt.split('[OBSERVABLE BACKGROUND ELEMENTS]\n')[1].split('\n\n[CLOTHING]')[0];
 }
+function lensPhysics(prompt) {
+  return prompt.split('[LENS_PHYSICS]\n')[1].split('\n\n[BIOLOGICAL_MICRO_REALISM]')[0];
+}
+
 
 test('generates a complete prompt without free-form source text', () => {
   const result = generateImagePrompt();
@@ -245,6 +249,79 @@ test('realism sections include physical photographic language', () => {
   assert.match(result.prompt, /corneal reflections/i);
   assert.match(result.prompt, /stray hairs/i);
   assert.match(result.prompt, /vignetting/i);
+});
+
+test('lens physics profiles vary across representative scene and capture combinations', () => {
+  const cases = [
+    [{ sceneType:'inside_car_selfie', camera:'xiaomi15_front', framing:'chest_up', cameraDistance:'50 cm' }, /23mm-equivalent.*~86° diagonal.*2-3% barrel distortion.*10-15%/is],
+    [{ sceneType:'mirror_selfie', camera:'smartphone_rear', framing:'three_quarter', cameraDistance:'1 m from the mirror' }, /26mm-equivalent.*~80° diagonal.*1-1\.5% barrel distortion.*6-10%/is],
+    [{ sceneType:'full_body_third_person', camera:'smartphone_rear', framing:'full_body', cameraDistance:'3 m' }, /28mm-equivalent.*~75° diagonal.*0\.5-1% barrel distortion.*4-8%/is],
+    [{ sceneType:'cafe_selfie', camera:'generic_front', framing:'close', cameraDistance:'45 cm' }, /24mm-equivalent.*~84° diagonal.*1\.5-2\.5% barrel distortion.*8-12%/is],
+    [{ sceneType:'bedroom_selfie', camera:'xiaomi15_front', framing:'chest_up', cameraDistance:'50 cm' }, /23mm-equivalent.*~86° diagonal.*2-3% barrel distortion.*10-15%/is]
+  ];
+  for (const [input, expected] of cases) {
+    const result = generateImagePrompt(input);
+    const lens = lensPhysics(result.prompt);
+    assert.match(lens, expected);
+    for (const token of [/chromatic aberration/i, /vignetting/i, /barrel distortion/i]) assert.match(lens, token);
+    assert.equal(result.validation.valid, true, result.validation.errors.join(' | '));
+  }
+});
+
+test('car interior and rear-camera mirror selfie emit different lens physics', () => {
+  const car = lensPhysics(generateImagePrompt({ sceneType:'inside_car_selfie', camera:'xiaomi15_front', framing:'chest_up', cameraDistance:'50 cm' }).prompt);
+  const mirror = lensPhysics(generateImagePrompt({ sceneType:'mirror_selfie', camera:'smartphone_rear', framing:'three_quarter', cameraDistance:'1 m from the mirror' }).prompt);
+  assert.notEqual(car, mirror);
+});
+
+test('framing changes edge visibility wording without changing the focal profile', () => {
+  const base = { sceneType:'third_person_portrait', camera:'smartphone_rear', cameraDistance:'2.5 m' };
+  const close = lensPhysics(generateImagePrompt({ ...base, framing:'close' }).prompt);
+  const wide = lensPhysics(generateImagePrompt({ ...base, framing:'three_quarter' }).prompt);
+  assert.match(close, /28mm-equivalent.*~75° diagonal/is);
+  assert.match(wide, /28mm-equivalent.*~75° diagonal/is);
+  assert.match(close, /crop some outer-edge falloff/i);
+  assert.doesNotMatch(wide, /crop some outer-edge falloff/i);
+});
+
+test('Xiaomi front and smartphone rear remain distinct camera profiles', () => {
+  const front = lensPhysics(generateImagePrompt({ sceneType:'mirror_selfie', camera:'xiaomi15_front', framing:'waist_up' }).prompt);
+  const rear = lensPhysics(generateImagePrompt({ sceneType:'mirror_selfie', camera:'smartphone_rear', framing:'waist_up' }).prompt);
+  assert.match(front, /23mm-equivalent/i);
+  assert.match(rear, /26mm-equivalent/i);
+  assert.notEqual(front, rear);
+});
+
+test('camera distance can narrow a third-person profile without using framing as the cause', () => {
+  const near = lensPhysics(generateImagePrompt({ sceneType:'third_person_portrait', camera:'smartphone_rear', framing:'three_quarter', cameraDistance:'1 m' }).prompt);
+  const far = lensPhysics(generateImagePrompt({ sceneType:'third_person_portrait', camera:'smartphone_rear', framing:'three_quarter', cameraDistance:'3 m' }).prompt);
+  assert.match(near, /26mm-equivalent.*~80° diagonal/is);
+  assert.match(far, /28mm-equivalent.*~75° diagonal/is);
+  assert.notEqual(near, far);
+});
+
+test('field verification matrix generates ten valid prompts across lens contexts', () => {
+  const cases = [
+    ['car-xiaomi-medium',{ sceneType:'inside_car_selfie', camera:'xiaomi15_front', framing:'chest_up', cameraDistance:'50 cm' }],
+    ['car-iphone-close',{ sceneType:'inside_car_selfie', camera:'iphone15pm_front', framing:'close', cameraDistance:'45 cm' }],
+    ['mirror-rear-medium',{ sceneType:'mirror_selfie', camera:'smartphone_rear', framing:'three_quarter', cameraDistance:'1 m from the mirror' }],
+    ['mirror-xiaomi-medium',{ sceneType:'mirror_selfie', camera:'xiaomi15_front', framing:'waist_up', cameraDistance:'80 cm from the mirror' }],
+    ['outdoor-third-full',{ sceneType:'full_body_third_person', location:'an ordinary outdoor Saudi walkway', camera:'smartphone_rear', framing:'full_body', cameraDistance:'3 m' }],
+    ['outdoor-third-close',{ sceneType:'third_person_portrait', location:'an ordinary outdoor Saudi walkway', camera:'smartphone_rear', framing:'close', cameraDistance:'1 m' }],
+    ['cafe-generic-close',{ sceneType:'cafe_selfie', camera:'generic_front', framing:'close', cameraDistance:'45 cm' }],
+    ['cafe-xiaomi-medium',{ sceneType:'cafe_selfie', camera:'xiaomi15_front', framing:'waist_up', cameraDistance:'55 cm' }],
+    ['bedroom-xiaomi-medium',{ sceneType:'bedroom_selfie', camera:'xiaomi15_front', framing:'chest_up', cameraDistance:'50 cm' }],
+    ['bedroom-mirror-rear-full',{ sceneType:'bedroom_mirror_selfie', camera:'smartphone_rear', framing:'full_body', cameraDistance:'1.2 m from the mirror' }]
+  ];
+  for (const [name,input] of cases) {
+    const result = generateImagePrompt(input);
+    const lens = lensPhysics(result.prompt);
+    assert.equal(result.validation.valid, true, `${name}: ${result.validation.errors.join(' | ')}`);
+    assert.match(lens, /chromatic aberration/i, name);
+    assert.match(lens, /vignetting/i, name);
+    assert.match(lens, /barrel distortion/i, name);
+    console.log(`LENS_FIELD ${JSON.stringify({ name, lens })}`);
+  }
 });
 
 test('negatives include anti-AI-tell bans', () => {

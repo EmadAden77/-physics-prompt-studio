@@ -342,7 +342,7 @@ export function generateImagePrompt(input={}){
     const clutter=BEDROOM_CLUTTER_LEVELS[input.clutterLevel] || BEDROOM_CLUTTER_LEVELS.moderate;
     sceneText=`${sceneText} ${anchorText} ROOM CLUTTER: ${clutter}`;
   }
-  const furnitureRules=getFurnitureGeometryForScene(requested,location);
+  const furnitureRules=getFurnitureGeometryForScene(requested,location,poseValue);
   const furnitureText=furnitureRules.length ? `FURNITURE GEOMETRY: ${furnitureRules.join(' ')}` : '';
   sceneText=`${sceneText} ${furnitureText}`.trim();
 

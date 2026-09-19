@@ -194,14 +194,14 @@ function lightingRules(lighting,notes,realismLevel){
 }
 const METADATA_EXPOSURE=Object.freeze({
   midday:'approx. ISO 50-100, approx. 1/500-1/1000s',golden:'approx. ISO 100-200, approx. 1/250-1/500s',soft_day:'approx. ISO 100-250, approx. 1/125-1/250s',window_day:'approx. ISO 100-320, approx. 1/100-1/200s',
-  warm_indoor:'approx. ISO 400-800, approx. 1/60-1/100s',bright_indoor:'approx. ISO 200-500, approx. 1/100-1/125s',night:'approx. ISO 800-1600, approx. 1/30-1/60s',very_low:'approx. ISO 1600-3200, approx. 1/15-1/30s',
+  warm_indoor:'approx. ISO 400-800, approx. 1/60-1/100s',bright_indoor:'approx. ISO 200-500, approx. 1/100-1/125s',night:'approx. ISO 800-1600, approx. 1/30-1/60s',very_low:'approx. ISO 1600-3200, approx. 1/15-1/30s',flash:'approx. ISO 100-400, approx. 1/60-1/120s',
   indoor:'approx. ISO 200-800, approx. 1/60-1/125s',unknown:'plausible automatic ISO and shutter behavior appropriate to the available light; no exact EXIF values are asserted'
 });
 // At any future lighting profile addition, update this mapping.
 const LIGHTING_METADATA_CLASS=Object.freeze({
   day_direct_sun:'midday',day_open_shade:'soft_day',day_overcast:'soft_day',day_window:'window_day',golden_hour:'golden',blue_sky_noon:'midday',car_daylight:'window_day',
   supermarket_fluorescent:'bright_indoor',retail_ceiling_led:'bright_indoor',mixed_retail:'bright_indoor',night_led_street:'night',night_parking_led:'night',night_storefront:'night',night_gas_station:'night',night_corniche:'night',night_desert_vehicle:'night',
-  night_majlis_warm:'warm_indoor',night_cafe_mixed:'warm_indoor',night_office_led:'bright_indoor',night_home_warm:'warm_indoor',night_phone_screen:'very_low',night_car_practicals:'night',night_car_screen_only:'very_low',screen_flash_only:'very_low',phone_led_flash_only:'unknown',low_key_bedroom:'very_low'
+  night_majlis_warm:'warm_indoor',night_cafe_mixed:'warm_indoor',night_office_led:'bright_indoor',night_home_warm:'warm_indoor',night_phone_screen:'very_low',night_car_practicals:'night',night_car_screen_only:'very_low',screen_flash_only:'very_low',phone_led_flash_only:'flash',low_key_bedroom:'very_low'
 });
 function fallbackMetadataClass(lighting){
   const text=clean(lighting).toLowerCase();

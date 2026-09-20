@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateImagePrompt, validateGeneratedPrompt, validateRealism } from '../core/prompt-generator.js';
-import { CLOTHING_CATALOG, HOME_CLOTHING, CLOTHING_STYLING, HAND_INTERACTIONS, HAND_PROPS, LIGHTING_PROFILES, POSE_HAND_USAGE, getAvailableProps, getRemainingHands } from '../core/scene-builder.js';
+import { CLOTHING_CATALOG, HOME_CLOTHING, CLOTHING_STYLING, HAND_INTERACTIONS, HAND_PROPS, LIGHTING_PROFILES, POSE_HAND_USAGE, FURNITURE_GEOMETRY_RULES, MAJLIS_ANCHOR, getAvailableProps, getRemainingHands } from '../core/scene-builder.js';
 import { MIRROR_POSES, THIRD_PERSON_POSES } from '../core/scene-compatibility.js';
 import { buildRealismPacket } from '../core/realistic-image-generator.js';
 
@@ -38,7 +38,7 @@ function sceneSection(prompt) {
 }
 function furnitureKinds(prompt) {
   const scene=sceneSection(prompt);
-  const patterns={ sofa:/The sofa maintains/i, armchair:/The armchair is a single-seat/i, chair:/The chair has four legs/i, table:/The table has a continuous top/i, desk:/The desk has a flat working surface/i, bed:/The bed has a continuous frame/i, counter:/The counter is a continuous solid structure/i, generic:/All furniture maintains a coherent 3D structure/i };
+  const patterns={ sofa:/The sofa is a single discrete three-seat piece/i, armchair:/The armchair is a single discrete one-seat piece/i, chair:/The chair is a single discrete one-seat piece/i, table:/The table has a continuous top/i, desk:/The desk has a flat working surface/i, bed:/The bed has a continuous frame/i, counter:/The counter is a continuous solid structure/i, generic:/All furniture maintains a coherent 3D structure/i };
   return Object.entries(patterns).filter(([,pattern])=>pattern.test(scene)).map(([kind])=>kind);
 }
 
@@ -1412,6 +1412,82 @@ test('furniture geometry field verification matrix covers ten pose-aware cases',
   }
 });
 
+test('PR 10 seating physics regressions cover sofa chair and armchair', () => {
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /single discrete three-seat piece/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /three separate seat cushions/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /four square back cushions/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /pelvis visibly compresses/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /thighs align/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /independent from every background sofa or chair/i);
+
+  assert.match(FURNITURE_GEOMETRY_RULES.chair, /single discrete one-seat piece/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.chair, /two narrow flat armrests/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.chair, /all four feet contacting the floor/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.chair, /pelvis creates visible seat compression/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.chair, /thighs align with the seat plane/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.chair, /must not merge with a desk, sofa, wall, or background chair/i);
+
+  assert.match(FURNITURE_GEOMETRY_RULES.armchair, /single discrete one-seat piece/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.armchair, /two rounded padded armrests/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.armchair, /four short wooden legs/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.armchair, /pelvis visibly compresses/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.armchair, /back contacts the back cushion/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.armchair, /visually separate from every sofa and background chair/i);
+});
+
+test('PR 10 MAJLIS_ANCHOR is complete and frozen', () => {
+  assert.deepEqual(Object.keys(MAJLIS_ANCHOR), ['room','main_sofa','side_sofas','coffee_table','rug','tv_unit','decor','fixed_layout_rule']);
+  assert.equal(Object.isFrozen(MAJLIS_ANCHOR), true);
+  for(const key of Object.keys(MAJLIS_ANCHOR)) assert.ok(MAJLIS_ANCHOR[key].length > 20, key);
+});
+
+test('PR 10 modern majlis anchor injects for default and all majlis variants', () => {
+  const cases=[
+    ['majlis-default',{ sceneType:'majlis_selfie' }],
+    ['majlis-modern',{ sceneType:'majlis_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis' }],
+    ['majlis-standing',{ sceneType:'majlis_standing_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis' }],
+    ['majlis-seated',{ sceneType:'majlis_seated_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis' }]
+  ];
+  for(const [name,input] of cases){
+    const scene=sceneSection(generateImagePrompt(input).prompt);
+    assert.match(scene,/MAJLIS ANCHOR \(locked layout\)/i,name);
+    assert.match(scene,/MAIN SOFA:/i,name);
+    assert.match(scene,/SIDE SOFAS:/i,name);
+  }
+});
+
+test('PR 10 traditional majlis locations never receive the modern anchor', () => {
+  for(const location of ['traditional_majlis','traditional_saudi_majlis']){
+    const scene=sceneSection(generateImagePrompt({ sceneType:'majlis_selfie',location,locationValue:location }).prompt);
+    assert.doesNotMatch(scene,/MAJLIS ANCHOR \(locked layout\)/i,location);
+  }
+});
+
+test('PR 10 majlis anchor does not leak to living-room or office scenes', () => {
+  const controls=[
+    ['living-room',{ sceneType:'living_room_selfie',location:'villa_living_room',locationValue:'villa_living_room' }],
+    ['office',{ sceneType:'office_selfie',location:'saudi_office',locationValue:'saudi_office' }]
+  ];
+  for(const [name,input] of controls){
+    assert.doesNotMatch(sceneSection(generateImagePrompt(input).prompt),/MAJLIS ANCHOR \(locked layout\)/i,name);
+  }
+});
+
+test('PR 10 modern majlis prompts preserve 23 sections and validation', () => {
+  const cases=[
+    { sceneType:'majlis_selfie' },
+    { sceneType:'majlis_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis',poseValue:'seated_sofa' },
+    { sceneType:'majlis_standing_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis' },
+    { sceneType:'majlis_seated_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis',poseValue:'seated_sofa' }
+  ];
+  for(const input of cases){
+    const result=generateImagePrompt(input);
+    assert.equal(result.sections.length,23,input.sceneType);
+    assert.deepEqual(headings(result.prompt),canonical,input.sceneType);
+    assert.equal(result.validation.valid,true,`${input.sceneType}: ${result.validation.errors.join(' | ')}`);
+  }
+});
+
 test('bedroom prompt contains furniture geometry rule', () => {
   const result = generateImagePrompt({ sceneType: 'bedroom_selfie' });
   assert.match(result.prompt, /FURNITURE GEOMETRY/i);
@@ -1421,7 +1497,7 @@ test('bedroom prompt contains furniture geometry rule', () => {
 test('majlis prompt contains sofa geometry rule', () => {
   const result = generateImagePrompt({ sceneType: 'majlis_selfie', location: 'modern_saudi_majlis' });
   assert.match(result.prompt, /FURNITURE GEOMETRY/i);
-  assert.match(result.prompt, /sofa maintains a continuous/i);
+  assert.match(result.prompt, /sofa is a single discrete three-seat piece/i);
 });
 
 test('cafe prompt contains table geometry rule', () => {

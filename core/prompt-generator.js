@@ -155,13 +155,14 @@ export function resolveLensPhysics({ scene = '', captureType = '', camera = '', 
   const distance = clean(cameraDistance).toLowerCase();
   const mirror = capture.includes('mirror') || sceneValue.includes('mirror');
   const thirdPerson = capture.includes('third-person');
+  if (cameraValue === 'xiaomi15_front') {
+    return 'LENS PHYSICS (mandatory): Use the Xiaomi 15 Ultra front-camera optical profile: approximately 21mm-equivalent field of view (~90° diagonal). Preserve only mild residual optical imperfections that would plausibly remain after normal smartphone computational correction; do not force decorative barrel distortion, chromatic aberration, or vignetting.';
+  }
   const nearThirdPerson = thirdPerson && /(?:close|near|\b0\.\d+\s*m\b|\b1(?:\.\d+)?\s*m\b)/.test(distance);
   // Fallback profile is reserved for unknown or forward-compatible camera values.
   let focal = 24, fov = 84, distortion = '1.5-2.5%', vignette = '8-12%';
   if (thirdPerson) {
     [focal, fov, distortion, vignette] = nearThirdPerson ? [26, 80, '1-1.5%', '6-10%'] : [28, 75, '0.5-1%', '4-8%'];
-  } else if (cameraValue === 'xiaomi15_front') {
-    [focal, fov, distortion, vignette] = [23, 86, '2-3%', '10-15%'];
   } else if (cameraValue === 'iphone15pm_front' || cameraValue === 'generic_front') {
     [focal, fov, distortion, vignette] = [24, 84, '1.5-2.5%', '8-12%'];
   } else if (cameraValue === 'smartphone_rear') {
@@ -212,13 +213,14 @@ function fallbackMetadataClass(lighting){
   return 'unknown';
 }
 function resolveCameraMetadata(camera,lighting,lightingValue=''){
+  if(camera.value==='xiaomi15_front') return 'CAPTURE METADATA (for scene fidelity): Shot on the Xiaomi 15 Ultra front camera: 32MP front-camera behavior, approximately 21mm equivalent, f/2.0, ~90° FOV, handheld with automatic smartphone exposure appropriate to the actual available light.';
   const canonical=clean(lightingValue), exposure=METADATA_EXPOSURE[canonical ? (LIGHTING_METADATA_CLASS[canonical] || 'unknown') : fallbackMetadataClass(lighting)];
-  const capture=camera.value==='xiaomi15_front' ? 'Shot on Xiaomi 15 Ultra front camera, approximately 23mm equivalent, f/1.63-class smartphone capture behavior' : camera.value==='iphone15pm_front' ? 'Shot on iPhone 15 Pro Max front camera with a natural wide selfie field of view' : camera.value==='smartphone_rear' ? 'Shot on a modern smartphone rear camera with a natural wide field of view' : 'Shot on a modern smartphone front camera with a natural wide selfie field of view';
+  const capture=camera.value==='iphone15pm_front' ? 'Shot on iPhone 15 Pro Max front camera with a natural wide selfie field of view' : camera.value==='smartphone_rear' ? 'Shot on a modern smartphone rear camera with a natural wide field of view' : 'Shot on a modern smartphone front camera with a natural wide selfie field of view';
   return `CAPTURE METADATA (for scene fidelity): ${capture}, ${exposure}, handheld.`;
 }
 function negatives(scene){
   const capture = scene.capture.includes('third-person') ? 'selfie arm, implied subject-held camera' : scene.capture.includes('mirror') ? 'direct front-camera viewpoint outside the mirror, duplicate phone or hands' : 'third-person viewpoint, floating external camera, mirror capture unless explicitly selected';
-  return `Avoid: plastic skin, waxy or porcelain skin, face reconstruction, artificial symmetry, malformed hands, extra fingers, duplicated limbs, floating objects, impossible body support, incorrect contact shadows, melted textiles, melted fabric, floating clothes, deformed abs, impossible anatomy, morphing sofa, split furniture, merged furniture, disconnected armrest, two sofas merged, dotted upholstery, speckled fabric, checkered weave, grid-textured cushions, knitted-appearance upholstery, visible weft or thread pattern on seating, contrasting-thread weave, slub-like texture on sofa fabric, visible linen grain on upholstery, tufted upholstery, button-tufted cushions, quilted fabric, patterned upholstery, contrasting cushion fabrics, nail-head trim, decorative piping on seating, visible buttons on back cushions, furniture with disconnected legs, furniture floating above the ground, repeated background people, cloned props, impossible reflections, invisible artificial key lights, fake rim lights, excessive HDR, aggressive orange-teal grading, DSLR-style bokeh, over-sharpening, oversaturated skin, sterile showroom staging, generic static posing, advertisement-style product placement, artificial lens flare, beauty filtering, symmetric face, missing corneal reflections, uniform fabric without weave or fibers, deformed background people, fused background bodies, cloned background faces, floating background people, mis-scaled background humans, background people without ground contact, gibberish text, pseudo-Arabic script, garbled signs, English-only signage in Saudi scenes, fictional characters on signs. Capture-specific exclusions: ${capture}.`;
+  return `Avoid: plastic skin, waxy or porcelain skin, face reconstruction, artificial symmetry, malformed hands, extra fingers, duplicated limbs, floating objects, impossible body support, incorrect contact shadows, melted textiles, melted fabric, floating clothes, deformed abs, impossible anatomy, morphing sofa, split furniture, merged furniture, disconnected armrest, two sofas merged, dotted upholstery, speckled fabric, checkered weave, grid-textured cushions, knitted-appearance upholstery, visible weft or thread pattern on seating, contrasting-thread weave, slub-like texture on sofa fabric, visible linen grain on upholstery, tufted upholstery, button-tufted cushions, quilted fabric, patterned upholstery, contrasting cushion fabrics, nail-head trim, decorative piping on seating, visible buttons on back cushions, furniture with disconnected legs, furniture floating above the ground, repeated background people, cloned props, impossible reflections, invisible artificial key lights, fake rim lights, excessive HDR, aggressive orange-teal grading, DSLR-style bokeh, over-sharpening, oversaturated skin, sterile showroom staging, generic static posing, advertisement-style product placement, artificial lens flare, beauty filtering, symmetric face, missing corneal reflections, deformed background people, fused background bodies, cloned background faces, floating background people, mis-scaled background humans, background people without ground contact, gibberish text, pseudo-Arabic script, garbled signs, English-only signage in Saudi scenes, fictional characters on signs. Capture-specific exclusions: ${capture}.`;
 }
 function verification(scene,ratio,guidance){ return `Before finalizing, verify: capture type unmistakably matches “${scene.capture}”; the camera position is physically possible; anatomy and contacts are coherent; selected location, clothing, hair direction, pose, angle and lighting are visible and mutually compatible; lighting can be traced to plausible physical sources; materials respond differently according to their properties; background scale and requested activity level make sense; composition is ${ratio.prompt}; and the realism checklist is satisfied: ${guidance.consistency.replace(/^Before finalizing, verify:\s*/i,'')} If a secondary aesthetic choice conflicts with physical causality or capture geometry, preserve physical plausibility.`; }
 
@@ -363,13 +365,18 @@ export function generateImagePrompt(input={}){
   const isModernMajlisLocation=majlisLocationValue==='modern_saudi_majlis' || majlisLocation==='modern_saudi_majlis' || /modern.*saudi.*majlis/i.test(majlisLocation);
   const isDefaultModernMajlis=requested.startsWith('majlis_') && !majlisLocationValue && !majlisLocation;
   const modernMajlisAnchorEnabled=!isTraditionalMajlis && (isModernMajlisLocation || isDefaultModernMajlis);
+  const seatedMajlisSubject=/seated/i.test(requested) || /seated|sitting/i.test(poseValue);
   if(modernMajlisAnchorEnabled){
     const majlisAnchorText=[`MAJLIS ANCHOR (locked layout): ${MAJLIS_ANCHOR.room}`,`MAIN SOFA: ${MAJLIS_ANCHOR.main_sofa}`,`SIDE SOFAS: ${MAJLIS_ANCHOR.side_sofas}`,`COFFEE TABLE: ${MAJLIS_ANCHOR.coffee_table}`,`RUG: ${MAJLIS_ANCHOR.rug}`,`TV UNIT: ${MAJLIS_ANCHOR.tv_unit}`,`DECOR: ${MAJLIS_ANCHOR.decor}`,MAJLIS_ANCHOR.fixed_layout_rule].join(' ');
     sceneText=`${sceneText} ${majlisAnchorText}`;
+    if(seatedMajlisSubject) sceneText=`${sceneText} CRITICAL SUBJECT POSITION LOCK: The subject is seated on the CENTER seat of the long run of the main RIGHT-wall L-shaped sectional, never on either LEFT-wall single-seat sofa and never on the projecting return. The pelvis is centered over one seat cushion with localized compression directly beneath body weight.`;
   }
   const furnitureRules=getFurnitureGeometryForScene(requested,location,poseValue);
   const furnitureText=furnitureRules.length ? `FURNITURE GEOMETRY: ${furnitureRules.join(' ')}` : '';
   sceneText=`${sceneText} ${furnitureText}`.trim();
+  const effectiveFraming=modernMajlisAnchorEnabled && seatedMajlisSubject && framing.value==='chest_up'
+    ? { ...framing, prompt:'close head-and-upper-chest framing, never wider than mid-chest; the face remains the dominant visual subject while enough immediate environment remains visible to establish that the subject is seated indoors' }
+    : framing;
 
   const poseText=pose ? `${pose}. ` : '';
   const poseModifiers=[clothingStylingPrompt,handInteractionPrompt].filter(Boolean).join(' ');
@@ -383,12 +390,12 @@ export function generateImagePrompt(input={}){
     section('OBSERVABLE BACKGROUND ELEMENTS',backgroundText),
     section('CLOTHING',clothing),
     section('CONTEXTUAL ACCESSORIES',guidance.accessories), section('POSE & BODY MECHANICS',poseBody),
-    section('CAMERA GEOMETRY',geometryRules(scene,camera,framing,cameraGeometryText,input.cameraDistance,hasExplicitFraming)), section('PHYSICAL LIGHTING',lightingRules(lighting,input.lightingNotes,realism.value)),
+    section('CAMERA GEOMETRY',geometryRules(scene,camera,effectiveFraming,cameraGeometryText,input.cameraDistance,hasExplicitFraming)), section('PHYSICAL LIGHTING',lightingRules(lighting,input.lightingNotes,realism.value)),
     section('MIRROR RULES',mirrorSection), section('PRODUCT INTEGRATION',productText),
     section('PHYSICAL / MATERIAL REALISM',`${realism.prompt}. Enforce correct human anatomy; realistic neck, shoulder, arm, hand and finger structure; natural weight distribution; correct support and contact deformation; coherent gravity; realistic cloth drape and seam tension; material-specific reflectance; physically consistent reflections; and scene-specific scale.`),
     section('SMARTPHONE IMAGE BEHAVIOR','Use broad smartphone focus, restrained computational sharpening, realistic local contrast, modest dynamic range, plausible white balance, mild sensor/noise-reduction texture in darker areas, and natural clipping of strong practical lights when appropriate.'),
     section('LENS_PHYSICS',resolveLensPhysics({ scene:requested, captureType:scene.capture, camera, framing, cameraDistance:input.cameraDistance })),
-    section('BIOLOGICAL_MICRO_REALISM','BIOLOGICAL MICRO-REALISM (mandatory, apply only where resolvable): Preserve visible skin pores with non-uniform spatial distribution. Preserve fine vellus facial hair where the visible cheek, temple or jaw region is close enough and lit enough to register such detail. Preserve 5-12 stray hairs near the silhouette or hairline of the visible hair mass. Preserve source-consistent corneal reflections showing the actual scene. Preserve slight natural asymmetry in eyebrows, eyelids and jawline. Preserve individual fabric fibers visible at realistic viewing distance. Do not beautify, smooth, symmetrize or sterilize. If a region is cropped, occluded, too dark, too soft, too distant or out of focus, do not invent micro-detail merely to satisfy this section.'),
+    section('BIOLOGICAL_MICRO_REALISM','BIOLOGICAL MICRO-REALISM (mandatory, apply only where resolvable): Preserve visible skin pores with non-uniform spatial distribution. Preserve fine vellus facial hair where the visible cheek, temple or jaw region is close enough and lit enough to register such detail. Preserve 5-12 stray hairs near the silhouette or hairline of the visible hair mass. Preserve source-consistent corneal reflections showing the actual scene. Preserve slight natural asymmetry in eyebrows, eyelids and jawline. Preserve individual CLOTHING fibers only where genuinely resolvable at the captured distance. Do not force visible fibers, thread grids, slub texture, or weave patterns onto smooth upholstery or other materials whose surface specification explicitly forbids visible weave. Do not beautify, smooth, symmetrize or sterilize. If a region is cropped, occluded, too dark, too soft, too distant or out of focus, do not invent micro-detail merely to satisfy this section.'),
     section('CAMERA_METADATA_HINT',resolveCameraMetadata(camera,lighting,input.lightingValue)),
     section('AUTHENTIC IMPERFECTIONS',`${guidance.imperfections}\n${CAPTURE_IMPERFECTIONS}`),
     section('USER CONSTRAINTS',custom||'None.'), section('NEGATIVE CONSTRAINTS',negatives(scene)), section('FINAL VERIFICATION',verification(scene,ratio,guidance))

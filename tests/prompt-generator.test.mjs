@@ -38,7 +38,7 @@ function sceneSection(prompt) {
 }
 function furnitureKinds(prompt) {
   const scene=sceneSection(prompt);
-  const patterns={ sofa:/The sofa is a single discrete three-seat piece/i, armchair:/The armchair is a single discrete one-seat piece/i, chair:/The chair is a single discrete one-seat piece/i, table:/The table has a continuous top/i, desk:/The desk has a flat working surface/i, bed:/The bed has a continuous frame/i, counter:/The counter is a continuous solid structure/i, generic:/All furniture maintains a coherent 3D structure/i };
+  const patterns={ sofa:/The main sofa is ONE connected L-shaped sectional/i, armchair:/The armchair is a single discrete one-seat piece/i, chair:/The chair is a single discrete one-seat piece/i, table:/The table has a continuous top/i, desk:/The desk has a flat working surface/i, bed:/The bed has a continuous frame/i, counter:/The counter is a continuous solid structure/i, generic:/All furniture maintains a coherent 3D structure/i };
   return Object.entries(patterns).filter(([,pattern])=>pattern.test(scene)).map(([kind])=>kind);
 }
 
@@ -261,7 +261,7 @@ test('canonical lighting values map deterministically to metadata exposure class
   };
   assert.equal(LIGHTING_PROFILES.length,26);
   assert.deepEqual(new Set(LIGHTING_PROFILES.map((item)=>item.value)),new Set(Object.keys(expected)));
-  for (const profile of LIGHTING_PROFILES) assert.match(metadataSection(generateImagePrompt({ sceneType:'front_selfie', lighting:profile.prompt, lightingValue:profile.value }).prompt),patterns[expected[profile.value]],profile.value);
+  for (const profile of LIGHTING_PROFILES) assert.match(metadataSection(generateImagePrompt({ sceneType:'front_selfie', camera:'generic_front', lighting:profile.prompt, lightingValue:profile.value }).prompt),patterns[expected[profile.value]],profile.value);
 });
 
 test('phone LED flash uses the dedicated flash exposure range', () => {
@@ -269,12 +269,12 @@ test('phone LED flash uses the dedicated flash exposure range', () => {
   assert.match(metadata,/ISO 100-400.*1\/60-1\/120s/i);
 });
 
-test('Xiaomi midday and night metadata differ by lighting', () => {
+test('Xiaomi metadata uses the verified front-camera hardware profile and automatic exposure', () => {
   const midday=metadataSection(generateImagePrompt({ sceneType:'outdoor_selfie', camera:'xiaomi15_front', lightingValue:'blue_sky_noon', lighting:'strong high-elevation midday sun' }).prompt);
   const night=metadataSection(generateImagePrompt({ sceneType:'inside_car_selfie', camera:'xiaomi15_front', lightingValue:'night_car_practicals', lighting:'stationary car interior at night' }).prompt);
-  assert.notEqual(midday,night);
-  assert.match(midday,/ISO 50-100.*1\/500-1\/1000s/i);
-  assert.match(night,/ISO 800-1600.*1\/30-1\/60s/i);
+  assert.equal(midday,night);
+  assert.match(midday,/32MP.*21mm equivalent.*f\/2\.0.*~90° FOV.*automatic smartphone exposure/is);
+  assert.doesNotMatch(midday,/ISO \d/i);
 });
 
 test('free-text metadata fallback keeps explicit priority and does not treat car as night', () => {
@@ -285,15 +285,15 @@ test('free-text metadata fallback keeps explicit priority and does not treat car
     ['ordinary office fluorescent ceiling lighting',/ISO 200-800.*1\/60-1\/125s/i],
     ['ambiguous available light',/plausible automatic ISO and shutter behavior/i]
   ];
-  for(const [lighting,expected] of cases) assert.match(metadataSection(generateImagePrompt({ sceneType:'front_selfie', lighting }).prompt),expected,lighting);
-  const carDay=metadataSection(generateImagePrompt({ sceneType:'inside_car_selfie', lighting:'daylight through car windows' }).prompt);
+  for(const [lighting,expected] of cases) assert.match(metadataSection(generateImagePrompt({ sceneType:'front_selfie', camera:'generic_front', lighting }).prompt),expected,lighting);
+  const carDay=metadataSection(generateImagePrompt({ sceneType:'inside_car_selfie', camera:'generic_front', lighting:'daylight through car windows' }).prompt);
   assert.match(carDay,/ISO 200-800.*1\/60-1\/125s/i);
   assert.doesNotMatch(carDay,/ISO 800-1600.*1\/30-1\/60s/i);
 });
 
 test('unknown canonical lighting value never falls back to free-text classification', () => {
-  const unknownCanonical=metadataSection(generateImagePrompt({ sceneType:'outdoor_selfie', lighting:'direct midday sun outdoors', lightingValue:'future_unmapped_profile' }).prompt);
-  const missing=metadataSection(generateImagePrompt({ sceneType:'front_selfie' }).prompt);
+  const unknownCanonical=metadataSection(generateImagePrompt({ sceneType:'outdoor_selfie', camera:'generic_front', lighting:'direct midday sun outdoors', lightingValue:'future_unmapped_profile' }).prompt);
+  const missing=metadataSection(generateImagePrompt({ sceneType:'front_selfie', camera:'generic_front' }).prompt);
   for(const metadata of [unknownCanonical,missing]) {
     assert.match(metadata,/plausible automatic ISO and shutter behavior/i);
     assert.doesNotMatch(metadata,/ISO \d/i);
@@ -305,8 +305,13 @@ test('all camera types use lighting-consistent metadata without file references'
   for(const camera of cameras) {
     const day=metadataSection(generateImagePrompt({ sceneType:camera==='smartphone_rear'?'third_person_portrait':'outdoor_selfie', camera, lighting:'direct daytime sunlight', lightingValue:'day_direct_sun' }).prompt);
     const night=metadataSection(generateImagePrompt({ sceneType:camera==='smartphone_rear'?'third_person_portrait':'front_selfie', camera, lighting:'night scene with practical fixtures', lightingValue:'night_led_street' }).prompt);
-    assert.match(day,/ISO 50-100.*1\/500-1\/1000s/i,camera);
-    assert.match(night,/ISO 800-1600.*1\/30-1\/60s/i,camera);
+    if(camera==='xiaomi15_front'){
+      assert.match(day,/automatic smartphone exposure appropriate to the actual available light/i,camera);
+      assert.equal(day,night,camera);
+    } else {
+      assert.match(day,/ISO 50-100.*1\/500-1\/1000s/i,camera);
+      assert.match(night,/ISO 800-1600.*1\/30-1\/60s/i,camera);
+    }
     assert.doesNotMatch(day+night,/File reference|IMG_20250915_143022/i,camera);
   }
 });
@@ -356,11 +361,11 @@ test('realism sections include physical photographic language', () => {
 
 test('lens physics profiles vary across representative scene and capture combinations', () => {
   const cases = [
-    [{ sceneType:'inside_car_selfie', camera:'xiaomi15_front', framing:'chest_up', cameraDistance:'50 cm' }, /23mm-equivalent.*~86° diagonal.*2-3% barrel distortion.*10-15%/is],
+    [{ sceneType:'inside_car_selfie', camera:'xiaomi15_front', framing:'chest_up', cameraDistance:'50 cm' }, /Xiaomi 15 Ultra front-camera optical profile.*21mm-equivalent.*~90° diagonal.*mild residual optical imperfections/is],
     [{ sceneType:'mirror_selfie', camera:'smartphone_rear', framing:'three_quarter', cameraDistance:'1 m from the mirror' }, /26mm-equivalent.*~80° diagonal.*1-1\.5% barrel distortion.*6-10%/is],
     [{ sceneType:'full_body_third_person', camera:'smartphone_rear', framing:'full_body', cameraDistance:'3 m' }, /28mm-equivalent.*~75° diagonal.*0\.5-1% barrel distortion.*4-8%/is],
     [{ sceneType:'cafe_selfie', camera:'generic_front', framing:'close', cameraDistance:'45 cm' }, /24mm-equivalent.*~84° diagonal.*1\.5-2\.5% barrel distortion.*8-12%/is],
-    [{ sceneType:'bedroom_selfie', camera:'xiaomi15_front', framing:'chest_up', cameraDistance:'50 cm' }, /23mm-equivalent.*~86° diagonal.*2-3% barrel distortion.*10-15%/is]
+    [{ sceneType:'bedroom_selfie', camera:'xiaomi15_front', framing:'chest_up', cameraDistance:'50 cm' }, /Xiaomi 15 Ultra front-camera optical profile.*21mm-equivalent.*~90° diagonal.*mild residual optical imperfections/is]
   ];
   for (const [input, expected] of cases) {
     const result = generateImagePrompt(input);
@@ -390,7 +395,7 @@ test('framing changes edge visibility wording without changing the focal profile
 test('Xiaomi front and smartphone rear remain distinct camera profiles', () => {
   const front = lensPhysics(generateImagePrompt({ sceneType:'mirror_selfie', camera:'xiaomi15_front', framing:'waist_up' }).prompt);
   const rear = lensPhysics(generateImagePrompt({ sceneType:'mirror_selfie', camera:'smartphone_rear', framing:'waist_up' }).prompt);
-  assert.match(front, /23mm-equivalent/i);
+  assert.match(front, /21mm-equivalent/i);
   assert.match(rear, /26mm-equivalent/i);
   assert.notEqual(front, rear);
 });
@@ -1413,9 +1418,9 @@ test('furniture geometry field verification matrix covers ten pose-aware cases',
 });
 
 test('PR 10 seating physics regressions cover sofa chair and armchair', () => {
-  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /single discrete three-seat piece/i);
-  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /three separate seat cushions/i);
-  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /four square back cushions/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /ONE connected L-shaped sectional/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /long three-seat run/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /three distinct seat cushions/i);
   assert.match(FURNITURE_GEOMETRY_RULES.sofa, /When a subject is seated, the pelvis visibly compresses/i);
   assert.match(FURNITURE_GEOMETRY_RULES.sofa, /thighs align/i);
   assert.match(FURNITURE_GEOMETRY_RULES.sofa, /independent from every background sofa or chair/i);
@@ -1549,6 +1554,28 @@ test('PR 10 explicit modern majlis location drives anchor outside majlis scene p
   assert.equal(result.validation.valid,true,result.validation.errors.join(' | '));
 });
 
+
+test('PR 10 final patch keeps micro-realism fibers clothing-only', () => {
+  const result=generateImagePrompt({ sceneType:'majlis_seated_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis',poseValue:'seated_sofa' });
+  const biological=result.prompt.split('[BIOLOGICAL_MICRO_REALISM]\n')[1].split('\n\n[CAMERA_METADATA_HINT]')[0];
+  assert.match(biological,/CLOTHING fibers only/i);
+});
+
+test('PR 10 final patch removes the global uniform-fabric weave directive', () => {
+  const result=generateImagePrompt({ sceneType:'majlis_seated_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis',poseValue:'seated_sofa' });
+  const negatives=result.prompt.split('[NEGATIVE CONSTRAINTS]\n')[1].split('\n\n[FINAL VERIFICATION]')[0];
+  assert.doesNotMatch(negatives,/uniform fabric without weave or fibers/i);
+});
+
+test('PR 10 final patch defines the main sofa as an L-shaped sectional', () => {
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa,/L-shaped sectional/i);
+});
+
+test('PR 10 final patch uses the Xiaomi 21mm-equivalent lens profile', () => {
+  const lens=lensPhysics(generateImagePrompt({ sceneType:'majlis_seated_selfie',camera:'xiaomi15_front',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis',poseValue:'seated_sofa',framing:'chest_up' }).prompt);
+  assert.match(lens,/21mm-equivalent/i);
+});
+
 test('bedroom prompt contains furniture geometry rule', () => {
   const result = generateImagePrompt({ sceneType: 'bedroom_selfie' });
   assert.match(result.prompt, /FURNITURE GEOMETRY/i);
@@ -1558,7 +1585,7 @@ test('bedroom prompt contains furniture geometry rule', () => {
 test('majlis prompt contains sofa geometry rule', () => {
   const result = generateImagePrompt({ sceneType: 'majlis_selfie', location: 'modern_saudi_majlis' });
   assert.match(result.prompt, /FURNITURE GEOMETRY/i);
-  assert.match(result.prompt, /sofa is a single discrete three-seat piece/i);
+  assert.match(result.prompt, /main sofa is ONE connected L-shaped sectional/i);
 });
 
 test('cafe prompt contains table geometry rule', () => {

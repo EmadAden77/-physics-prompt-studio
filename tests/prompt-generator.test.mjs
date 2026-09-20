@@ -1440,7 +1440,7 @@ test('PR 10 sofa armrests cannot expand into blocks or extra seats', () => {
 });
 
 test('PR 10 sofa cushions keep one solid upholstery treatment', () => {
-  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /same solid upholstery/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /single solid color/i);
 });
 
 test('PR 10 majlis sofas stay flush against their assigned walls', () => {
@@ -1455,11 +1455,25 @@ test('PR 10 negative constraints ban tufted upholstery', () => {
 });
 
 test('PR 10 sofa upholstery explicitly rejects tufting quilting and buttons', () => {
-  assert.match(FURNITURE_GEOMETRY_RULES.sofa,/never tufted, quilted, buttoned/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa,/no tufting, no buttons, no quilting/i);
 });
 
 test('PR 10 main majlis sofa explicitly bans tufting', () => {
   assert.match(MAJLIS_ANCHOR.main_sofa,/no tufting/i);
+});
+
+test('PR 10 negative constraints ban dotted upholstery', () => {
+  const result=generateImagePrompt({ sceneType:'majlis_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis' });
+  const negatives=result.prompt.split('[NEGATIVE CONSTRAINTS]\n')[1].split('\n\n[FINAL VERIFICATION]')[0];
+  assert.match(negatives,/dotted upholstery/i);
+});
+
+test('PR 10 main majlis sofa hides visible weave texture', () => {
+  assert.match(MAJLIS_ANCHOR.main_sofa,/no visible weave texture/i);
+});
+
+test('PR 10 sofa upholstery cannot inherit clothing texture', () => {
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa,/must NOT share the slub, linen, or woven-appearance texture/i);
 });
 
 test('PR 10 MAJLIS_ANCHOR is complete and frozen', () => {

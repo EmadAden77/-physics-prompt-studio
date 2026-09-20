@@ -31,9 +31,9 @@ const expandedClothing = (group, value, label, prompt) => ({
 const LOCATION_REALISM_SUFFIX = ' Keep the place ordinary, non-iconic, and non-identifiable. Preserve realistic scale, circulation space, surface wear, small maintenance imperfections, dust or use marks where plausible, non-uniform object placement, believable background occupancy, material-specific reflections, and no showroom-clean or staged advertising look.';
 
 export const FURNITURE_GEOMETRY_RULES = Object.freeze({
-  sofa: 'The sofa maintains a continuous structural frame with a single seat base, unified backrest, and clearly separated armrests on both sides. All legs or base contact the ground with realistic contact shadows. Cushions show weight-driven compression at contact points and gravity-driven fabric folds.',
-  armchair: 'The armchair is a single-seat piece with a continuous frame, unified backrest, two armrests, and a seat base. It is not a sofa. All feet contact the ground with realistic shadows. Cushion compresses under body weight.',
-  chair: 'The chair has four legs (or a continuous base) in contact with the ground, a seat, and a backrest. It is not part of another piece of furniture. Legs cast realistic contact shadows.',
+  sofa: 'The sofa is a single discrete three-seat piece with three separate seat cushions and four square back cushions leaning 8-12 degrees from vertical. It has two flat padded armrests, each 14-18 cm wide, and short wooden legs with every leg visibly grounded by coherent contact shadows. A seated pelvis visibly compresses one seat cushion, thighs align with the seat plane without sinking through it, the back meets a back cushion where the pose requires support, and both feet rest naturally on the floor unless the pose explicitly says otherwise. Keep its silhouette and contact boundaries independent from every background sofa or chair.',
+  armchair: 'The armchair is a single discrete one-seat piece with one seat cushion and one back cushion leaning 10-15 degrees from vertical. It has two rounded padded armrests, each 10-14 cm wide, and four short wooden legs with all four feet in firm floor contact and coherent contact shadows. A seated pelvis visibly compresses the seat cushion, thighs follow the seat plane, the back contacts the back cushion according to posture, and feet rest naturally on the floor unless the pose explicitly requires another placement. It must remain visually separate from every sofa and background chair.',
+  chair: 'The chair is a single discrete one-seat piece with one seat pad and one backrest or back cushion leaning 8-12 degrees from vertical. It has two narrow flat armrests, each 4-6 cm wide, and four legs with all four feet contacting the floor and casting coherent contact shadows. A seated pelvis creates visible seat compression where padding exists, thighs align with the seat plane, the back contacts the backrest according to posture, and feet rest naturally on the floor unless the pose explicitly says otherwise. It must not merge with a desk, sofa, wall, or background chair.',
   table: 'The table has a continuous top supported by legs or a base, all in contact with the ground. The top surface maintains physical continuity with no splitting or floating elements. Objects on the table rest with correct support and contact shadows.',
   desk: 'The desk has a flat working surface supported by legs or a base, with realistic desk-to-chair clearance and human scale. All supports contact the ground with coherent shadows.',
   bed: 'The bed has a continuous frame, a mattress with realistic compression under weight, a headboard connected to the frame, and legs or base in ground contact. Bedding shows gravity-driven wrinkles.',
@@ -41,9 +41,9 @@ export const FURNITURE_GEOMETRY_RULES = Object.freeze({
   generic: 'All furniture maintains a coherent 3D structure: no morphing, no merging, no splitting, no floating pieces. All supports, legs, and bases contact the ground. Contact shadows are consistent with the light source direction. Surfaces show weight-driven compression at contact points.'
 });
 
-// FURNITURE_GEOMETRY_RULES describe furniture physics,
-// not subject-support. They are applied when the furniture
-// type is in scene regardless of subject pose.
+// FURNITURE_GEOMETRY_RULES describe furniture structure and contact physics.
+// Seating rules also couple the subject to the support surface; non-seating rules remain furniture-only.
+// They are applied when the furniture type is in scene regardless of subject pose.
 // Explicit pose semantics also protect API callers whose scene context does not name the furniture type (for example bedroom-mirror-seated -> bed).
 const COUNTER_CONTEXT = new Set(['cafe_selfie','barbershop_selfie','clinic_waiting_selfie','saudi_cafe','specialty_coffee','bakery_cafe','administrative_reception','service_counter_area','barbershop','clinic_waiting_room']);
 const POSE_FURNITURE_SEMANTICS = Object.freeze({
@@ -696,6 +696,17 @@ export const CLOTHING_CATALOG = [
   ...FORMAL_LOOKS,
   ...EXTRA_DEDUPED
 ].map(normalizeClothingCatalogItem);
+
+export const MAJLIS_ANCHOR = Object.freeze({
+  room: 'A fixed modern Saudi majlis room, approximately 5m x 7m, with light beige walls, glossy light-beige marble flooring, simple crown molding, a central ceiling fixture plus restrained side spotlights, and a wall-mounted split air conditioner on the LEFT wall.',
+  main_sofa: 'A light-sand modern L-shape sofa runs along the RIGHT wall as one connected piece, with three separate seat cushions, four square back cushions, and short wooden legs.',
+  side_sofas: 'Two separate single-seat sofas in the same light-sand upholstery sit along the LEFT wall facing the L-shape. Each has one seat cushion, one back cushion, its own armrests and legs, and an independent silhouette.',
+  coffee_table: 'A dark-wood rectangular coffee table is centered between the seating groups, with a mildly reflective top, square wooden legs, one Arabic coffee dallah, three finjan cups, and one small plate of dates.',
+  rug: 'A large sand-to-cream flat-weave rug is centered under the coffee table and extends beneath the front edges of the seating while preserving visible circulation gaps.',
+  tv_unit: 'A low dark-wood TV unit sits on the FRONT wall with one switched-off 55-inch television and restrained side shelves holding a few small printed items.',
+  decor: 'One large plant stays in the far corner, restrained Arabic wall prints use simple wooden frames, and one warm side lamp provides ordinary residential accent light.',
+  fixed_layout_rule: 'IMPORTANT: This is a locked modern majlis layout. Keep the L-shape sofa on the right wall, the two single sofas on the left wall, the coffee table centered between them, the rug under the table and seating edges, the TV unit on the front wall, and the decor in fixed positions. The two single sofas must remain physically separate from each other and from the L-shape, with independent silhouettes, visible floor or circulation gaps, and no fused cushions, armrests, bases, or legs. Do not move, add, remove, or duplicate these pieces. Camera framing may hide an element but must never relocate it.'
+});
 
 export const BEDROOM_ANCHOR = Object.freeze({
   room: 'A single fixed master bedroom, roughly 4m x 5m, with cream-painted walls, a wooden door on the LEFT wall in its existing fixed position, crown molding, recessed ceiling spotlights, a wall-mounted split air conditioner, and glossy light-colored tile flooring. This layout is locked and identical in every image.',

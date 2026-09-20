@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateImagePrompt, validateGeneratedPrompt, validateRealism } from '../core/prompt-generator.js';
-import { CLOTHING_CATALOG, HOME_CLOTHING, CLOTHING_STYLING, HAND_INTERACTIONS, HAND_PROPS, LIGHTING_PROFILES, POSE_HAND_USAGE, FURNITURE_GEOMETRY_RULES, MAJLIS_ANCHOR, getAvailableProps, getRemainingHands } from '../core/scene-builder.js';
+import { CLOTHING_CATALOG, HOME_CLOTHING, CLOTHING_STYLING, HAND_INTERACTIONS, HAND_PROPS, LIGHTING_PROFILES, POSE_HAND_USAGE, FURNITURE_GEOMETRY_RULES, MAJLIS_ANCHOR, LAPTOP_SCENE_CONTEXTS, LAPTOP_SCENE_SEATED_POSES, getAvailableProps, getRemainingHands } from '../core/scene-builder.js';
 import { MIRROR_POSES, THIRD_PERSON_POSES } from '../core/scene-compatibility.js';
 import { buildRealismPacket } from '../core/realistic-image-generator.js';
 
@@ -1574,6 +1574,56 @@ test('PR 10 final patch defines the main sofa as an L-shaped sectional', () => {
 test('PR 10 final patch uses the Xiaomi 21mm-equivalent lens profile', () => {
   const lens=lensPhysics(generateImagePrompt({ sceneType:'majlis_seated_selfie',camera:'xiaomi15_front',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis',poseValue:'seated_sofa',framing:'chest_up' }).prompt);
   assert.match(lens,/21mm-equivalent/i);
+});
+
+
+test('PR 11 defines exactly 21 eligible seated poses and injects bedroom MacBook context for bed and floor sitting', () => {
+  assert.equal(LAPTOP_SCENE_SEATED_POSES.size,21);
+  assert.equal(LAPTOP_SCENE_SEATED_POSES.has('bedroom-laptop-bed'),false);
+  assert.equal(LAPTOP_SCENE_SEATED_POSES.has('bedroom-laptop-armchair'),false);
+  assert.match(LAPTOP_SCENE_CONTEXTS.bedroom_seated,/floor beside the subject for floor-sitting poses/i);
+  for(const poseValue of ['bed-sitting-edge','bedroom-floor-cross']){
+    const result=generateImagePrompt({ sceneType:'bedroom_selfie',poseValue });
+    assert.match(sceneSection(result.prompt),/SCENE-SUPPORTED MACBOOK:.*modern MacBook/is,poseValue);
+    assert.equal(result.sections.length,23,poseValue);
+    assert.equal(result.validation.valid,true,result.validation.errors.join(' | '));
+  }
+});
+
+test('PR 11 injects a closed scene-supported MacBook into seated majlis after the anchor and before furniture geometry', () => {
+  const scene=sceneSection(generateImagePrompt({ sceneType:'majlis_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis',poseValue:'seated_sofa' }).prompt);
+  assert.match(scene,/SCENE-SUPPORTED MACBOOK:.*closed modern MacBook.*coffee table.*away from the dallah/is);
+  assert.ok(scene.indexOf('MAJLIS ANCHOR') < scene.indexOf('SCENE-SUPPORTED MACBOOK'));
+  assert.ok(scene.indexOf('SCENE-SUPPORTED MACBOOK') < scene.indexOf('FURNITURE GEOMETRY'));
+});
+
+test('PR 11 injects an open scene-supported MacBook into seated office scenes', () => {
+  const result=generateImagePrompt({ sceneType:'office_selfie',location:'saudi_office',locationValue:'saudi_office',poseValue:'seated_chair' });
+  assert.match(sceneSection(result.prompt),/SCENE-SUPPORTED MACBOOK:.*open modern MacBook.*desk in front of the subject.*screen angled toward the user/is);
+  assert.equal(result.sections.length,23);
+  assert.equal(result.validation.valid,true,result.validation.errors.join(' | '));
+});
+
+test('PR 11 does not inject scene MacBook outside eligible seated bedroom majlis or office contexts', () => {
+  const cases=[
+    ['bedroom-standing',{ sceneType:'bedroom_selfie',poseValue:'bedroom-stand-relaxed' }],
+    ['majlis-standing',{ sceneType:'majlis_selfie',location:'modern_saudi_majlis',poseValue:'standing_relaxed' }],
+    ['office-standing',{ sceneType:'office_selfie',location:'saudi_office',poseValue:'standing_relaxed' }],
+    ['car-seated',{ sceneType:'inside_car_selfie',poseValue:'driver_seat' }],
+    ['cafe-seated',{ sceneType:'cafe_selfie',location:'saudi_cafe',poseValue:'seated_chair' }],
+    ['outdoor',{ sceneType:'outdoor_selfie',poseValue:'seated_chair' }]
+  ];
+  for(const [name,input] of cases) assert.doesNotMatch(sceneSection(generateImagePrompt(input).prompt),/SCENE-SUPPORTED MACBOOK/i,name);
+});
+
+test('PR 11 prevents duplicate MacBooks without confusing laptop-bag with a MacBook', () => {
+  for(const poseValue of ['bedroom-laptop-bed','bedroom-laptop-armchair']){
+    assert.doesNotMatch(sceneSection(generateImagePrompt({ sceneType:'bedroom_selfie',poseValue }).prompt),/SCENE-SUPPORTED MACBOOK/i,poseValue);
+  }
+  const held=generateImagePrompt({ sceneType:'office_selfie',location:'saudi_office',poseValue:'seated_chair',heldProp:'macbook-pro-16' });
+  assert.doesNotMatch(sceneSection(held.prompt),/SCENE-SUPPORTED MACBOOK/i);
+  const bag=generateImagePrompt({ sceneType:'office_selfie',location:'saudi_office',poseValue:'seated_chair',heldProp:'laptop-bag' });
+  assert.match(sceneSection(bag.prompt),/SCENE-SUPPORTED MACBOOK/i);
 });
 
 test('bedroom prompt contains furniture geometry rule', () => {

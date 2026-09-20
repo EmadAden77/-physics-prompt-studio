@@ -1448,6 +1448,20 @@ test('PR 10 majlis sofas stay flush against their assigned walls', () => {
   assert.match(MAJLIS_ANCHOR.side_sofas, /flush against the LEFT wall/i);
 });
 
+test('PR 10 negative constraints ban tufted upholstery', () => {
+  const result=generateImagePrompt({ sceneType:'majlis_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis' });
+  const negatives=result.prompt.split('[NEGATIVE CONSTRAINTS]\n')[1].split('\n\n[FINAL VERIFICATION]')[0];
+  assert.match(negatives,/tufted upholstery/i);
+});
+
+test('PR 10 sofa upholstery explicitly rejects tufting quilting and buttons', () => {
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa,/never tufted, quilted, buttoned/i);
+});
+
+test('PR 10 main majlis sofa explicitly bans tufting', () => {
+  assert.match(MAJLIS_ANCHOR.main_sofa,/no tufting/i);
+});
+
 test('PR 10 MAJLIS_ANCHOR is complete and frozen', () => {
   assert.deepEqual(Object.keys(MAJLIS_ANCHOR), ['room','main_sofa','side_sofas','coffee_table','rug','tv_unit','decor','fixed_layout_rule']);
   assert.equal(Object.isFrozen(MAJLIS_ANCHOR), true);

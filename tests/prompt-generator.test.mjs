@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateImagePrompt, validateGeneratedPrompt, validateRealism } from '../core/prompt-generator.js';
-import { CLOTHING_CATALOG, HOME_CLOTHING, CLOTHING_STYLING, HAND_INTERACTIONS, HAND_PROPS, LIGHTING_PROFILES, POSE_HAND_USAGE, getAvailableProps, getRemainingHands } from '../core/scene-builder.js';
+import { CLOTHING_CATALOG, HOME_CLOTHING, CLOTHING_STYLING, HAND_INTERACTIONS, HAND_PROPS, LIGHTING_PROFILES, POSE_HAND_USAGE, FURNITURE_GEOMETRY_RULES, MAJLIS_ANCHOR, getAvailableProps, getRemainingHands } from '../core/scene-builder.js';
 import { MIRROR_POSES, THIRD_PERSON_POSES } from '../core/scene-compatibility.js';
 import { buildRealismPacket } from '../core/realistic-image-generator.js';
 
@@ -38,7 +38,7 @@ function sceneSection(prompt) {
 }
 function furnitureKinds(prompt) {
   const scene=sceneSection(prompt);
-  const patterns={ sofa:/The sofa maintains/i, armchair:/The armchair is a single-seat/i, chair:/The chair has four legs/i, table:/The table has a continuous top/i, desk:/The desk has a flat working surface/i, bed:/The bed has a continuous frame/i, counter:/The counter is a continuous solid structure/i, generic:/All furniture maintains a coherent 3D structure/i };
+  const patterns={ sofa:/The main sofa is ONE connected L-shaped sectional/i, armchair:/The armchair is a single discrete one-seat piece/i, chair:/The chair is a single discrete one-seat piece/i, table:/The table has a continuous top/i, desk:/The desk has a flat working surface/i, bed:/The bed has a continuous frame/i, counter:/The counter is a continuous solid structure/i, generic:/All furniture maintains a coherent 3D structure/i };
   return Object.entries(patterns).filter(([,pattern])=>pattern.test(scene)).map(([kind])=>kind);
 }
 
@@ -261,7 +261,7 @@ test('canonical lighting values map deterministically to metadata exposure class
   };
   assert.equal(LIGHTING_PROFILES.length,26);
   assert.deepEqual(new Set(LIGHTING_PROFILES.map((item)=>item.value)),new Set(Object.keys(expected)));
-  for (const profile of LIGHTING_PROFILES) assert.match(metadataSection(generateImagePrompt({ sceneType:'front_selfie', lighting:profile.prompt, lightingValue:profile.value }).prompt),patterns[expected[profile.value]],profile.value);
+  for (const profile of LIGHTING_PROFILES) assert.match(metadataSection(generateImagePrompt({ sceneType:'front_selfie', camera:'generic_front', lighting:profile.prompt, lightingValue:profile.value }).prompt),patterns[expected[profile.value]],profile.value);
 });
 
 test('phone LED flash uses the dedicated flash exposure range', () => {
@@ -269,12 +269,12 @@ test('phone LED flash uses the dedicated flash exposure range', () => {
   assert.match(metadata,/ISO 100-400.*1\/60-1\/120s/i);
 });
 
-test('Xiaomi midday and night metadata differ by lighting', () => {
+test('Xiaomi metadata uses the verified front-camera hardware profile and automatic exposure', () => {
   const midday=metadataSection(generateImagePrompt({ sceneType:'outdoor_selfie', camera:'xiaomi15_front', lightingValue:'blue_sky_noon', lighting:'strong high-elevation midday sun' }).prompt);
   const night=metadataSection(generateImagePrompt({ sceneType:'inside_car_selfie', camera:'xiaomi15_front', lightingValue:'night_car_practicals', lighting:'stationary car interior at night' }).prompt);
-  assert.notEqual(midday,night);
-  assert.match(midday,/ISO 50-100.*1\/500-1\/1000s/i);
-  assert.match(night,/ISO 800-1600.*1\/30-1\/60s/i);
+  assert.equal(midday,night);
+  assert.match(midday,/32MP.*21mm equivalent.*f\/2\.0.*~90° FOV.*automatic smartphone exposure/is);
+  assert.doesNotMatch(midday,/ISO \d/i);
 });
 
 test('free-text metadata fallback keeps explicit priority and does not treat car as night', () => {
@@ -285,15 +285,15 @@ test('free-text metadata fallback keeps explicit priority and does not treat car
     ['ordinary office fluorescent ceiling lighting',/ISO 200-800.*1\/60-1\/125s/i],
     ['ambiguous available light',/plausible automatic ISO and shutter behavior/i]
   ];
-  for(const [lighting,expected] of cases) assert.match(metadataSection(generateImagePrompt({ sceneType:'front_selfie', lighting }).prompt),expected,lighting);
-  const carDay=metadataSection(generateImagePrompt({ sceneType:'inside_car_selfie', lighting:'daylight through car windows' }).prompt);
+  for(const [lighting,expected] of cases) assert.match(metadataSection(generateImagePrompt({ sceneType:'front_selfie', camera:'generic_front', lighting }).prompt),expected,lighting);
+  const carDay=metadataSection(generateImagePrompt({ sceneType:'inside_car_selfie', camera:'generic_front', lighting:'daylight through car windows' }).prompt);
   assert.match(carDay,/ISO 200-800.*1\/60-1\/125s/i);
   assert.doesNotMatch(carDay,/ISO 800-1600.*1\/30-1\/60s/i);
 });
 
 test('unknown canonical lighting value never falls back to free-text classification', () => {
-  const unknownCanonical=metadataSection(generateImagePrompt({ sceneType:'outdoor_selfie', lighting:'direct midday sun outdoors', lightingValue:'future_unmapped_profile' }).prompt);
-  const missing=metadataSection(generateImagePrompt({ sceneType:'front_selfie' }).prompt);
+  const unknownCanonical=metadataSection(generateImagePrompt({ sceneType:'outdoor_selfie', camera:'generic_front', lighting:'direct midday sun outdoors', lightingValue:'future_unmapped_profile' }).prompt);
+  const missing=metadataSection(generateImagePrompt({ sceneType:'front_selfie', camera:'generic_front' }).prompt);
   for(const metadata of [unknownCanonical,missing]) {
     assert.match(metadata,/plausible automatic ISO and shutter behavior/i);
     assert.doesNotMatch(metadata,/ISO \d/i);
@@ -305,8 +305,13 @@ test('all camera types use lighting-consistent metadata without file references'
   for(const camera of cameras) {
     const day=metadataSection(generateImagePrompt({ sceneType:camera==='smartphone_rear'?'third_person_portrait':'outdoor_selfie', camera, lighting:'direct daytime sunlight', lightingValue:'day_direct_sun' }).prompt);
     const night=metadataSection(generateImagePrompt({ sceneType:camera==='smartphone_rear'?'third_person_portrait':'front_selfie', camera, lighting:'night scene with practical fixtures', lightingValue:'night_led_street' }).prompt);
-    assert.match(day,/ISO 50-100.*1\/500-1\/1000s/i,camera);
-    assert.match(night,/ISO 800-1600.*1\/30-1\/60s/i,camera);
+    if(camera==='xiaomi15_front'){
+      assert.match(day,/automatic smartphone exposure appropriate to the actual available light/i,camera);
+      assert.equal(day,night,camera);
+    } else {
+      assert.match(day,/ISO 50-100.*1\/500-1\/1000s/i,camera);
+      assert.match(night,/ISO 800-1600.*1\/30-1\/60s/i,camera);
+    }
     assert.doesNotMatch(day+night,/File reference|IMG_20250915_143022/i,camera);
   }
 });
@@ -356,11 +361,11 @@ test('realism sections include physical photographic language', () => {
 
 test('lens physics profiles vary across representative scene and capture combinations', () => {
   const cases = [
-    [{ sceneType:'inside_car_selfie', camera:'xiaomi15_front', framing:'chest_up', cameraDistance:'50 cm' }, /23mm-equivalent.*~86° diagonal.*2-3% barrel distortion.*10-15%/is],
+    [{ sceneType:'inside_car_selfie', camera:'xiaomi15_front', framing:'chest_up', cameraDistance:'50 cm' }, /Xiaomi 15 Ultra front-camera optical profile.*21mm-equivalent.*~90° diagonal.*mild residual optical imperfections/is],
     [{ sceneType:'mirror_selfie', camera:'smartphone_rear', framing:'three_quarter', cameraDistance:'1 m from the mirror' }, /26mm-equivalent.*~80° diagonal.*1-1\.5% barrel distortion.*6-10%/is],
     [{ sceneType:'full_body_third_person', camera:'smartphone_rear', framing:'full_body', cameraDistance:'3 m' }, /28mm-equivalent.*~75° diagonal.*0\.5-1% barrel distortion.*4-8%/is],
     [{ sceneType:'cafe_selfie', camera:'generic_front', framing:'close', cameraDistance:'45 cm' }, /24mm-equivalent.*~84° diagonal.*1\.5-2\.5% barrel distortion.*8-12%/is],
-    [{ sceneType:'bedroom_selfie', camera:'xiaomi15_front', framing:'chest_up', cameraDistance:'50 cm' }, /23mm-equivalent.*~86° diagonal.*2-3% barrel distortion.*10-15%/is]
+    [{ sceneType:'bedroom_selfie', camera:'xiaomi15_front', framing:'chest_up', cameraDistance:'50 cm' }, /Xiaomi 15 Ultra front-camera optical profile.*21mm-equivalent.*~90° diagonal.*mild residual optical imperfections/is]
   ];
   for (const [input, expected] of cases) {
     const result = generateImagePrompt(input);
@@ -390,7 +395,7 @@ test('framing changes edge visibility wording without changing the focal profile
 test('Xiaomi front and smartphone rear remain distinct camera profiles', () => {
   const front = lensPhysics(generateImagePrompt({ sceneType:'mirror_selfie', camera:'xiaomi15_front', framing:'waist_up' }).prompt);
   const rear = lensPhysics(generateImagePrompt({ sceneType:'mirror_selfie', camera:'smartphone_rear', framing:'waist_up' }).prompt);
-  assert.match(front, /23mm-equivalent/i);
+  assert.match(front, /21mm-equivalent/i);
   assert.match(rear, /26mm-equivalent/i);
   assert.notEqual(front, rear);
 });
@@ -1412,6 +1417,165 @@ test('furniture geometry field verification matrix covers ten pose-aware cases',
   }
 });
 
+test('PR 10 seating physics regressions cover sofa chair and armchair', () => {
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /ONE connected L-shaped sectional/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /long three-seat run/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /three distinct seat cushions/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /When a subject is seated, the pelvis visibly compresses/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /thighs align/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /independent from every background sofa or chair/i);
+
+  assert.match(FURNITURE_GEOMETRY_RULES.chair, /single discrete one-seat piece/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.chair, /two narrow flat armrests/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.chair, /all four feet contacting the floor/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.chair, /When a subject is seated, the pelvis creates visible seat compression/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.chair, /thighs align with the seat plane/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.chair, /must not merge with a desk, sofa, wall, or background chair/i);
+
+  assert.match(FURNITURE_GEOMETRY_RULES.armchair, /single discrete one-seat piece/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.armchair, /two rounded padded armrests/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.armchair, /four short wooden legs/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.armchair, /When a subject is seated, the pelvis visibly compresses/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.armchair, /back contacts the back cushion/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.armchair, /visually separate from every sofa and background chair/i);
+});
+
+test('PR 10 sofa armrests cannot expand into blocks or extra seats', () => {
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /never become a block, seat, or additional cushion/i);
+});
+
+test('PR 10 sofa cushions keep one solid upholstery treatment', () => {
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /single solid color/i);
+});
+
+test('PR 10 majlis sofas stay flush against their assigned walls', () => {
+  assert.match(MAJLIS_ANCHOR.main_sofa, /flush against the RIGHT wall/i);
+  assert.match(MAJLIS_ANCHOR.side_sofas, /flush against the LEFT wall/i);
+});
+
+test('PR 10 negative constraints ban tufted upholstery', () => {
+  const result=generateImagePrompt({ sceneType:'majlis_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis' });
+  const negatives=result.prompt.split('[NEGATIVE CONSTRAINTS]\n')[1].split('\n\n[FINAL VERIFICATION]')[0];
+  assert.match(negatives,/tufted upholstery/i);
+});
+
+test('PR 10 sofa upholstery explicitly rejects tufting quilting and buttons', () => {
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa,/no tufting, no buttons, no quilting/i);
+});
+
+test('PR 10 main majlis sofa explicitly bans tufting', () => {
+  assert.match(MAJLIS_ANCHOR.main_sofa,/no tufting/i);
+});
+
+test('PR 10 negative constraints ban dotted upholstery', () => {
+  const result=generateImagePrompt({ sceneType:'majlis_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis' });
+  const negatives=result.prompt.split('[NEGATIVE CONSTRAINTS]\n')[1].split('\n\n[FINAL VERIFICATION]')[0];
+  assert.match(negatives,/dotted upholstery/i);
+});
+
+test('PR 10 main majlis sofa hides visible weave texture', () => {
+  assert.match(MAJLIS_ANCHOR.main_sofa,/no visible weave texture/i);
+});
+
+test('PR 10 sofa upholstery cannot inherit clothing texture', () => {
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa,/must NOT share the slub, linen, or woven-appearance texture/i);
+});
+
+test('PR 10 MAJLIS_ANCHOR is complete and frozen', () => {
+  assert.deepEqual(Object.keys(MAJLIS_ANCHOR), ['room','main_sofa','side_sofas','coffee_table','rug','tv_unit','decor','fixed_layout_rule']);
+  assert.equal(Object.isFrozen(MAJLIS_ANCHOR), true);
+  for(const key of Object.keys(MAJLIS_ANCHOR)) assert.ok(MAJLIS_ANCHOR[key].length > 20, key);
+});
+
+test('PR 10 modern majlis anchor injects for default and all majlis variants', () => {
+  const cases=[
+    ['majlis-default',{ sceneType:'majlis_selfie' }],
+    ['majlis-modern',{ sceneType:'majlis_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis' }],
+    ['majlis-standing',{ sceneType:'majlis_standing_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis' }],
+    ['majlis-seated',{ sceneType:'majlis_seated_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis' }]
+  ];
+  for(const [name,input] of cases){
+    const scene=sceneSection(generateImagePrompt(input).prompt);
+    assert.match(scene,/MAJLIS ANCHOR \(locked layout\)/i,name);
+    assert.match(scene,/MAIN SOFA:/i,name);
+    assert.match(scene,/SIDE SOFAS:/i,name);
+  }
+});
+
+test('PR 10 traditional majlis locations never receive the modern anchor', () => {
+  for(const location of ['traditional_majlis','traditional_saudi_majlis']){
+    const scene=sceneSection(generateImagePrompt({ sceneType:'majlis_selfie',location,locationValue:location }).prompt);
+    assert.doesNotMatch(scene,/MAJLIS ANCHOR \(locked layout\)/i,location);
+  }
+});
+
+test('PR 10 majlis anchor does not leak to living-room or office scenes', () => {
+  const controls=[
+    ['living-room',{ sceneType:'living_room_selfie',location:'villa_living_room',locationValue:'villa_living_room' }],
+    ['office',{ sceneType:'office_selfie',location:'saudi_office',locationValue:'saudi_office' }]
+  ];
+  for(const [name,input] of controls){
+    assert.doesNotMatch(sceneSection(generateImagePrompt(input).prompt),/MAJLIS ANCHOR \(locked layout\)/i,name);
+  }
+});
+
+test('PR 10 modern majlis prompts preserve 23 sections and validation', () => {
+  const cases=[
+    { sceneType:'majlis_selfie' },
+    { sceneType:'majlis_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis',poseValue:'seated_sofa' },
+    { sceneType:'majlis_standing_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis' },
+    { sceneType:'majlis_seated_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis',poseValue:'seated_sofa' }
+  ];
+  for(const input of cases){
+    const result=generateImagePrompt(input);
+    assert.equal(result.sections.length,23,input.sceneType);
+    assert.deepEqual(headings(result.prompt),canonical,input.sceneType);
+    assert.equal(result.validation.valid,true,`${input.sceneType}: ${result.validation.errors.join(' | ')}`);
+  }
+});
+
+test('PR 10 standing majlis does not emit seated sofa contact text', () => {
+  const result=generateImagePrompt({ sceneType:'majlis_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis',poseValue:'standing_relaxed' });
+  assert.deepEqual(furnitureKinds(result.prompt),['generic']);
+  assert.doesNotMatch(sceneSection(result.prompt),/When a subject is seated|seated pelvis/i);
+});
+
+test('PR 10 traditional locationValue suppresses anchor when location text is empty', () => {
+  for(const locationValue of ['traditional_majlis','traditional_saudi_majlis']){
+    const scene=sceneSection(generateImagePrompt({ sceneType:'majlis_selfie',location:'',locationValue }).prompt);
+    assert.doesNotMatch(scene,/MAJLIS ANCHOR \(locked layout\)/i,locationValue);
+  }
+});
+
+test('PR 10 explicit modern majlis location drives anchor outside majlis scene prefix', () => {
+  const result=generateImagePrompt({ sceneType:'front_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis' });
+  assert.match(sceneSection(result.prompt),/MAJLIS ANCHOR \(locked layout\)/i);
+  assert.equal(result.sections.length,23);
+  assert.equal(result.validation.valid,true,result.validation.errors.join(' | '));
+});
+
+
+test('PR 10 final patch keeps micro-realism fibers clothing-only', () => {
+  const result=generateImagePrompt({ sceneType:'majlis_seated_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis',poseValue:'seated_sofa' });
+  const biological=result.prompt.split('[BIOLOGICAL_MICRO_REALISM]\n')[1].split('\n\n[CAMERA_METADATA_HINT]')[0];
+  assert.match(biological,/CLOTHING fibers only/i);
+});
+
+test('PR 10 final patch removes the global uniform-fabric weave directive', () => {
+  const result=generateImagePrompt({ sceneType:'majlis_seated_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis',poseValue:'seated_sofa' });
+  const negatives=result.prompt.split('[NEGATIVE CONSTRAINTS]\n')[1].split('\n\n[FINAL VERIFICATION]')[0];
+  assert.doesNotMatch(negatives,/uniform fabric without weave or fibers/i);
+});
+
+test('PR 10 final patch defines the main sofa as an L-shaped sectional', () => {
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa,/L-shaped sectional/i);
+});
+
+test('PR 10 final patch uses the Xiaomi 21mm-equivalent lens profile', () => {
+  const lens=lensPhysics(generateImagePrompt({ sceneType:'majlis_seated_selfie',camera:'xiaomi15_front',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis',poseValue:'seated_sofa',framing:'chest_up' }).prompt);
+  assert.match(lens,/21mm-equivalent/i);
+});
+
 test('bedroom prompt contains furniture geometry rule', () => {
   const result = generateImagePrompt({ sceneType: 'bedroom_selfie' });
   assert.match(result.prompt, /FURNITURE GEOMETRY/i);
@@ -1421,7 +1585,7 @@ test('bedroom prompt contains furniture geometry rule', () => {
 test('majlis prompt contains sofa geometry rule', () => {
   const result = generateImagePrompt({ sceneType: 'majlis_selfie', location: 'modern_saudi_majlis' });
   assert.match(result.prompt, /FURNITURE GEOMETRY/i);
-  assert.match(result.prompt, /sofa maintains a continuous/i);
+  assert.match(result.prompt, /main sofa is ONE connected L-shaped sectional/i);
 });
 
 test('cafe prompt contains table geometry rule', () => {

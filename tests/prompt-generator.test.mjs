@@ -1435,6 +1435,19 @@ test('PR 10 seating physics regressions cover sofa chair and armchair', () => {
   assert.match(FURNITURE_GEOMETRY_RULES.armchair, /visually separate from every sofa and background chair/i);
 });
 
+test('PR 10 sofa armrests cannot expand into blocks or extra seats', () => {
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /never become a block, seat, or additional cushion/i);
+});
+
+test('PR 10 sofa cushions keep one solid upholstery treatment', () => {
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /same solid upholstery/i);
+});
+
+test('PR 10 majlis sofas stay flush against their assigned walls', () => {
+  assert.match(MAJLIS_ANCHOR.main_sofa, /flush against the RIGHT wall/i);
+  assert.match(MAJLIS_ANCHOR.side_sofas, /flush against the LEFT wall/i);
+});
+
 test('PR 10 MAJLIS_ANCHOR is complete and frozen', () => {
   assert.deepEqual(Object.keys(MAJLIS_ANCHOR), ['room','main_sofa','side_sofas','coffee_table','rug','tv_unit','decor','fixed_layout_rule']);
   assert.equal(Object.isFrozen(MAJLIS_ANCHOR), true);

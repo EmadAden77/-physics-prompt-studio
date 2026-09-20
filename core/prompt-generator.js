@@ -1,7 +1,7 @@
 import { buildRealismPacket, renderRealismGuidance } from './realistic-image-generator.js';
 import { baseSceneTypeFor, sceneMeta } from './scene-type-expansion.js';
 import { clothingSceneCoherence, resolveContextAwareConstraints, getPoseCameraHint } from './scene-compatibility.js';
-import { BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_POSES, SAUDI_CULTURAL_DRESS_LOCK, SAUDI_SIGNAGE_RULE, CLOTHING_STYLING, HAND_INTERACTIONS, CLOTHING_CATALOG, HOME_CLOTHING, getFurnitureGeometryForScene, getAvailableProps, getRemainingHands, getPropHandUsage } from './scene-builder.js';
+import { BEDROOM_ANCHOR, MAJLIS_ANCHOR, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_POSES, SAUDI_CULTURAL_DRESS_LOCK, SAUDI_SIGNAGE_RULE, CLOTHING_STYLING, HAND_INTERACTIONS, CLOTHING_CATALOG, HOME_CLOTHING, getFurnitureGeometryForScene, getAvailableProps, getRemainingHands, getPropHandUsage } from './scene-builder.js';
 import { resolveCameraAngle } from './camera-angle-resolver.js';
 
 export const SCENE_TYPES = [
@@ -353,6 +353,11 @@ export function generateImagePrompt(input={}){
     ].join(' ');
     const clutter=BEDROOM_CLUTTER_LEVELS[input.clutterLevel] || BEDROOM_CLUTTER_LEVELS.moderate;
     sceneText=`${sceneText} ${anchorText} ROOM CLUTTER: ${clutter}`;
+  }
+  const modernMajlisAnchorEnabled=requested.startsWith('majlis_') && (!clean(input.location) || clean(input.locationValue)==='modern_saudi_majlis' || clean(input.location)==='modern_saudi_majlis' || /modern.*saudi.*majlis/i.test(clean(input.location)));
+  if(modernMajlisAnchorEnabled){
+    const majlisAnchorText=[`MAJLIS ANCHOR (locked layout): ${MAJLIS_ANCHOR.room}`,`MAIN SOFA: ${MAJLIS_ANCHOR.main_sofa}`,`SIDE SOFAS: ${MAJLIS_ANCHOR.side_sofas}`,`COFFEE TABLE: ${MAJLIS_ANCHOR.coffee_table}`,`RUG: ${MAJLIS_ANCHOR.rug}`,`TV UNIT: ${MAJLIS_ANCHOR.tv_unit}`,`DECOR: ${MAJLIS_ANCHOR.decor}`,MAJLIS_ANCHOR.fixed_layout_rule].join(' ');
+    sceneText=`${sceneText} ${majlisAnchorText}`;
   }
   const furnitureRules=getFurnitureGeometryForScene(requested,location,poseValue);
   const furnitureText=furnitureRules.length ? `FURNITURE GEOMETRY: ${furnitureRules.join(' ')}` : '';

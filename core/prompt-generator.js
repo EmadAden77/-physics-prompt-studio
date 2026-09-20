@@ -354,10 +354,15 @@ export function generateImagePrompt(input={}){
     const clutter=BEDROOM_CLUTTER_LEVELS[input.clutterLevel] || BEDROOM_CLUTTER_LEVELS.moderate;
     sceneText=`${sceneText} ${anchorText} ROOM CLUTTER: ${clutter}`;
   }
-  // Free-text fallback for direct API callers; canonical
-  // locationValue and location equality come first.
-  // traditional_majlis and traditional_saudi_majlis never match.
-  const modernMajlisAnchorEnabled=requested.startsWith('majlis_') && (!clean(input.location) || clean(input.locationValue)==='modern_saudi_majlis' || clean(input.location)==='modern_saudi_majlis' || /modern.*saudi.*majlis/i.test(clean(input.location)));
+  // Canonical location values take precedence; free-text location matching
+  // supports direct API callers. Explicit traditional identifiers always
+  // suppress the fixed modern-majlis anchor.
+  const majlisLocationValue=clean(input.locationValue);
+  const majlisLocation=clean(input.location);
+  const isTraditionalMajlis=/traditional/i.test(majlisLocationValue) || /traditional/i.test(majlisLocation);
+  const isModernMajlisLocation=majlisLocationValue==='modern_saudi_majlis' || majlisLocation==='modern_saudi_majlis' || /modern.*saudi.*majlis/i.test(majlisLocation);
+  const isDefaultModernMajlis=requested.startsWith('majlis_') && !majlisLocationValue && !majlisLocation;
+  const modernMajlisAnchorEnabled=!isTraditionalMajlis && (isModernMajlisLocation || isDefaultModernMajlis);
   if(modernMajlisAnchorEnabled){
     const majlisAnchorText=[`MAJLIS ANCHOR (locked layout): ${MAJLIS_ANCHOR.room}`,`MAIN SOFA: ${MAJLIS_ANCHOR.main_sofa}`,`SIDE SOFAS: ${MAJLIS_ANCHOR.side_sofas}`,`COFFEE TABLE: ${MAJLIS_ANCHOR.coffee_table}`,`RUG: ${MAJLIS_ANCHOR.rug}`,`TV UNIT: ${MAJLIS_ANCHOR.tv_unit}`,`DECOR: ${MAJLIS_ANCHOR.decor}`,MAJLIS_ANCHOR.fixed_layout_rule].join(' ');
     sceneText=`${sceneText} ${majlisAnchorText}`;

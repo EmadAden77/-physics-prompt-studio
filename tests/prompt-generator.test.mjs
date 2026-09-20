@@ -1416,21 +1416,21 @@ test('PR 10 seating physics regressions cover sofa chair and armchair', () => {
   assert.match(FURNITURE_GEOMETRY_RULES.sofa, /single discrete three-seat piece/i);
   assert.match(FURNITURE_GEOMETRY_RULES.sofa, /three separate seat cushions/i);
   assert.match(FURNITURE_GEOMETRY_RULES.sofa, /four square back cushions/i);
-  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /pelvis visibly compresses/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /When a subject is seated, the pelvis visibly compresses/i);
   assert.match(FURNITURE_GEOMETRY_RULES.sofa, /thighs align/i);
   assert.match(FURNITURE_GEOMETRY_RULES.sofa, /independent from every background sofa or chair/i);
 
   assert.match(FURNITURE_GEOMETRY_RULES.chair, /single discrete one-seat piece/i);
   assert.match(FURNITURE_GEOMETRY_RULES.chair, /two narrow flat armrests/i);
   assert.match(FURNITURE_GEOMETRY_RULES.chair, /all four feet contacting the floor/i);
-  assert.match(FURNITURE_GEOMETRY_RULES.chair, /pelvis creates visible seat compression/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.chair, /When a subject is seated, the pelvis creates visible seat compression/i);
   assert.match(FURNITURE_GEOMETRY_RULES.chair, /thighs align with the seat plane/i);
   assert.match(FURNITURE_GEOMETRY_RULES.chair, /must not merge with a desk, sofa, wall, or background chair/i);
 
   assert.match(FURNITURE_GEOMETRY_RULES.armchair, /single discrete one-seat piece/i);
   assert.match(FURNITURE_GEOMETRY_RULES.armchair, /two rounded padded armrests/i);
   assert.match(FURNITURE_GEOMETRY_RULES.armchair, /four short wooden legs/i);
-  assert.match(FURNITURE_GEOMETRY_RULES.armchair, /pelvis visibly compresses/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.armchair, /When a subject is seated, the pelvis visibly compresses/i);
   assert.match(FURNITURE_GEOMETRY_RULES.armchair, /back contacts the back cushion/i);
   assert.match(FURNITURE_GEOMETRY_RULES.armchair, /visually separate from every sofa and background chair/i);
 });
@@ -1486,6 +1486,26 @@ test('PR 10 modern majlis prompts preserve 23 sections and validation', () => {
     assert.deepEqual(headings(result.prompt),canonical,input.sceneType);
     assert.equal(result.validation.valid,true,`${input.sceneType}: ${result.validation.errors.join(' | ')}`);
   }
+});
+
+test('PR 10 standing majlis does not emit seated sofa contact text', () => {
+  const result=generateImagePrompt({ sceneType:'majlis_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis',poseValue:'standing_relaxed' });
+  assert.deepEqual(furnitureKinds(result.prompt),['generic']);
+  assert.doesNotMatch(sceneSection(result.prompt),/When a subject is seated|seated pelvis/i);
+});
+
+test('PR 10 traditional locationValue suppresses anchor when location text is empty', () => {
+  for(const locationValue of ['traditional_majlis','traditional_saudi_majlis']){
+    const scene=sceneSection(generateImagePrompt({ sceneType:'majlis_selfie',location:'',locationValue }).prompt);
+    assert.doesNotMatch(scene,/MAJLIS ANCHOR \(locked layout\)/i,locationValue);
+  }
+});
+
+test('PR 10 explicit modern majlis location drives anchor outside majlis scene prefix', () => {
+  const result=generateImagePrompt({ sceneType:'front_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis' });
+  assert.match(sceneSection(result.prompt),/MAJLIS ANCHOR \(locked layout\)/i);
+  assert.equal(result.sections.length,23);
+  assert.equal(result.validation.valid,true,result.validation.errors.join(' | '));
 });
 
 test('bedroom prompt contains furniture geometry rule', () => {

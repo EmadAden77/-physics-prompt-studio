@@ -41,6 +41,18 @@ export const FURNITURE_GEOMETRY_RULES = Object.freeze({
   generic: 'All furniture maintains a coherent 3D structure: no morphing, no merging, no splitting, no floating pieces. All supports, legs, and bases contact the ground. Contact shadows are consistent with the light source direction. Surfaces show weight-driven compression at contact points.'
 });
 
+export const LAPTOP_SCENE_SEATED_POSES = new Set([
+  'seated_sofa','seated_chair','bed-sitting-cross','bed-sitting-edge','bed-sitting-back-wall','bed-sitting-legs-extended','bed-sitting-hugging-pillow','bed-sitting-sideways',
+  'armchair-sit-lean-back','armchair-sit-corner','armchair-sit-one-knee','armchair-sit-crossed','armchair-sit-feet-floor',
+  'bedroom-cup-bed','bedroom-tea-armchair','bedroom-book-bed','bedroom-floor-cross','bedroom-floor-back-wall','bedroom-floor-knee-up','bedroom-nightstand-reach','bedroom-mirror-seated'
+]);
+
+export const LAPTOP_SCENE_CONTEXTS = Object.freeze({
+  bedroom_seated: 'A slim closed or open modern MacBook rests on the bed surface, the left nightstand, or the floor beside the subject for floor-sitting poses, at natural scale, switched off or dim. Never held by the subject.',
+  majlis_seated: 'A slim closed modern MacBook rests on the coffee table at natural scale, positioned away from the dallah, finjan cups, and date plate. Never held by the subject.',
+  office_seated: 'A slim open modern MacBook rests on the desk in front of the subject at natural scale, screen angled toward the user. Never held by the subject.'
+});
+
 // FURNITURE_GEOMETRY_RULES describe furniture structure and contact physics.
 // Seating rules also couple the subject to the support surface; non-seating rules remain furniture-only.
 // They are applied when the furniture type is in scene regardless of subject pose.

@@ -1,7 +1,7 @@
 import { buildRealismPacket, renderRealismGuidance } from './realistic-image-generator.js';
 import { baseSceneTypeFor, sceneMeta } from './scene-type-expansion.js';
 import { clothingSceneCoherence, resolveContextAwareConstraints, getPoseCameraHint } from './scene-compatibility.js';
-import { BEDROOM_ANCHOR, MAJLIS_ANCHOR, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_POSES, SAUDI_CULTURAL_DRESS_LOCK, SAUDI_SIGNAGE_RULE, CLOTHING_STYLING, HAND_INTERACTIONS, CLOTHING_CATALOG, HOME_CLOTHING, getFurnitureGeometryForScene, getAvailableProps, getRemainingHands, getPropHandUsage } from './scene-builder.js';
+import { BEDROOM_ANCHOR, MAJLIS_ANCHOR, LAPTOP_SCENE_CONTEXTS, LAPTOP_SCENE_SEATED_POSES, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_POSES, SAUDI_CULTURAL_DRESS_LOCK, SAUDI_SIGNAGE_RULE, CLOTHING_STYLING, HAND_INTERACTIONS, CLOTHING_CATALOG, HOME_CLOTHING, getFurnitureGeometryForScene, getAvailableProps, getRemainingHands, getPropHandUsage } from './scene-builder.js';
 import { resolveCameraAngle } from './camera-angle-resolver.js';
 
 export const SCENE_TYPES = [
@@ -371,6 +371,12 @@ export function generateImagePrompt(input={}){
     sceneText=`${sceneText} ${majlisAnchorText}`;
     if(seatedMajlisSubject) sceneText=`${sceneText} CRITICAL SUBJECT POSITION LOCK: The subject is seated on the CENTER seat of the long run of the main RIGHT-wall L-shaped sectional, never on either LEFT-wall single-seat sofa and never on the projecting return. The pelvis is centered over one seat cushion with localized compression directly beneath body weight.`;
   }
+  const laptopSceneContextKey=requested.startsWith('bedroom_') ? 'bedroom_seated' : requested.startsWith('majlis_') ? 'majlis_seated' : requested.startsWith('office_') ? 'office_seated' : '';
+  const requestedMacBookHeld=/^macbook-/i.test(clean(input.heldProp));
+  const autoLaptopContext=laptopSceneContextKey && LAPTOP_SCENE_SEATED_POSES.has(poseValue) && !requestedMacBookHeld && !/^bedroom-laptop-/i.test(poseValue)
+    ? LAPTOP_SCENE_CONTEXTS[laptopSceneContextKey] : '';
+  if(autoLaptopContext) sceneText=`${sceneText} SCENE-SUPPORTED MACBOOK: ${autoLaptopContext}`;
+
   const furnitureRules=getFurnitureGeometryForScene(requested,location,poseValue);
   const furnitureText=furnitureRules.length ? `FURNITURE GEOMETRY: ${furnitureRules.join(' ')}` : '';
   sceneText=`${sceneText} ${furnitureText}`.trim();

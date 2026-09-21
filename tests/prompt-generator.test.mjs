@@ -124,7 +124,7 @@ test('selected hair style affects identity while length density and hairline rem
   const style = 'hair parted on the left side with a clean visible line, natural fall on both sides, density and hairline unchanged';
   const result = generateImagePrompt({ sceneType: 'front_selfie', hairStyle: style });
   assert.ok(result.prompt.includes(style));
-  assert.match(result.prompt, /Hair length, density, and hair thickness remain as in the reference image/i);
+  assert.match(result.prompt, /Hair DENSITY, thickness, CURL PATTERN, and length must match the reference image EXACTLY/i);
   assert.match(result.prompt, /Do not shorten, lengthen, thin, thicken/i);
   assert.equal(result.config.hair_style, style);
 });
@@ -588,7 +588,7 @@ test('Saudi cultural rules stay out of technical negative constraints and non-Sa
 test('hair style lock is merged into IDENTITY SUBJECT rather than emitted as an extra section', () => {
   const result = generateImagePrompt({ sceneType: 'front_selfie' });
   const identity = result.prompt.split('[IDENTITY / SUBJECT]\n')[1].split('\n\n[SCENE]')[0];
-  assert.match(identity, /Hair length, density, and hair thickness remain as in the reference image/i);
+  assert.match(identity, /Hair DENSITY, thickness, CURL PATTERN, and length must match the reference image EXACTLY/i);
   assert.match(identity, /Do not shorten/i);
   assert.equal(result.prompt.includes('[HAIR_STYLE_LOCK]'), false);
 });
@@ -1792,5 +1792,67 @@ test('PR 13 directional prompts contain no double periods and preserve canonical
     assert.equal(result.sections.length,23);
     assert.equal(result.validation.valid,true,result.validation.errors.join(' | '));
   }
+});
+
+function pr17Section(prompt, name, nextName) {
+  return prompt.split(`[${name}]\n`)[1].split(`\n\n[${nextName}]\n`)[0];
+}
+
+const PR17_FORWARD_HAIR='hair combed FORWARD onto the forehead with visible individual strands.';
+
+test('PR 17 HAIR_LOCK preserves density curl pattern top volume and length from the reference', () => {
+  const result=generateImagePrompt({ hairStyle:PR17_FORWARD_HAIR });
+  const identity=pr17Section(result.prompt,'IDENTITY / SUBJECT','SCENE');
+  assert.match(identity,/Hair DENSITY, thickness, CURL PATTERN, and length must match the reference image EXACTLY/i);
+  assert.match(identity,/top volume/i);
+});
+
+test('PR 17 HAIR_LOCK explicitly forbids top-volume inflation and added hair mass', () => {
+  const result=generateImagePrompt({ hairStyle:PR17_FORWARD_HAIR });
+  const identity=pr17Section(result.prompt,'IDENTITY / SUBJECT','SCENE');
+  assert.match(identity,/Do not inflate top volume/i);
+  assert.match(identity,/Do not add hair mass/i);
+  assert.match(identity,/Do not stylize the curl tighter or looser than the reference/i);
+});
+
+test('PR 17 forward direction changes only the front section without volumetric restyling', () => {
+  const result=generateImagePrompt({ hairStyle:PR17_FORWARD_HAIR });
+  const identity=pr17Section(result.prompt,'IDENTITY / SUBJECT','SCENE');
+  assert.match(identity,/ONLY the front section changes direction so strands fall forward onto the upper forehead/i);
+  assert.match(identity,/Top volume, curl pattern, and total hair mass remain unchanged from the reference/i);
+  assert.match(identity,/The change is directional, not volumetric/i);
+});
+
+test('PR 17 directional hair negatives reject inflated volume and exaggerated curls only when direction is specified', () => {
+  const directed=generateImagePrompt({ hairStyle:PR17_FORWARD_HAIR });
+  const directedNegatives=pr17Section(directed.prompt,'NEGATIVE CONSTRAINTS','FINAL VERIFICATION');
+  assert.match(directedNegatives,/inflated hair volume/i);
+  assert.match(directedNegatives,/exaggerated curl pattern/i);
+  assert.match(directedNegatives,/added hair density/i);
+  assert.match(directedNegatives,/exaggerated top lift/i);
+
+  const neutral=generateImagePrompt({ hairStyle:'' });
+  const neutralNegatives=pr17Section(neutral.prompt,'NEGATIVE CONSTRAINTS','FINAL VERIFICATION');
+  assert.doesNotMatch(neutralNegatives,/inflated hair volume/i);
+  assert.doesNotMatch(neutralNegatives,/exaggerated curl pattern/i);
+});
+
+test('PR 17 FINAL VERIFICATION checks reference hair identity while allowing only front-direction change', () => {
+  const result=generateImagePrompt({ hairStyle:PR17_FORWARD_HAIR });
+  const verification=result.prompt.split('[FINAL VERIFICATION]\n')[1];
+  assert.match(verification,/hair density, curl pattern, top volume, and length match the reference/i);
+  assert.match(verification,/only the direction of the front section has changed/i);
+});
+
+test('PR 17 fuel-station driver selfie preserves the canonical 23-section invariant', () => {
+  const result=generateImagePrompt({
+    sceneType:'inside_car_selfie',
+    poseValue:'driver_seat',
+    pose:'driver_seat',
+    hairStyle:PR17_FORWARD_HAIR,
+    location:'at a modern Saudi fuel station with canopy lighting, pumps, lane markings, convenience-store context, and correct safety clearances'
+  });
+  assert.equal(result.sections.length,23);
+  assert.equal(result.validation.valid,true,result.validation.errors.join(' | '));
 });
 

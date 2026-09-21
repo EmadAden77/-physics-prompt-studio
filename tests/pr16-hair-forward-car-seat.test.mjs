@@ -9,7 +9,7 @@ function section(prompt, name, nextName) {
 test('PR 16 forward hair lock requires visible droop and forehead coverage', () => {
   const result=generateImagePrompt({ hairStyle:'hair combed FORWARD onto the forehead with visible individual strands.' });
   const identity=section(result.prompt,'IDENTITY / SUBJECT','SCENE');
-  assert.match(identity,/must visibly droop or fall forward/i);
+  assert.match(identity,/ONLY the front section changes direction so strands fall forward onto the upper forehead/i);
   assert.match(identity,/hairline must be at least partially covered/i);
 });
 

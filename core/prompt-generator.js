@@ -84,7 +84,7 @@ const CLOTHING_STYLING_SCENE_TYPES = new Set([
   'third_person_portrait','full_body_third_person','candid_third_person'
 ]);
 const CANONICAL_SECTIONS = ['GOAL','ACTION-DRIVEN AUTHENTICITY','CAPTURE TYPE LOCK — CRITICAL','IDENTITY / SUBJECT','SCENE','SAUDI CULTURAL DRESS','OBSERVABLE BACKGROUND ELEMENTS','CLOTHING','CONTEXTUAL ACCESSORIES','POSE & BODY MECHANICS','CAMERA GEOMETRY','PHYSICAL LIGHTING','MIRROR RULES','PRODUCT INTEGRATION','PHYSICAL / MATERIAL REALISM','SMARTPHONE IMAGE BEHAVIOR','LENS_PHYSICS','BIOLOGICAL_MICRO_REALISM','CAMERA_METADATA_HINT','AUTHENTIC IMPERFECTIONS','USER CONSTRAINTS','NEGATIVE CONSTRAINTS','FINAL VERIFICATION'];
-const HAIR_LOCK = 'Hair length, density, and hair thickness remain as in the reference image when a reference image is attached. The DIRECTION and strand flow must follow the selected hairstyle direction and override the reference\'s default direction. Preserve the underlying hairline shape while allowing selected forward-falling strands to cover it naturally. Do not shorten, lengthen, thin, thicken, or recede the hairline. If no reference image is attached, keep the chosen baseline hair length and density stable and do not invent extra length or density solely to satisfy a hairstyle.';
+const HAIR_LOCK = 'Hair DENSITY, thickness, CURL PATTERN, and length must match the reference image EXACTLY when a reference image is attached. Direction changes only. Do not inflate top volume. Do not exaggerate curl definition beyond the reference. Do not add hair mass. Do not stylize the curl tighter or looser than the reference. The DIRECTION and strand flow must follow the selected hairstyle direction and override the reference\'s default direction. Preserve the underlying hairline shape while allowing selected forward-falling strands to cover it naturally. Do not shorten, lengthen, thin, thicken, or recede the hairline. If no reference image is attached, keep the chosen baseline hair length, density, curl pattern, and top volume stable and do not invent extra hair mass solely to satisfy a hairstyle.';
 function resolveHairDirection(hair='') {
   const text=clean(hair).toLowerCase();
   if(!text) return 'neutral';
@@ -97,7 +97,7 @@ function resolveHairDirection(hair='') {
 }
 const HAIR_DIRECTION_LOCKS=Object.freeze({
   backward:'Selected direction is BACKWARD. The dominant visible flow must run from the forehead toward the back of the head. No strands may fall forward onto the forehead. Hairline must remain fully visible.',
-  forward:'Selected direction is FORWARD. Visible strands must flow toward and onto the forehead. The front section must visibly droop or fall forward so that several strands rest on or over the upper forehead. The hairline must be at least partially covered by these forward-falling strands. Do not sweep the front hair backward.',
+  forward:'Selected direction is FORWARD. ONLY the front section changes direction so strands fall forward onto the upper forehead. Top volume, curl pattern, and total hair mass remain unchanged from the reference. The change is directional, not volumetric. The hairline must be at least partially covered by these forward-falling strands. Do not sweep the front hair backward.',
   side:'Selected direction is SIDE-PARTED. The selected side parting line must be clearly visible and the hair must flow naturally away from that line. Do not replace the selected side part with a backward sweep.',
   center:'Selected direction is CENTER-PARTED. A visible center or explicitly off-center parting line must remain clear, with hair flowing to both sides. Do not replace the selected center structure with a backward sweep.',
   messy:'Selected direction is MESSY. Preserve visibly disordered, non-uniform strand flow. Do not convert it into a clean, uniformly combed arrangement.'
@@ -113,7 +113,12 @@ function hairDirectionLock(hair){
   const rule=HAIR_DIRECTION_LOCKS[resolveHairDirection(hair)];
   return `HAIR DIRECTION LOCK: ${rule || 'Keep visible hair naturally arranged without inventing a directional style.'}`;
 }
-function hairDirectionNegatives(hair){ return HAIR_DIRECTION_NEGATIVES[resolveHairDirection(hair)] || ''; }
+const HAIR_IDENTITY_NEGATIVES='inflated hair volume, exaggerated curl pattern, hair volume greater than reference, added hair density, thicker hair than reference, exaggerated top lift, stylized curl definition beyond reference, restyled curl texture';
+function hairDirectionNegatives(hair){
+  const direction=resolveHairDirection(hair);
+  const directional=HAIR_DIRECTION_NEGATIVES[direction] || '';
+  return directional ? `${directional}, ${HAIR_IDENTITY_NEGATIVES}` : '';
+}
 
 function carSeatRole(requestedSceneType='', poseValue='') {
   const requested=clean(requestedSceneType);
@@ -284,7 +289,7 @@ function negatives(scene,hair,majlisUpholsteryScope = false){
 function verification(scene,ratio,guidance,hair){
   const hairCheck=resolveHairDirection(hair)==='neutral'
     ? 'hair remains naturally arranged without an invented directional lock'
-    : 'the selected hair direction is unmistakably visible; no strands contradict the selected direction; stray hairs (if visible) respect the selected direction';
+    : 'the selected hair direction is unmistakably visible; no strands contradict the selected direction; stray hairs (if visible) respect the selected direction; hair density, curl pattern, top volume, and length match the reference; only the direction of the front section has changed';
   return `Before finalizing, verify: capture type unmistakably matches “${scene.capture}”; the camera position is physically possible; anatomy and contacts are coherent; selected location and clothing are visible and mutually compatible; ${hairCheck}; selected pose, angle and lighting are visible and mutually compatible; lighting can be traced to plausible physical sources; materials respond differently according to their properties; background scale and requested activity level make sense; composition is ${ratio.prompt}; and the realism checklist is satisfied: ${guidance.consistency.replace(/^Before finalizing, verify:\s*/i,'')} If a secondary aesthetic choice conflicts with physical causality or capture geometry, preserve physical plausibility.`;
 }
 
@@ -501,7 +506,7 @@ export function validateGeneratedPrompt(prompt,context={}){
   if(heads.length!==23) errors.push(`Expected exactly 23 canonical sections, found ${heads.length}.`);
   if(JSON.stringify(heads)!==JSON.stringify(CANONICAL_SECTIONS)) errors.push('Canonical prompt sections are missing, duplicated, or out of order.');
   for(const name of CANONICAL_SECTIONS){ if(!map.has(name)) errors.push(`Missing required section: [${name}]`); else if(map.get(name)===null) errors.push(`Duplicate required section: [${name}]`); else if(!clean(map.get(name))) errors.push(`Required section is empty: [${name}]`); }
-  const checks=[['PHYSICAL LIGHTING',/Physical illumination/i,'Physical illumination rule is missing from [PHYSICAL LIGHTING].'],['PHYSICAL LIGHTING',/Exposure, ISO, HDR/i,'Exposure/ISO/HDR separation rule is missing from [PHYSICAL LIGHTING].'],['LENS_PHYSICS',/chromatic aberration/i,'Chromatic aberration rule is missing from [LENS_PHYSICS].'],['LENS_PHYSICS',/vignetting/i,'Vignetting rule is missing from [LENS_PHYSICS].'],['LENS_PHYSICS',/barrel distortion/i,'Barrel-distortion rule is missing from [LENS_PHYSICS].'],['BIOLOGICAL_MICRO_REALISM',/visible skin pores/i,'Visible skin pores rule is missing from [BIOLOGICAL_MICRO_REALISM].'],['BIOLOGICAL_MICRO_REALISM',/corneal reflections/i,'Corneal reflections rule is missing from [BIOLOGICAL_MICRO_REALISM].'],['BIOLOGICAL_MICRO_REALISM',/stray hairs/i,'Stray hairs rule is missing from [BIOLOGICAL_MICRO_REALISM].'],['IDENTITY / SUBJECT',/Hair length, density, and hair thickness remain as in the reference image/i,'Hair length/density/direction lock is missing from [IDENTITY / SUBJECT].'],['CAMERA_METADATA_HINT',/CAPTURE METADATA/i,'Capture metadata guidance is missing from [CAMERA_METADATA_HINT].'],['FINAL VERIFICATION',/Before finalizing/i,'Final verification language is missing from [FINAL VERIFICATION].']];
+  const checks=[['PHYSICAL LIGHTING',/Physical illumination/i,'Physical illumination rule is missing from [PHYSICAL LIGHTING].'],['PHYSICAL LIGHTING',/Exposure, ISO, HDR/i,'Exposure/ISO/HDR separation rule is missing from [PHYSICAL LIGHTING].'],['LENS_PHYSICS',/chromatic aberration/i,'Chromatic aberration rule is missing from [LENS_PHYSICS].'],['LENS_PHYSICS',/vignetting/i,'Vignetting rule is missing from [LENS_PHYSICS].'],['LENS_PHYSICS',/barrel distortion/i,'Barrel-distortion rule is missing from [LENS_PHYSICS].'],['BIOLOGICAL_MICRO_REALISM',/visible skin pores/i,'Visible skin pores rule is missing from [BIOLOGICAL_MICRO_REALISM].'],['BIOLOGICAL_MICRO_REALISM',/corneal reflections/i,'Corneal reflections rule is missing from [BIOLOGICAL_MICRO_REALISM].'],['BIOLOGICAL_MICRO_REALISM',/stray hairs/i,'Stray hairs rule is missing from [BIOLOGICAL_MICRO_REALISM].'],['IDENTITY / SUBJECT',/Hair DENSITY, thickness, CURL PATTERN, and length must match the reference image EXACTLY/i,'Hair density/curl/volume/direction lock is missing from [IDENTITY / SUBJECT].'],['CAMERA_METADATA_HINT',/CAPTURE METADATA/i,'Capture metadata guidance is missing from [CAMERA_METADATA_HINT].'],['FINAL VERIFICATION',/Before finalizing/i,'Final verification language is missing from [FINAL VERIFICATION].']];
   for(const [name,re,msg] of checks) if(!re.test(map.get(name)||'')) errors.push(msg);
   const negativeBody=map.get('NEGATIVE CONSTRAINTS')||'';
   if(!/\bAvoid\b/i.test(negativeBody)) errors.push('Negative constraint language must include "Avoid" in [NEGATIVE CONSTRAINTS].');

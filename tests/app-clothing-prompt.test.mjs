@@ -61,8 +61,8 @@ test('PR 14 clothing styling UI is category-driven rather than statically duplic
   const { clothingStylingOptionsForValue } = await import('../app.js');
   const shirt=clothingStylingOptionsForValue('look-01');
   const thobe=clothingStylingOptionsForValue('white_thobe');
-  assert.equal(shirt.length,7);
-  assert.equal(thobe.length,5);
+  assert.equal(shirt.length,10);
+  assert.equal(thobe.length,6);
   assert.equal(shirt.some((item)=>item.value==='french-tuck'),true);
   assert.equal(thobe.some((item)=>item.value==='sleeves-rolled'),true);
   const match=html.match(/<select id="clothingStyling">([\s\S]*?)<\/select>/);

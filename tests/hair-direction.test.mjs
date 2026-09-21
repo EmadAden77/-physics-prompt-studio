@@ -33,16 +33,29 @@ test('hair-back-separated explicitly locks backward flow and a clear forehead', 
   assert.match(style.prompt, /Absolutely no strands fall forward or cover the forehead/i);
 });
 
-test('selected hairstyle emits mandatory HAIR DIRECTION LOCK inside identity subject', () => {
-  const style = HAIR_STYLES.find((item) => item.value === 'hair-back-separated');
-  const result = generateImagePrompt({ sceneType: 'front_selfie', hairStyle: style.prompt });
-  const identity = result.prompt.split('[IDENTITY / SUBJECT]\n')[1].split('\n\n[SCENE]')[0];
+test('selected hairstyle emits only the matching HAIR DIRECTION LOCK for all five directions', () => {
+  const cases = [
+    ['hair-back-separated', 'BACKWARD'],
+    ['hair-forward-natural', 'FORWARD'],
+    ['hair-side-part-left', 'SIDE-PARTED'],
+    ['hair-center-part-classic', 'CENTER-PARTED'],
+    ['hair-messy-natural', 'MESSY']
+  ];
+  const directionLabels = cases.map(([, label]) => label);
 
-  assert.ok(identity.includes(style.prompt));
-  assert.match(identity, /HAIR DIRECTION LOCK:/);
-  assert.match(identity, /no strands may fall forward onto the forehead/i);
-  assert.match(identity, /parting line must be clearly visible on the left side/i);
-  assert.match(identity, /Ignore generic 'natural look' instructions that contradict the selected direction/i);
+  for (const [value, expected] of cases) {
+    const style = HAIR_STYLES.find((item) => item.value === value);
+    assert.ok(style, `${value} is missing`);
+    const result = generateImagePrompt({ sceneType: 'front_selfie', hairStyle: style.prompt });
+    const identity = result.prompt.split('[IDENTITY / SUBJECT]\n')[1].split('\n\n[SCENE]')[0];
+    const lock = identity.split('HAIR DIRECTION LOCK:')[1].split('Hair length, density, hairline shape')[0];
+
+    assert.ok(identity.includes(style.prompt.replace(/\.+$/u, '')));
+    assert.match(lock, new RegExp(`Selected direction is ${expected}`, 'i'));
+    for (const other of directionLabels.filter((label) => label !== expected)) {
+      assert.doesNotMatch(lock, new RegExp(`Selected direction is ${other}`, 'i'), `${value}: leaked ${other} lock`);
+    }
+  }
 });
 
 test('all base and expanded scene types expose all 30 hair styles', () => {

@@ -196,7 +196,7 @@ test('HAND_PROPS contains exactly the supplied 52 items', () => {
 
 test('POSE_HAND_USAGE covers all selfie and bedroom poses', () => {
   const all = [...SELFIE_POSES, ...BEDROOM_POSES];
-  assert.equal(all.length, 56);
+  assert.equal(all.length, 68);
   for (const pose of all) assert.ok(Object.hasOwn(POSE_HAND_USAGE, pose.value), `missing hand usage for ${pose.value}`);
 });
 

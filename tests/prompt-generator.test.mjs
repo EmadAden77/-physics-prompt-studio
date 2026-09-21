@@ -860,7 +860,7 @@ test('clothing styling is injected when selected', () => {
     clothing: 'white_tshirt',
     clothingStyling: 'sleeves-rolled'
   });
-  assert.match(result.prompt, /rolled up to the elbows/i);
+  assert.match(result.prompt, /short T-shirt sleeves/i);
 });
 
 test('default clothing styling adds nothing', () => {
@@ -915,13 +915,13 @@ test('23 sections are preserved', () => {
   assert.equal(result.sections.length, 23);
 });
 
-test('sleeves-rolled only applies to garments explicitly tagged sleeved', () => {
-  const tshirt = generateImagePrompt({ sceneType: 'front_selfie', clothing: 'a plain white crew-neck cotton T-shirt...', clothingStyling: 'sleeves-rolled' });
-  assert.match(tshirt.prompt, /rolled up to the elbows/i);
-  for (const clothing of ['a plain black abaya...', 'a plain well-fitted white Saudi thobe...']) {
-    const result = generateImagePrompt({ sceneType: 'front_selfie', clothing, clothingStyling: 'sleeves-rolled' });
-    assert.doesNotMatch(result.prompt, /rolled up to the elbows/i);
-  }
+test('sleeves-rolled follows category-specific garment styling', () => {
+  const tshirt = generateImagePrompt({ sceneType:'front_selfie', clothingValue:'white_tshirt', clothingStyling:'sleeves-rolled' });
+  const thobe = generateImagePrompt({ sceneType:'front_selfie', clothingValue:'white_thobe', clothingStyling:'sleeves-rolled' });
+  const abaya = generateImagePrompt({ sceneType:'front_selfie', clothingValue:'black_abaya', clothingStyling:'sleeves-rolled' });
+  assert.match(tshirt.prompt,/short T-shirt sleeves/i);
+  assert.match(thobe.prompt,/thobe sleeves/i);
+  assert.doesNotMatch(abaya.prompt,/thobe sleeves|T-shirt sleeves/i);
 });
 
 test('french-tuck never applies to thobe or abaya', () => {
@@ -931,11 +931,11 @@ test('french-tuck never applies to thobe or abaya', () => {
   }
 });
 
-test('top-buttons-open only applies to buttoned tops', () => {
-  const shirt = generateImagePrompt({ sceneType: 'front_selfie', clothing: 'a crisp white oxford cotton shirt...', clothingStyling: 'top-buttons-open' });
-  assert.match(shirt.prompt, /Top 2-3 buttons unbuttoned/i);
-  const tshirt = generateImagePrompt({ sceneType: 'front_selfie', clothing: 'a plain white crew-neck cotton T-shirt...', clothingStyling: 'top-buttons-open' });
-  assert.doesNotMatch(tshirt.prompt, /Top 2-3 buttons unbuttoned/i);
+test('top-buttons-open is scoped to the shirt category', () => {
+  const shirt = generateImagePrompt({ sceneType:'front_selfie', clothingValue:'look-01', clothingStyling:'top-buttons-open' });
+  const tshirt = generateImagePrompt({ sceneType:'front_selfie', clothingValue:'white_tshirt', clothingStyling:'top-buttons-open' });
+  assert.match(shirt.prompt,/top two shirt buttons open/i);
+  assert.doesNotMatch(tshirt.prompt,/top two shirt buttons open/i);
 });
 
 test('pocket-hands applies to pocketed garments only', () => {
@@ -954,21 +954,20 @@ test('wipe-sweat applies to all garments', () => {
 
 test('scene-aware filtering disables styling in supermarket_selfie', () => {
   const supermarket = generateImagePrompt({ sceneType: 'supermarket_selfie', clothing: 'white_tshirt', clothingStyling: 'sleeves-rolled' });
-  assert.doesNotMatch(supermarket.prompt, /rolled up to the elbows/i);
+  assert.doesNotMatch(supermarket.prompt, /Roll the thobe sleeves|Roll the shirt sleeves|Roll the short T-shirt sleeves/i);
 });
 
-test('fully-open never applies to FORMAL_LOOKS', () => {
-  const formalLook = CLOTHING_CATALOG.find((item) => item.value === 'look-01');
-  const result = generateImagePrompt({ sceneType: 'front_selfie', clothing: formalLook.prompt, clothingStyling: 'fully-open' });
-  assert.doesNotMatch(result.prompt, /Outer layer fully unbuttoned or unzipped/i);
+test('suit jacket styling does not apply to FORMAL_LOOKS shirt category', () => {
+  const result = generateImagePrompt({ sceneType:'front_selfie', clothingValue:'look-01', clothingStyling:'suit-jacket-open' });
+  assert.doesNotMatch(result.prompt,/suit or jacket open at the front/i);
 });
 
-test('quilted_vest_knit does not allow sleeves-rolled', () => {
-  const vest = CLOTHING_CATALOG.find((item) => item.value === 'quilted_vest_knit');
+test('quilted_vest_knit suit category rejects shirt sleeve styling', () => {
+  const vest=CLOTHING_CATALOG.find((item)=>item.value==='quilted_vest_knit');
   assert.ok(vest);
-  assert.equal(vest.garmentTags.includes('sleeved'), false);
-  const result = generateImagePrompt({ sceneType: 'front_selfie', clothing: vest.prompt, clothingStyling: 'sleeves-rolled' });
-  assert.doesNotMatch(result.prompt, /rolled up to the elbows/i);
+  assert.equal(vest.category,'suit');
+  const result=generateImagePrompt({ sceneType:'front_selfie', clothingValue:'quilted_vest_knit', clothingStyling:'sleeves-rolled' });
+  assert.doesNotMatch(result.prompt,/shirt sleeves|thobe sleeves|T-shirt sleeves/i);
 });
 
 test('every clothing catalog item has non-empty garmentTags', () => {
@@ -977,14 +976,13 @@ test('every clothing catalog item has non-empty garmentTags', () => {
   assert.equal(all.filter((item) => !Array.isArray(item.garmentTags) || item.garmentTags.length === 0).length, 0);
 });
 
-test('every clothing item retains at least one styling and hand option', () => {
-  const all = [...CLOTHING_CATALOG, ...HOME_CLOTHING];
-  for (const item of all) {
-    const tags = new Set(item.garmentTags);
-    const styling = CLOTHING_STYLING.filter((option) => option.applicableTo.includes('all') || option.applicableTo.some((tag) => tags.has(tag)));
-    const hands = HAND_INTERACTIONS.filter((option) => option.applicableTo.includes('all') || option.applicableTo.some((tag) => tags.has(tag)));
-    assert.ok(styling.length > 0, `No clothing styling options for ${item.value}`);
-    assert.ok(hands.length > 0, `No hand interaction options for ${item.value}`);
+test('every general clothing item has a styling category and every clothing item retains a hand option', () => {
+  const allowed=new Set(['thobe','shirt','tshirt','bisht','abaya','suit']);
+  for(const item of CLOTHING_CATALOG) assert.ok(allowed.has(item.category),`Invalid styling category for ${item.value}`);
+  for(const item of [...CLOTHING_CATALOG,...HOME_CLOTHING]) {
+    const tags=new Set(item.garmentTags);
+    const hands=HAND_INTERACTIONS.filter((option)=>option.applicableTo.includes('all') || option.applicableTo.some((tag)=>tags.has(tag)));
+    assert.ok(hands.length>0,`No hand interaction options for ${item.value}`);
   }
 });
 

@@ -306,10 +306,12 @@ export function generateImagePrompt(input={}){
   const clothingItem=resolveClothingItem(input);
   const clothingWarning=clothingSceneCoherence(clothingItem?.value || clean(input.clothingValue), requested);
   const garmentTags=new Set(clothingItem?.garmentTags || []);
-  const clothingStyling=pick(CLOTHING_STYLING,input.clothingStyling,CLOTHING_STYLING[0]);
+  const clothingStylingOptions=clothingItem?.category ? (CLOTHING_STYLING[clothingItem.category] || []) : [];
+  const clothingStylingFallback=clothingStylingOptions.find((item)=>item.value==='default') || clothingStylingOptions[0];
+  const clothingStyling=pick(clothingStylingOptions,input.clothingStyling,clothingStylingFallback);
   const handInteraction=pick(HAND_INTERACTIONS,input.handInteraction,HAND_INTERACTIONS[0]);
   const stylingSceneSupported=CLOTHING_STYLING_SCENE_TYPES.has(requested) && requested!=='supermarket_selfie';
-  const clothingStylingPrompt=stylingSceneSupported && optionAppliesToGarment(clothingStyling,garmentTags) ? clothingStyling.prompt : '';
+  const clothingStylingPrompt=stylingSceneSupported && clothingStyling && optionAppliesToGarment(clothingStyling,garmentTags) ? clothingStyling.prompt : '';
   const handInteractionPrompt=optionAppliesToGarment(handInteraction,garmentTags) ? handInteraction.prompt : '';
   const hair=clean(input.hairStyle), poseInput=clean(input.pose), angleInput=clean(input.angle);
   const bedroomPoseCameraEnabled=requested==='bedroom_selfie' || requested==='bedroom_mirror_selfie';

@@ -58,7 +58,7 @@ test('core catalog counts match the documented production baseline', () => {
   const duplicateSuitValues = FORMAL_SUITS.filter((item) => clothingValues.has(item.value)).map((item) => item.value);
   assert.deepEqual(duplicateSuitValues, [], `CLOTHING_OPTIONS and FORMAL_SUITS duplicate values: ${duplicateSuitValues.join(', ')}`);
 
-  assert.equal(SELFIE_POSES.length, 16, 'SELFIE_POSES count changed');
+  assert.equal(SELFIE_POSES.length, 28, 'SELFIE_POSES count changed');
   assert.equal(SELFIE_ANGLES.length, 16, 'SELFIE_ANGLES count changed');
   assert.equal(LIGHTING_PROFILES.length, 26, 'LIGHTING_PROFILES count changed');
 });

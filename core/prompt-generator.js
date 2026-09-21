@@ -84,7 +84,7 @@ const CLOTHING_STYLING_SCENE_TYPES = new Set([
   'third_person_portrait','full_body_third_person','candid_third_person'
 ]);
 const CANONICAL_SECTIONS = ['GOAL','ACTION-DRIVEN AUTHENTICITY','CAPTURE TYPE LOCK — CRITICAL','IDENTITY / SUBJECT','SCENE','SAUDI CULTURAL DRESS','OBSERVABLE BACKGROUND ELEMENTS','CLOTHING','CONTEXTUAL ACCESSORIES','POSE & BODY MECHANICS','CAMERA GEOMETRY','PHYSICAL LIGHTING','MIRROR RULES','PRODUCT INTEGRATION','PHYSICAL / MATERIAL REALISM','SMARTPHONE IMAGE BEHAVIOR','LENS_PHYSICS','BIOLOGICAL_MICRO_REALISM','CAMERA_METADATA_HINT','AUTHENTIC IMPERFECTIONS','USER CONSTRAINTS','NEGATIVE CONSTRAINTS','FINAL VERIFICATION'];
-const HAIR_LOCK = 'Hair DENSITY, thickness, CURL PATTERN, and length must match the reference image EXACTLY when a reference image is attached. Direction changes only. Do not inflate top volume. Do not exaggerate curl definition beyond the reference. Do not add hair mass. Do not stylize the curl tighter or looser than the reference. The DIRECTION and strand flow must follow the selected hairstyle direction and override the reference\'s default direction. Preserve the underlying hairline shape while allowing selected forward-falling strands to cover it naturally. Do not shorten, lengthen, thin, thicken, or recede the hairline. If no reference image is attached, keep the chosen baseline hair length, density, curl pattern, and top volume stable and do not invent extra hair mass solely to satisfy a hairstyle.';
+const HAIR_LOCK = 'Hair DENSITY, thickness, CURL PATTERN, and length must match the reference image EXACTLY when a reference image is attached. Direction changes only. Do not inflate top volume. Do not exaggerate curl definition beyond the reference. Do not add hair mass. Do not stylize the curl tighter or looser than the reference. The DIRECTION and strand flow must follow the selected hairstyle direction and override the reference\'s default direction. Preserve the underlying hairline shape; whether the hairline is visible or covered must follow only the selected hairstyle direction. Do not shorten, lengthen, thin, thicken, or recede the hairline. If no reference image is attached, keep the chosen baseline hair length, density, curl pattern, and top volume stable and do not invent extra hair mass solely to satisfy a hairstyle.';
 function resolveHairDirection(hair='') {
   const text=clean(hair).toLowerCase();
   if(!text) return 'neutral';
@@ -97,7 +97,7 @@ function resolveHairDirection(hair='') {
 }
 const HAIR_DIRECTION_LOCKS=Object.freeze({
   backward:'Selected direction is BACKWARD. The dominant visible flow must run from the forehead toward the back of the head. No strands may fall forward onto the forehead. Hairline must remain fully visible.',
-  forward:'Selected direction is FORWARD. ONLY the front section changes direction so strands fall forward onto the upper forehead. The front section must visibly droop or fall forward so that several strands rest on or over the upper forehead. Top volume, curl pattern, and total hair mass remain unchanged from the reference when a reference image is attached; otherwise they remain unchanged from the chosen no-reference baseline. The change is directional, not volumetric. The hairline must be at least partially covered by these forward-falling strands. Do not sweep the front hair backward.',
+  forward:'Selected direction is FORWARD. ONLY the front section changes direction so strands fall forward onto the upper forehead. The front section must visibly droop or fall forward so that several strands rest on or over the upper forehead. Top volume, curl pattern, and total hair mass remain unchanged from the reference when a reference image is attached; otherwise they remain unchanged from the chosen no-reference baseline. The change is ONLY directional. The top of the head must keep the SAME height and SAME curl definition as the reference. Do not add volume. Do not enhance curl. Do not restyle. The hairline must be at least partially covered by these forward-falling strands. Do not sweep the front hair backward.',
   side:'Selected direction is SIDE-PARTED. The selected side parting line must be clearly visible and the hair must flow naturally away from that line. Do not replace the selected side part with a backward sweep.',
   center:'Selected direction is CENTER-PARTED. A visible center or explicitly off-center parting line must remain clear, with hair flowing to both sides. Do not replace the selected center structure with a backward sweep.',
   messy:'Selected direction is MESSY. Preserve visibly disordered, non-uniform strand flow. Do not convert it into a clean, uniformly combed arrangement.'
@@ -113,7 +113,7 @@ function hairDirectionLock(hair){
   const rule=HAIR_DIRECTION_LOCKS[resolveHairDirection(hair)];
   return `HAIR DIRECTION LOCK: ${rule || 'Keep visible hair naturally arranged without inventing a directional style.'}`;
 }
-const HAIR_IDENTITY_NEGATIVES='inflated hair volume, exaggerated curl pattern, hair volume greater than reference, added hair density, thicker hair than reference, exaggerated top lift, stylized curl definition beyond reference, restyled curl texture';
+const HAIR_IDENTITY_NEGATIVES='inflated hair volume, exaggerated curl pattern, hair volume greater than reference, added hair density, thicker hair than reference, exaggerated top lift, stylized curl definition beyond reference, restyled curl texture, volume added at the top of the head, curl definition enhanced beyond reference, hair restyled entirely, added hair mass at crown';
 function hairDirectionNegatives(hair){
   const direction=resolveHairDirection(hair);
   const directional=HAIR_DIRECTION_NEGATIVES[direction] || '';
@@ -284,14 +284,15 @@ function resolveCameraMetadata(camera,lighting,lightingValue=''){
   const capture=camera.value==='iphone15pm_front' ? 'Shot on iPhone 15 Pro Max front camera with a natural wide selfie field of view' : camera.value==='smartphone_rear' ? 'Shot on a modern smartphone rear camera with a natural wide field of view' : 'Shot on a modern smartphone front camera with a natural wide selfie field of view';
   return `CAPTURE METADATA (for scene fidelity): ${capture}, ${exposure}, handheld.`;
 }
-function negatives(scene,hair,majlisUpholsteryScope = false){
+function negatives(scene,hair,majlisUpholsteryScope = false,carAnchorScope = false){
   const capture = scene.capture.includes('third-person') ? 'selfie arm, implied subject-held camera' : scene.capture.includes('mirror') ? 'direct front-camera viewpoint outside the mirror, duplicate phone or hands' : 'third-person viewpoint, floating external camera, mirror capture unless explicitly selected';
   const majlisUpholstery = majlisUpholsteryScope
     ? 'tufted upholstery, button-tufted cushions, quilted fabric, patterned upholstery, contrasting cushion fabrics, nail-head trim, decorative piping on seating, visible buttons on back cushions, dotted upholstery, speckled fabric, checkered weave, grid-textured cushions, knitted-appearance upholstery, visible weft or thread pattern on seating, contrasting-thread weave, slub-like texture on sofa fabric, visible linen grain on upholstery, '
     : '';
   const hairExclusions=hairDirectionNegatives(hair);
   const forwardHairRequirement=resolveHairDirection(hair)==='forward' ? ' REQUIRED: forward-falling front strands visibly resting on the upper forehead.' : '';
-  return `Avoid: plastic skin, waxy or porcelain skin, face reconstruction, artificial symmetry, malformed hands, extra fingers, duplicated limbs, floating objects, impossible body support, incorrect contact shadows, melted textiles, melted fabric, floating clothes, deformed abs, impossible anatomy, morphing sofa, split furniture, merged furniture, disconnected armrest, two sofas merged, ${majlisUpholstery}furniture with disconnected legs, furniture floating above the ground, repeated background people, cloned props, impossible reflections, invisible artificial key lights, fake rim lights, excessive HDR, aggressive orange-teal grading, DSLR-style bokeh, over-sharpening, oversaturated skin, sterile showroom staging, generic static posing, advertisement-style product placement, artificial lens flare, beauty filtering, symmetric face, missing corneal reflections, deformed background people, fused background bodies, cloned background faces, floating background people, mis-scaled background humans, background people without ground contact, gibberish text, pseudo-Arabic script, garbled signs, English-only signage in Saudi scenes, fictional characters on signs${hairExclusions ? `, ${hairExclusions}` : ''}.${forwardHairRequirement} Capture-specific exclusions: ${capture}.`;
+  const carExclusions=carAnchorScope ? 'uniform cabin illumination, fill light on the face, bright dashboard glow, artificially lit cabin interior, showroom-bright car cabin at night, light from an invisible source, screen light spilling beyond arm\'s length, wrong Range Rover Sport generation, pre-facelift single-screen center stack, button-heavy pre-facelift dashboard, generic full-size luxury SUV cabin, rotary gear selector, mismatched dashboard and steering-wheel generation, forced panoramic-roof visibility' : '';
+  return `Avoid: plastic skin, waxy or porcelain skin, face reconstruction, artificial symmetry, malformed hands, extra fingers, duplicated limbs, floating objects, impossible body support, incorrect contact shadows, melted textiles, melted fabric, floating clothes, deformed abs, impossible anatomy, morphing sofa, split furniture, merged furniture, disconnected armrest, two sofas merged, ${majlisUpholstery}furniture with disconnected legs, furniture floating above the ground, repeated background people, cloned props, impossible reflections, invisible artificial key lights, fake rim lights, excessive HDR, aggressive orange-teal grading, DSLR-style bokeh, over-sharpening, oversaturated skin, sterile showroom staging, generic static posing, advertisement-style product placement, artificial lens flare, beauty filtering, symmetric face, missing corneal reflections, deformed background people, fused background bodies, cloned background faces, floating background people, mis-scaled background humans, background people without ground contact, gibberish text, pseudo-Arabic script, garbled signs, English-only signage in Saudi scenes, fictional characters on signs${hairExclusions ? `, ${hairExclusions}` : ''}${carExclusions ? `, ${carExclusions}` : ''}.${forwardHairRequirement} Capture-specific exclusions: ${capture}.`;
 }
 function verification(scene,ratio,guidance,hair,identityReference=true){
   const hairDirection=resolveHairDirection(hair);
@@ -334,6 +335,7 @@ export function validateRealism(prompt){
 
 export function generateImagePrompt(input={}){
   const requested=clean(input.sceneType)||DEFAULTS.sceneType.value;
+  const carAnchorEnabled=isCarAnchorScene(requested);
   const scene=pick(SCENE_TYPES,baseSceneTypeFor(requested),DEFAULTS.sceneType);
   const extra=sceneMeta(requested);
   const captureDefaultCamera=scene.capture.includes('third-person') ? CAMERA_PROFILES.find((item)=>item.value==='smartphone_rear') : DEFAULTS.camera;
@@ -406,9 +408,13 @@ export function generateImagePrompt(input={}){
     getRemainingHands(requested,scene.capture,'none',poseValue,effectiveHandInteraction)
   );
   const secondaryPropHands=getPropHandUsage(secondaryProp,remainingAfterPrimary);
+  const resolvedBackgroundElements=backgroundElements(background,contextual,saudi);
+  if(carAnchorEnabled && resolvedBackgroundElements.length){
+    resolvedBackgroundElements[0]='vehicle cabin surfaces and controls inside the framing, plus parking fixtures and exterior vehicles visible through real glazing at believable scale';
+  }
   const packet=buildRealismPacket({
     sceneType:scene.value,requestedSceneType:requested,captureType:scene.capture,location,clothing,hairStyle:hair,expression:expression.prompt,angle:cameraGeometryText,lighting,description,
-    aspectRatio:ratio.prompt,pose,poseValue,backgroundActivity:background.value,backgroundElements:backgroundElements(background,contextual,saudi),
+    aspectRatio:ratio.prompt,pose,poseValue,backgroundActivity:background.value,backgroundElements:resolvedBackgroundElements,
     heldProp:propPrompt(heldProp,heldPropHands),
     secondaryProp:propPrompt(secondaryProp,secondaryPropHands)
   });
@@ -423,7 +429,9 @@ export function generateImagePrompt(input={}){
     ? guidance.mirror
     : 'Mirror rules: not applicable.';
 
-  let sceneText=`Location: ${location}. Maintain believable architecture, furniture, roads, vehicles, landscape, circulation space, object scale and environmental depth appropriate to the selected location.`;
+  let sceneText=carAnchorEnabled
+    ? `Environment around the vehicle: ${location}. Preserve realistic parking/road geometry, exterior vehicle spacing, glazing perspective, cabin-to-exterior scale, and environmental depth appropriate to the selected location.`
+    : `Location: ${location}. Maintain believable architecture, furniture, roads, vehicles, landscape, circulation space, object scale and environmental depth appropriate to the selected location.`;
   if(requested.startsWith('bedroom_')){
     const anchorText=[
       `ROOM ANCHOR (locked layout): ${BEDROOM_ANCHOR.room}`,
@@ -460,24 +468,26 @@ export function generateImagePrompt(input={}){
     ? LAPTOP_SCENE_CONTEXTS[laptopSceneContextKey] : '';
   if(autoLaptopContext) sceneText=`${sceneText} SCENE-SUPPORTED MACBOOK: ${autoLaptopContext}`;
 
-  if(isCarAnchorScene(requested)){
+  if(carAnchorEnabled){
     const carAnchorText=[
-      CAR_ANCHOR.model,
-      CAR_ANCHOR.exterior_color,
-      CAR_ANCHOR.interior_seats,
-      CAR_ANCHOR.dashboard,
-      CAR_ANCHOR.steering_wheel,
-      CAR_ANCHOR.center_console,
-      CAR_ANCHOR.roof,
-      CAR_ANCHOR.windows,
-      CAR_ANCHOR.drive,
-      CAR_ANCHOR.cabin_scale,
+      `MODEL: ${CAR_ANCHOR.model}.`,
+      `EXTERIOR: ${CAR_ANCHOR.exterior_color}.`,
+      `SEATS / CABIN MATERIALS: ${CAR_ANCHOR.interior_seats}.`,
+      `DASHBOARD / INFOTAINMENT: ${CAR_ANCHOR.dashboard}.`,
+      `STEERING WHEEL: ${CAR_ANCHOR.steering_wheel}.`,
+      `CENTER CONSOLE: ${CAR_ANCHOR.center_console}.`,
+      `ROOF: ${CAR_ANCHOR.roof}.`,
+      `GLAZING: ${CAR_ANCHOR.windows}.`,
+      `DRIVE LAYOUT: ${CAR_ANCHOR.drive}.`,
+      `CABIN SCALE: ${CAR_ANCHOR.cabin_scale}.`,
+      CAR_ANCHOR.geometry,
+      `INTERIOR WEAR: ${CAR_ANCHOR.interior_wear}`,
       CAR_ANCHOR.fixed_rule
-    ].join(', ');
+    ].join(' ');
     sceneText=`${sceneText} CAR INTERIOR ANCHOR: ${carAnchorText}`;
   }
 
-  const furnitureRules=getFurnitureGeometryForScene(requested,location,poseValue);
+  const furnitureRules=carAnchorEnabled ? [] : getFurnitureGeometryForScene(requested,location,poseValue);
   const furnitureText=furnitureRules.length ? `FURNITURE GEOMETRY: ${furnitureRules.join(' ')}` : '';
   sceneText=`${sceneText} ${furnitureText}`.trim();
   const effectiveFraming=modernMajlisAnchorEnabled && seatedMajlisSubject && framing.value==='chest_up'
@@ -510,7 +520,7 @@ export function generateImagePrompt(input={}){
     section('BIOLOGICAL_MICRO_REALISM','BIOLOGICAL MICRO-REALISM (mandatory, apply only where resolvable): Preserve visible skin pores with non-uniform spatial distribution. Preserve fine vellus facial hair where the visible cheek, temple or jaw region is close enough and lit enough to register such detail. Preserve a small number of naturally stray hairs ONLY in directions consistent with the selected hairstyle direction. Do not place stray hairs contradicting the selected direction. Preserve source-consistent corneal reflections showing the actual scene. Preserve slight natural asymmetry in eyebrows, eyelids and jawline. Preserve individual CLOTHING fibers only where genuinely resolvable at the captured distance. Do not force visible fibers, thread grids, slub texture, or weave patterns onto smooth upholstery or other materials whose surface specification explicitly forbids visible weave. Do not beautify, smooth, symmetrize or sterilize. If a region is cropped, occluded, too dark, too soft, too distant or out of focus, do not invent micro-detail merely to satisfy this section.'),
     section('CAMERA_METADATA_HINT',resolveCameraMetadata(camera,lighting,input.lightingValue)),
     section('AUTHENTIC IMPERFECTIONS',`${guidance.imperfections}\n${CAPTURE_IMPERFECTIONS}`),
-    section('USER CONSTRAINTS',custom||'None.'), section('NEGATIVE CONSTRAINTS',negatives(scene,hair,modernMajlisAnchorEnabled)), section('FINAL VERIFICATION',verification(scene,ratio,guidance,hair,identity))
+    section('USER CONSTRAINTS',custom||'None.'), section('NEGATIVE CONSTRAINTS',negatives(scene,hair,modernMajlisAnchorEnabled,carAnchorEnabled)), section('FINAL VERIFICATION',verification(scene,ratio,guidance,hair,identity))
   ];
   const prompt=sections.join('\n\n'), realismCheck=validateRealism(prompt), validation=validateGeneratedPrompt(prompt,{sceneType:scene,realismPacket:packet,saudiContext:saudi});
   validation.warnings.push(...contextual.warnings);

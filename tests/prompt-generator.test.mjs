@@ -124,7 +124,7 @@ test('selected hair style affects identity while length density and hairline rem
   const style = 'hair parted on the left side with a clean visible line, natural fall on both sides, density and hairline unchanged';
   const result = generateImagePrompt({ sceneType: 'front_selfie', hairStyle: style });
   assert.ok(result.prompt.includes(style));
-  assert.match(result.prompt, /Hair length, density, hairline shape/i);
+  assert.match(result.prompt, /Hair length, density, and hair thickness remain as in the reference image/i);
   assert.match(result.prompt, /Do not shorten, lengthen, thin, thicken/i);
   assert.equal(result.config.hair_style, style);
 });
@@ -588,7 +588,7 @@ test('Saudi cultural rules stay out of technical negative constraints and non-Sa
 test('hair style lock is merged into IDENTITY SUBJECT rather than emitted as an extra section', () => {
   const result = generateImagePrompt({ sceneType: 'front_selfie' });
   const identity = result.prompt.split('[IDENTITY / SUBJECT]\n')[1].split('\n\n[SCENE]')[0];
-  assert.match(identity, /Hair length, density, hairline shape/i);
+  assert.match(identity, /Hair length, density, and hair thickness remain as in the reference image/i);
   assert.match(identity, /Do not shorten/i);
   assert.equal(result.prompt.includes('[HAIR_STYLE_LOCK]'), false);
 });

@@ -84,7 +84,7 @@ const CLOTHING_STYLING_SCENE_TYPES = new Set([
   'third_person_portrait','full_body_third_person','candid_third_person'
 ]);
 const CANONICAL_SECTIONS = ['GOAL','ACTION-DRIVEN AUTHENTICITY','CAPTURE TYPE LOCK — CRITICAL','IDENTITY / SUBJECT','SCENE','SAUDI CULTURAL DRESS','OBSERVABLE BACKGROUND ELEMENTS','CLOTHING','CONTEXTUAL ACCESSORIES','POSE & BODY MECHANICS','CAMERA GEOMETRY','PHYSICAL LIGHTING','MIRROR RULES','PRODUCT INTEGRATION','PHYSICAL / MATERIAL REALISM','SMARTPHONE IMAGE BEHAVIOR','LENS_PHYSICS','BIOLOGICAL_MICRO_REALISM','CAMERA_METADATA_HINT','AUTHENTIC IMPERFECTIONS','USER CONSTRAINTS','NEGATIVE CONSTRAINTS','FINAL VERIFICATION'];
-const HAIR_LOCK = 'Hair length, density, hairline shape, and hair thickness remain EXACTLY as in the reference image when a reference image is attached. Only the visible direction, part line, clumping, and strand orientation may change. Do not shorten, lengthen, thin, thicken, or recede the hairline. If no reference image is attached, keep the chosen baseline hair length and density stable and do not invent extra length or density solely to satisfy a hairstyle.';
+const HAIR_LOCK = 'Hair length, density, and hair thickness remain as in the reference image when a reference image is attached. The DIRECTION and strand flow must follow the selected hairstyle direction and override the reference\'s default direction. Preserve the underlying hairline shape while allowing selected forward-falling strands to cover it naturally. Do not shorten, lengthen, thin, thicken, or recede the hairline. If no reference image is attached, keep the chosen baseline hair length and density stable and do not invent extra length or density solely to satisfy a hairstyle.';
 function resolveHairDirection(hair='') {
   const text=clean(hair).toLowerCase();
   if(!text) return 'neutral';
@@ -97,7 +97,7 @@ function resolveHairDirection(hair='') {
 }
 const HAIR_DIRECTION_LOCKS=Object.freeze({
   backward:'Selected direction is BACKWARD. The dominant visible flow must run from the forehead toward the back of the head. No strands may fall forward onto the forehead. Hairline must remain fully visible.',
-  forward:'Selected direction is FORWARD. Visible strands must flow toward and onto the forehead. Hairline may be partially covered. Do not sweep the front hair backward.',
+  forward:'Selected direction is FORWARD. Visible strands must flow toward and onto the forehead. The front section must visibly droop or fall forward so that several strands rest on or over the upper forehead. The hairline must be at least partially covered by these forward-falling strands. Do not sweep the front hair backward.',
   side:'Selected direction is SIDE-PARTED. The selected side parting line must be clearly visible and the hair must flow naturally away from that line. Do not replace the selected side part with a backward sweep.',
   center:'Selected direction is CENTER-PARTED. A visible center or explicitly off-center parting line must remain clear, with hair flowing to both sides. Do not replace the selected center structure with a backward sweep.',
   messy:'Selected direction is MESSY. Preserve visibly disordered, non-uniform strand flow. Do not convert it into a clean, uniformly combed arrangement.'
@@ -114,6 +114,31 @@ function hairDirectionLock(hair){
   return `HAIR DIRECTION LOCK: ${rule || 'Keep visible hair naturally arranged without inventing a directional style.'}`;
 }
 function hairDirectionNegatives(hair){ return HAIR_DIRECTION_NEGATIVES[resolveHairDirection(hair)] || ''; }
+
+function carSeatRole(requestedSceneType='', poseValue='') {
+  const requested=clean(requestedSceneType);
+  const pose=clean(poseValue);
+  if(requested==='inside_car_driver_selfie') return 'driver';
+  if(requested==='inside_car_passenger_selfie') return 'passenger';
+  if(requested!=='inside_car_selfie') return '';
+  return pose==='driver_seat' ? 'driver' : 'passenger';
+}
+
+function normalizeInsideCarCameraGeometry(cameraText,requestedSceneType,poseValue) {
+  const role=carSeatRole(requestedSceneType,poseValue);
+  if(!role) return cameraText;
+  let text=clean(cameraText);
+  if(role==='driver'){
+    text=text.replace(/\bsubject-held\b/gi,'driver-held');
+    return /\bdriver-held\b/i.test(text) ? text : `driver-held front-camera selfie from the driver seat. ${text}`.trim();
+  }
+  text=text
+    .replace(/\bdriver-held\b/gi,'subject-held')
+    .replace(/steering-wheel perspective/gi,'passenger-side cabin perspective')
+    .replace(/dashboard and steering-wheel geometry/gi,'dashboard, glazing, and passenger-side cabin geometry');
+  return /\bsubject-held\b/i.test(text) ? text : `subject-held front-camera selfie from the front passenger seat. ${text}`.trim();
+}
+
 const SAUDI_CONTEXT = /(?:^|[^a-z])(saudi(?: arabia)?|riyadh|jeddah|khobar|dammam|makkah|madinah|medina|taif|abha|tabuk|alula|qassim|hail|najran|jazan|alahsa|al ahsa|yanbu|arabian gulf|red sea)(?:$|[^a-z])/i;
 // TODO(location-classification): refine Saudi context detection
 // to prefer structured location values over broad regex matching.
@@ -253,7 +278,8 @@ function negatives(scene,hair,majlisUpholsteryScope = false){
     ? 'tufted upholstery, button-tufted cushions, quilted fabric, patterned upholstery, contrasting cushion fabrics, nail-head trim, decorative piping on seating, visible buttons on back cushions, dotted upholstery, speckled fabric, checkered weave, grid-textured cushions, knitted-appearance upholstery, visible weft or thread pattern on seating, contrasting-thread weave, slub-like texture on sofa fabric, visible linen grain on upholstery, '
     : '';
   const hairExclusions=hairDirectionNegatives(hair);
-  return `Avoid: plastic skin, waxy or porcelain skin, face reconstruction, artificial symmetry, malformed hands, extra fingers, duplicated limbs, floating objects, impossible body support, incorrect contact shadows, melted textiles, melted fabric, floating clothes, deformed abs, impossible anatomy, morphing sofa, split furniture, merged furniture, disconnected armrest, two sofas merged, ${majlisUpholstery}furniture with disconnected legs, furniture floating above the ground, repeated background people, cloned props, impossible reflections, invisible artificial key lights, fake rim lights, excessive HDR, aggressive orange-teal grading, DSLR-style bokeh, over-sharpening, oversaturated skin, sterile showroom staging, generic static posing, advertisement-style product placement, artificial lens flare, beauty filtering, symmetric face, missing corneal reflections, deformed background people, fused background bodies, cloned background faces, floating background people, mis-scaled background humans, background people without ground contact, gibberish text, pseudo-Arabic script, garbled signs, English-only signage in Saudi scenes, fictional characters on signs${hairExclusions ? `, ${hairExclusions}` : ''}. Capture-specific exclusions: ${capture}.`;
+  const forwardHairRequirement=resolveHairDirection(hair)==='forward' ? ' REQUIRED: forward-falling front strands visibly resting on the upper forehead.' : '';
+  return `Avoid: plastic skin, waxy or porcelain skin, face reconstruction, artificial symmetry, malformed hands, extra fingers, duplicated limbs, floating objects, impossible body support, incorrect contact shadows, melted textiles, melted fabric, floating clothes, deformed abs, impossible anatomy, morphing sofa, split furniture, merged furniture, disconnected armrest, two sofas merged, ${majlisUpholstery}furniture with disconnected legs, furniture floating above the ground, repeated background people, cloned props, impossible reflections, invisible artificial key lights, fake rim lights, excessive HDR, aggressive orange-teal grading, DSLR-style bokeh, over-sharpening, oversaturated skin, sterile showroom staging, generic static posing, advertisement-style product placement, artificial lens flare, beauty filtering, symmetric face, missing corneal reflections, deformed background people, fused background bodies, cloned background faces, floating background people, mis-scaled background humans, background people without ground contact, gibberish text, pseudo-Arabic script, garbled signs, English-only signage in Saudi scenes, fictional characters on signs${hairExclusions ? `, ${hairExclusions}` : ''}.${forwardHairRequirement} Capture-specific exclusions: ${capture}.`;
 }
 function verification(scene,ratio,guidance,hair){
   const hairCheck=resolveHairDirection(hair)==='neutral'
@@ -325,7 +351,7 @@ export function generateImagePrompt(input={}){
   const poseValue=clean(input.poseValue) || selectedBedroomPose?.value || selectedGeneralPose?.value || (POSE_HAND_USAGE_FALLBACK.has(poseInput) ? poseInput : '');
   const poseHint=bedroomPoseCameraEnabled ? getPoseCameraHint(poseInput || pose) : null;
   const angleLockedByPose=bedroomPoseCameraEnabled && Boolean(poseHint);
-  const cameraGeometryText=resolveCameraAngle({
+  const rawCameraGeometryText=resolveCameraAngle({
     sceneType:scene.value,
     requestedSceneType:requested,
     captureType:scene.capture,
@@ -334,6 +360,7 @@ export function generateImagePrompt(input={}){
     seed:input.seed,
     time:input.time
   });
+  const cameraGeometryText=normalizeInsideCarCameraGeometry(rawCameraGeometryText,requested,poseValue);
   const contextual=resolveContextAwareConstraints({
     sceneType:scene.value,
     requestedSceneType:requested,
@@ -426,7 +453,13 @@ export function generateImagePrompt(input={}){
 
   const poseText=pose ? `${pose}. ` : '';
   const poseModifiers=[clothingStylingPrompt,handInteractionPrompt].filter(Boolean).join(' ');
-  const poseBody=`${poseText}Body mechanics must respect balance, support, joint limits, body weight, seat or ground contact, and natural asymmetric posture.${poseModifiers ? ` ${poseModifiers}` : ''}`;
+  const resolvedCarSeatRole=carSeatRole(requested,poseValue);
+  const carSeatPositionLock=resolvedCarSeatRole==='passenger'
+    ? 'SUBJECT POSITION LOCK: The subject occupies the front passenger seat on the RIGHT side of this left-hand-drive Saudi-spec vehicle. The steering wheel must NOT be within the subject\'s reachable arm span. There is no steering wheel in front of the subject. The center console is to the subject\'s left, and the driver seat is farther to the subject\'s left. Do not place the subject in the driver position.'
+    : resolvedCarSeatRole==='driver'
+      ? 'SUBJECT POSITION LOCK: The subject occupies the driver seat on the LEFT side of this left-hand-drive Saudi-spec vehicle. The steering wheel is directly in front of the subject at the correct distance and angle. The center console is to the subject\'s right.'
+      : '';
+  const poseBody=`${poseText}Body mechanics must respect balance, support, joint limits, body weight, seat or ground contact, and natural asymmetric posture.${poseModifiers ? ` ${poseModifiers}` : ''}${carSeatPositionLock ? ` ${carSeatPositionLock}` : ''}`;
   const sections=[
     section('GOAL',`Generate ONE highly photorealistic ${ratio.prompt} image. ${description?`User scene intent: ${description}. `:''}The result must look like a genuine smartphone photograph rather than advertising, polished commercial photography, CGI or AI-stylized imagery.`),
     section('ACTION-DRIVEN AUTHENTICITY',actionText), section('CAPTURE TYPE LOCK — CRITICAL',captureRules(scene)),
@@ -468,7 +501,7 @@ export function validateGeneratedPrompt(prompt,context={}){
   if(heads.length!==23) errors.push(`Expected exactly 23 canonical sections, found ${heads.length}.`);
   if(JSON.stringify(heads)!==JSON.stringify(CANONICAL_SECTIONS)) errors.push('Canonical prompt sections are missing, duplicated, or out of order.');
   for(const name of CANONICAL_SECTIONS){ if(!map.has(name)) errors.push(`Missing required section: [${name}]`); else if(map.get(name)===null) errors.push(`Duplicate required section: [${name}]`); else if(!clean(map.get(name))) errors.push(`Required section is empty: [${name}]`); }
-  const checks=[['PHYSICAL LIGHTING',/Physical illumination/i,'Physical illumination rule is missing from [PHYSICAL LIGHTING].'],['PHYSICAL LIGHTING',/Exposure, ISO, HDR/i,'Exposure/ISO/HDR separation rule is missing from [PHYSICAL LIGHTING].'],['LENS_PHYSICS',/chromatic aberration/i,'Chromatic aberration rule is missing from [LENS_PHYSICS].'],['LENS_PHYSICS',/vignetting/i,'Vignetting rule is missing from [LENS_PHYSICS].'],['LENS_PHYSICS',/barrel distortion/i,'Barrel-distortion rule is missing from [LENS_PHYSICS].'],['BIOLOGICAL_MICRO_REALISM',/visible skin pores/i,'Visible skin pores rule is missing from [BIOLOGICAL_MICRO_REALISM].'],['BIOLOGICAL_MICRO_REALISM',/corneal reflections/i,'Corneal reflections rule is missing from [BIOLOGICAL_MICRO_REALISM].'],['BIOLOGICAL_MICRO_REALISM',/stray hairs/i,'Stray hairs rule is missing from [BIOLOGICAL_MICRO_REALISM].'],['IDENTITY / SUBJECT',/Hair length, density, hairline shape/i,'Hair length/density/hairline lock is missing from [IDENTITY / SUBJECT].'],['CAMERA_METADATA_HINT',/CAPTURE METADATA/i,'Capture metadata guidance is missing from [CAMERA_METADATA_HINT].'],['FINAL VERIFICATION',/Before finalizing/i,'Final verification language is missing from [FINAL VERIFICATION].']];
+  const checks=[['PHYSICAL LIGHTING',/Physical illumination/i,'Physical illumination rule is missing from [PHYSICAL LIGHTING].'],['PHYSICAL LIGHTING',/Exposure, ISO, HDR/i,'Exposure/ISO/HDR separation rule is missing from [PHYSICAL LIGHTING].'],['LENS_PHYSICS',/chromatic aberration/i,'Chromatic aberration rule is missing from [LENS_PHYSICS].'],['LENS_PHYSICS',/vignetting/i,'Vignetting rule is missing from [LENS_PHYSICS].'],['LENS_PHYSICS',/barrel distortion/i,'Barrel-distortion rule is missing from [LENS_PHYSICS].'],['BIOLOGICAL_MICRO_REALISM',/visible skin pores/i,'Visible skin pores rule is missing from [BIOLOGICAL_MICRO_REALISM].'],['BIOLOGICAL_MICRO_REALISM',/corneal reflections/i,'Corneal reflections rule is missing from [BIOLOGICAL_MICRO_REALISM].'],['BIOLOGICAL_MICRO_REALISM',/stray hairs/i,'Stray hairs rule is missing from [BIOLOGICAL_MICRO_REALISM].'],['IDENTITY / SUBJECT',/Hair length, density, and hair thickness remain as in the reference image/i,'Hair length/density/direction lock is missing from [IDENTITY / SUBJECT].'],['CAMERA_METADATA_HINT',/CAPTURE METADATA/i,'Capture metadata guidance is missing from [CAMERA_METADATA_HINT].'],['FINAL VERIFICATION',/Before finalizing/i,'Final verification language is missing from [FINAL VERIFICATION].']];
   for(const [name,re,msg] of checks) if(!re.test(map.get(name)||'')) errors.push(msg);
   const negativeBody=map.get('NEGATIVE CONSTRAINTS')||'';
   if(!/\bAvoid\b/i.test(negativeBody)) errors.push('Negative constraint language must include "Avoid" in [NEGATIVE CONSTRAINTS].');

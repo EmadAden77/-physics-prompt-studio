@@ -38,7 +38,7 @@ function sceneSection(prompt) {
 }
 function furnitureKinds(prompt) {
   const scene=sceneSection(prompt);
-  const patterns={ sofa:/The main sofa is ONE connected L-shaped sectional/i, armchair:/The armchair is a single discrete one-seat piece/i, chair:/The chair is a single discrete one-seat piece/i, table:/The table has a continuous top/i, desk:/The desk has a flat working surface/i, bed:/The bed has a continuous frame/i, counter:/The counter is a continuous solid structure/i, generic:/All furniture maintains a coherent 3D structure/i };
+  const patterns={ sofa:/The sofa is a single discrete upholstered piece/i, armchair:/The armchair is a single discrete one-seat piece/i, chair:/The chair is a single discrete one-seat piece/i, table:/The table has a continuous top/i, desk:/The desk has a flat working surface/i, bed:/The bed has a continuous frame/i, counter:/The counter is a continuous solid structure/i, generic:/All furniture maintains a coherent 3D structure/i };
   return Object.entries(patterns).filter(([,pattern])=>pattern.test(scene)).map(([kind])=>kind);
 }
 
@@ -1418,12 +1418,12 @@ test('furniture geometry field verification matrix covers ten pose-aware cases',
 });
 
 test('PR 10 seating physics regressions cover sofa chair and armchair', () => {
-  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /ONE connected L-shaped sectional/i);
-  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /long three-seat run/i);
-  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /three distinct seat cushions/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /single discrete upholstered piece/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /one unified frame/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /two armrests/i);
   assert.match(FURNITURE_GEOMETRY_RULES.sofa, /When a subject is seated, the pelvis visibly compresses/i);
   assert.match(FURNITURE_GEOMETRY_RULES.sofa, /thighs align/i);
-  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /independent from every background sofa or chair/i);
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /independent from every background sofa/i);
 
   assert.match(FURNITURE_GEOMETRY_RULES.chair, /single discrete one-seat piece/i);
   assert.match(FURNITURE_GEOMETRY_RULES.chair, /two narrow flat armrests/i);
@@ -1440,16 +1440,16 @@ test('PR 10 seating physics regressions cover sofa chair and armchair', () => {
   assert.match(FURNITURE_GEOMETRY_RULES.armchair, /visually separate from every sofa and background chair/i);
 });
 
-test('PR 10 sofa armrests cannot expand into blocks or extra seats', () => {
-  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /never become a block, seat, or additional cushion/i);
+test('PR 10 majlis sofa armrests cannot expand into blocks or extra seats', () => {
+  assert.match(MAJLIS_ANCHOR.main_sofa_geometry, /never become a block, seat, or additional cushion/i);
 });
 
-test('PR 10 sofa cushions keep one solid upholstery treatment', () => {
-  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /single solid color/i);
+test('PR 10 sofa cushions keep one smooth upholstery treatment', () => {
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa, /smooth matte upholstery without pattern, print, or contrasting fabric/i);
 });
 
 test('PR 10 majlis sofas stay flush against their assigned walls', () => {
-  assert.match(MAJLIS_ANCHOR.main_sofa, /flush against the RIGHT wall/i);
+  assert.match(MAJLIS_ANCHOR.main_sofa_geometry, /flush against the RIGHT wall/i);
   assert.match(MAJLIS_ANCHOR.side_sofas, /flush against the LEFT wall/i);
 });
 
@@ -1459,8 +1459,8 @@ test('PR 10 negative constraints ban tufted upholstery', () => {
   assert.match(negatives,/tufted upholstery/i);
 });
 
-test('PR 10 sofa upholstery explicitly rejects tufting quilting and buttons', () => {
-  assert.match(FURNITURE_GEOMETRY_RULES.sofa,/no tufting, no buttons, no quilting/i);
+test('PR 10 majlis sofa upholstery explicitly rejects tufting quilting and buttons', () => {
+  assert.match(MAJLIS_ANCHOR.main_sofa,/no tufting, no buttons, no quilting/i);
 });
 
 test('PR 10 main majlis sofa explicitly bans tufting', () => {
@@ -1473,16 +1473,16 @@ test('PR 10 negative constraints ban dotted upholstery', () => {
   assert.match(negatives,/dotted upholstery/i);
 });
 
-test('PR 10 main majlis sofa hides visible weave texture', () => {
-  assert.match(MAJLIS_ANCHOR.main_sofa,/no visible weave texture/i);
+test('PR 10 main majlis sofa keeps uniform monochrome upholstery', () => {
+  assert.match(MAJLIS_ANCHOR.main_sofa,/uniform monochrome surface/i);
 });
 
-test('PR 10 sofa upholstery cannot inherit clothing texture', () => {
-  assert.match(FURNITURE_GEOMETRY_RULES.sofa,/must NOT share the slub, linen, or woven-appearance texture/i);
+test('PR 10 majlis sofa upholstery rejects visible texture artifacts', () => {
+  assert.match(MAJLIS_ANCHOR.main_sofa,/No dots, no speckles, no checkered or grid pattern/i);
 });
 
 test('PR 10 MAJLIS_ANCHOR is complete and frozen', () => {
-  assert.deepEqual(Object.keys(MAJLIS_ANCHOR), ['room','main_sofa','side_sofas','coffee_table','rug','tv_unit','decor','fixed_layout_rule']);
+  assert.deepEqual(Object.keys(MAJLIS_ANCHOR), ['room','main_sofa','main_sofa_geometry','side_sofas','coffee_table','rug','tv_unit','decor','fixed_layout_rule']);
   assert.equal(Object.isFrozen(MAJLIS_ANCHOR), true);
   for(const key of Object.keys(MAJLIS_ANCHOR)) assert.ok(MAJLIS_ANCHOR[key].length > 20, key);
 });
@@ -1567,8 +1567,8 @@ test('PR 10 final patch removes the global uniform-fabric weave directive', () =
   assert.doesNotMatch(negatives,/uniform fabric without weave or fibers/i);
 });
 
-test('PR 10 final patch defines the main sofa as an L-shaped sectional', () => {
-  assert.match(FURNITURE_GEOMETRY_RULES.sofa,/L-shaped sectional/i);
+test('PR 10 final patch defines the main majlis sofa as an L-shaped sectional', () => {
+  assert.match(MAJLIS_ANCHOR.main_sofa_geometry,/L-shaped sectional/i);
 });
 
 test('PR 10 final patch uses the Xiaomi 21mm-equivalent lens profile', () => {
@@ -1576,6 +1576,40 @@ test('PR 10 final patch uses the Xiaomi 21mm-equivalent lens profile', () => {
   assert.match(lens,/21mm-equivalent/i);
 });
 
+
+test('PR 12 generic sofa rule contains no majlis-specific geometry', () => {
+  assert.match(FURNITURE_GEOMETRY_RULES.sofa,/single discrete upholstered piece/i);
+  assert.doesNotMatch(FURNITURE_GEOMETRY_RULES.sofa,/L-shaped|RIGHT wall|three-seat run|90 degrees/i);
+});
+
+test('PR 12 majlis anchor owns the full L-shaped sofa geometry', () => {
+  assert.match(MAJLIS_ANCHOR.main_sofa_geometry,/ONE connected L-shaped sectional/i);
+  assert.match(MAJLIS_ANCHOR.main_sofa_geometry,/flush against the RIGHT wall with no visible floor gap/i);
+  assert.match(MAJLIS_ANCHOR.main_sofa_geometry,/short connected return projects inward/i);
+});
+
+test('PR 12 modern majlis scene composes material and geometry without leaking L-shape into generic furniture', () => {
+  const scene=sceneSection(generateImagePrompt({ sceneType:'majlis_seated_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis',poseValue:'seated_sofa' }).prompt);
+  assert.match(scene,/MAIN SOFA:.*smooth matte light-sand upholstery.*ONE connected L-shaped sectional/is);
+  const furniture=scene.split('FURNITURE GEOMETRY:')[1] || '';
+  assert.match(furniture,/single discrete upholstered piece/i);
+  assert.doesNotMatch(furniture,/L-shaped|RIGHT wall|three-seat run/i);
+});
+
+test('PR 12 majlis upholstery negatives follow the modern anchor scope exactly', () => {
+  const modern=generateImagePrompt({ sceneType:'majlis_selfie',location:'modern_saudi_majlis',locationValue:'modern_saudi_majlis' }).prompt.split('[NEGATIVE CONSTRAINTS]\n')[1].split('\n\n[FINAL VERIFICATION]')[0];
+  const traditional=generateImagePrompt({ sceneType:'majlis_selfie',location:'traditional_saudi_majlis',locationValue:'traditional_saudi_majlis' }).prompt.split('[NEGATIVE CONSTRAINTS]\n')[1].split('\n\n[FINAL VERIFICATION]')[0];
+  assert.match(modern,/tufted upholstery|dotted upholstery|visible linen grain on upholstery/i);
+  assert.doesNotMatch(traditional,/tufted upholstery|dotted upholstery|visible linen grain on upholstery/i);
+});
+
+test('PR 12 bedroom keeps tufted headboard while majlis upholstery negatives stay absent', () => {
+  const result=generateImagePrompt({ sceneType:'bedroom_selfie' });
+  const scene=sceneSection(result.prompt);
+  const negatives=result.prompt.split('[NEGATIVE CONSTRAINTS]\n')[1].split('\n\n[FINAL VERIFICATION]')[0];
+  assert.match(scene,/dark tufted headboard/i);
+  assert.doesNotMatch(negatives,/tufted upholstery|button-tufted cushions|quilted fabric|dotted upholstery/i);
+});
 
 test('PR 11 defines exactly 21 eligible seated poses and injects bedroom MacBook context for bed and floor sitting', () => {
   assert.equal(LAPTOP_SCENE_SEATED_POSES.size,21);

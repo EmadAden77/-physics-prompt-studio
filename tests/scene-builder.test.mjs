@@ -238,8 +238,9 @@ test('bedroom poses use armchair-* identifiers not sofa-*', async () => {
   assert.equal(sofaIds.length, 0, `Found sofa identifiers: ${sofaIds.map(p => p.value).join(', ')}`);
 });
 
-test('BEDROOM_ANCHOR bed specifies two nightstands total', async () => {
+test('PR 12 bedroom anchor keeps one nightstand without legacy wording', async () => {
   const { BEDROOM_ANCHOR } = await import('../core/scene-builder.js');
-  assert.match(BEDROOM_ANCHOR.bed, /two matching nightstands total/i);
+  assert.match(BEDROOM_ANCHOR.bed, /exactly one nightstand/i);
+  assert.doesNotMatch(BEDROOM_ANCHOR.bed, /two matching nightstands total|old two matching nightstands/i);
 });
 

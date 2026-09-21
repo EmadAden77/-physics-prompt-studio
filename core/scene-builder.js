@@ -795,7 +795,8 @@ export const CAR_ANCHOR = Object.freeze({
   roof: 'panoramic roof with visible glass panel',
   windows: 'Range Rover Sport tinted windows',
   drive: 'left-hand drive (Saudi-spec)',
-  cabin_scale: 'full-size luxury SUV cabin'
+  cabin_scale: 'full-size luxury SUV cabin',
+  fixed_rule: 'IMPORTANT: This is a locked vehicle configuration. In every inside_car scene, keep the same Range Rover Sport L494 model, the same Fuji White exterior, the same Ebony/Ivory interior, the same dashboard layout with dual touchscreen, the same black-and-Ivory steering wheel, the same dark wood trim, and the same panoramic roof. Do not substitute another car model or color. Do not change the interior configuration between scenes. Camera framing may hide an element but must never replace it.'
 });
 
 export const BEDROOM_ANCHOR = Object.freeze({

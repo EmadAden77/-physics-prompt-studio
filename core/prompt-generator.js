@@ -114,6 +114,31 @@ function hairDirectionLock(hair){
   return `HAIR DIRECTION LOCK: ${rule || 'Keep visible hair naturally arranged without inventing a directional style.'}`;
 }
 function hairDirectionNegatives(hair){ return HAIR_DIRECTION_NEGATIVES[resolveHairDirection(hair)] || ''; }
+
+function carSeatRole(requestedSceneType='', poseValue='') {
+  const requested=clean(requestedSceneType);
+  const pose=clean(poseValue);
+  if(requested==='inside_car_driver_selfie') return 'driver';
+  if(requested==='inside_car_passenger_selfie') return 'passenger';
+  if(requested!=='inside_car_selfie') return '';
+  return pose==='driver_seat' ? 'driver' : 'passenger';
+}
+
+function normalizeInsideCarCameraGeometry(cameraText,requestedSceneType,poseValue) {
+  const role=carSeatRole(requestedSceneType,poseValue);
+  if(!role) return cameraText;
+  let text=clean(cameraText);
+  if(role==='driver'){
+    text=text.replace(/\bsubject-held\b/gi,'driver-held');
+    return /\bdriver-held\b/i.test(text) ? text : `driver-held front-camera selfie from the driver seat. ${text}`.trim();
+  }
+  text=text
+    .replace(/\bdriver-held\b/gi,'subject-held')
+    .replace(/steering-wheel perspective/gi,'passenger-side cabin perspective')
+    .replace(/dashboard and steering-wheel geometry/gi,'dashboard, glazing, and passenger-side cabin geometry');
+  return /\bsubject-held\b/i.test(text) ? text : `subject-held front-camera selfie from the front passenger seat. ${text}`.trim();
+}
+
 const SAUDI_CONTEXT = /(?:^|[^a-z])(saudi(?: arabia)?|riyadh|jeddah|khobar|dammam|makkah|madinah|medina|taif|abha|tabuk|alula|qassim|hail|najran|jazan|alahsa|al ahsa|yanbu|arabian gulf|red sea)(?:$|[^a-z])/i;
 // TODO(location-classification): refine Saudi context detection
 // to prefer structured location values over broad regex matching.
@@ -326,7 +351,7 @@ export function generateImagePrompt(input={}){
   const poseValue=clean(input.poseValue) || selectedBedroomPose?.value || selectedGeneralPose?.value || (POSE_HAND_USAGE_FALLBACK.has(poseInput) ? poseInput : '');
   const poseHint=bedroomPoseCameraEnabled ? getPoseCameraHint(poseInput || pose) : null;
   const angleLockedByPose=bedroomPoseCameraEnabled && Boolean(poseHint);
-  const cameraGeometryText=resolveCameraAngle({
+  const rawCameraGeometryText=resolveCameraAngle({
     sceneType:scene.value,
     requestedSceneType:requested,
     captureType:scene.capture,
@@ -335,6 +360,7 @@ export function generateImagePrompt(input={}){
     seed:input.seed,
     time:input.time
   });
+  const cameraGeometryText=normalizeInsideCarCameraGeometry(rawCameraGeometryText,requested,poseValue);
   const contextual=resolveContextAwareConstraints({
     sceneType:scene.value,
     requestedSceneType:requested,
@@ -427,9 +453,10 @@ export function generateImagePrompt(input={}){
 
   const poseText=pose ? `${pose}. ` : '';
   const poseModifiers=[clothingStylingPrompt,handInteractionPrompt].filter(Boolean).join(' ');
-  const carSeatPositionLock=requested==='inside_car_passenger_selfie'
+  const resolvedCarSeatRole=carSeatRole(requested,poseValue);
+  const carSeatPositionLock=resolvedCarSeatRole==='passenger'
     ? 'SUBJECT POSITION LOCK: The subject occupies the front passenger seat on the RIGHT side of this left-hand-drive Saudi-spec vehicle. The steering wheel must NOT be within the subject\'s reachable arm span. There is no steering wheel in front of the subject. The center console is to the subject\'s left, and the driver seat is farther to the subject\'s left. Do not place the subject in the driver position.'
-    : requested==='inside_car_driver_selfie'
+    : resolvedCarSeatRole==='driver'
       ? 'SUBJECT POSITION LOCK: The subject occupies the driver seat on the LEFT side of this left-hand-drive Saudi-spec vehicle. The steering wheel is directly in front of the subject at the correct distance and angle. The center console is to the subject\'s right.'
       : '';
   const poseBody=`${poseText}Body mechanics must respect balance, support, joint limits, body weight, seat or ground contact, and natural asymmetric posture.${poseModifiers ? ` ${poseModifiers}` : ''}${carSeatPositionLock ? ` ${carSeatPositionLock}` : ''}`;

@@ -56,3 +56,38 @@ test('PR 16 forward hair and both car-seat scenes preserve the canonical 23-sect
     assert.equal(result.validation.valid,true,`${JSON.stringify(input)}: ${result.validation.errors.join(' | ')}`);
   }
 });
+
+test('PR 16 base inside-car selfie defaults to the RIGHT front passenger seat when poseValue is empty', () => {
+  const result=generateImagePrompt({ sceneType:'inside_car_selfie', poseValue:'' });
+  const pose=section(result.prompt,'POSE & BODY MECHANICS','CAMERA GEOMETRY');
+  assert.match(pose,/SUBJECT POSITION LOCK/i);
+  assert.match(pose,/front passenger seat on the RIGHT side/i);
+  assert.match(pose,/There is no steering wheel in front of the subject/i);
+});
+
+test('PR 16 base inside-car selfie keeps an explicit passenger pose on the RIGHT', () => {
+  const result=generateImagePrompt({ sceneType:'inside_car_selfie', poseValue:'passenger_seat', pose:'passenger_seat' });
+  const pose=section(result.prompt,'POSE & BODY MECHANICS','CAMERA GEOMETRY');
+  assert.match(pose,/SUBJECT POSITION LOCK/i);
+  assert.match(pose,/front passenger seat on the RIGHT side/i);
+  assert.match(pose,/center console is to the subject's left/i);
+});
+
+test('PR 16 base inside-car selfie keeps an explicit driver pose on the LEFT', () => {
+  const result=generateImagePrompt({ sceneType:'inside_car_selfie', poseValue:'driver_seat', pose:'driver_seat' });
+  const pose=section(result.prompt,'POSE & BODY MECHANICS','CAMERA GEOMETRY');
+  assert.match(pose,/SUBJECT POSITION LOCK/i);
+  assert.match(pose,/driver seat on the LEFT side/i);
+  assert.match(pose,/center console is to the subject's right/i);
+});
+
+test('PR 16 base inside-car camera geometry is subject-held by default and driver-held only for driver_seat', () => {
+  const passenger=generateImagePrompt({ sceneType:'inside_car_selfie', poseValue:'', angle:'driver_eye_level' });
+  const driver=generateImagePrompt({ sceneType:'inside_car_selfie', poseValue:'driver_seat', pose:'driver_seat', angle:'driver_eye_level' });
+  const passengerCamera=section(passenger.prompt,'CAMERA GEOMETRY','PHYSICAL LIGHTING');
+  const driverCamera=section(driver.prompt,'CAMERA GEOMETRY','PHYSICAL LIGHTING');
+  assert.match(passengerCamera,/subject-held front-camera selfie/i);
+  assert.doesNotMatch(passengerCamera,/driver-held/i);
+  assert.doesNotMatch(passengerCamera,/steering-wheel perspective/i);
+  assert.match(driverCamera,/driver-held front-camera selfie/i);
+});

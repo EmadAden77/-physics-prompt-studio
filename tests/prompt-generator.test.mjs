@@ -1856,3 +1856,52 @@ test('PR 17 fuel-station driver selfie preserves the canonical 23-section invari
   assert.equal(result.validation.valid,true,result.validation.errors.join(' | '));
 });
 
+test('PR 18 inside_car_selfie injects the fixed Range Rover Sport CAR_ANCHOR', () => {
+  const result=generateImagePrompt({ sceneType:'inside_car_selfie' });
+  const scene=sceneSection(result.prompt);
+  assert.match(scene,/CAR INTERIOR ANCHOR:/i);
+  assert.match(scene,/2017 Range Rover Sport Autobiography Dynamic L494, Saudi-spec/i);
+  assert.match(scene,/Fuji White/i);
+  assert.match(scene,/Ivory perforated leather seats/i);
+  assert.match(scene,/left-hand drive \(Saudi-spec\)/i);
+});
+
+test('PR 18 inside_car_driver_selfie injects CAR_ANCHOR', () => {
+  const scene=sceneSection(generateImagePrompt({ sceneType:'inside_car_driver_selfie' }).prompt);
+  assert.match(scene,/CAR INTERIOR ANCHOR:.*Range Rover Sport/is);
+});
+
+test('PR 18 inside_car_passenger_selfie injects CAR_ANCHOR', () => {
+  const scene=sceneSection(generateImagePrompt({ sceneType:'inside_car_passenger_selfie' }).prompt);
+  assert.match(scene,/CAR INTERIOR ANCHOR:.*panoramic roof with visible glass panel/is);
+});
+
+test('PR 18 door-open and group car selfies both inject CAR_ANCHOR', () => {
+  for(const sceneType of ['door_open_car_selfie','car_group_selfie']){
+    const scene=sceneSection(generateImagePrompt({ sceneType }).prompt);
+    assert.match(scene,/CAR INTERIOR ANCHOR:.*Fuji White/is,sceneType);
+  }
+});
+
+test('PR 18 non-car scenes do not inject CAR_ANCHOR', () => {
+  for(const sceneType of ['office_selfie','bedroom_selfie','majlis_selfie']){
+    assert.doesNotMatch(sceneSection(generateImagePrompt({ sceneType }).prompt),/CAR INTERIOR ANCHOR:/i,sceneType);
+  }
+});
+
+test('PR 18 car anchor precedes furniture geometry and preserves the canonical 23-section invariant', () => {
+  for(const sceneType of ['inside_car_selfie','inside_car_driver_selfie','inside_car_passenger_selfie','door_open_car_selfie','car_group_selfie']){
+    const result=generateImagePrompt({ sceneType });
+    const scene=sceneSection(result.prompt);
+    assert.ok(scene.indexOf('CAR INTERIOR ANCHOR:')>=0,sceneType);
+    assert.ok(scene.indexOf('CAR INTERIOR ANCHOR:') < scene.indexOf('FURNITURE GEOMETRY:'),sceneType);
+    assert.equal(result.sections.length,23,sceneType);
+    assert.equal(result.validation.valid,true,`${sceneType}: ${result.validation.errors.join(' | ')}`);
+  }
+});
+
+test('PR 18 CAR_ANCHOR enforces the locked vehicle configuration in SCENE', () => {
+  const scene=sceneSection(generateImagePrompt({ sceneType:'inside_car_selfie' }).prompt);
+  assert.match(scene,/locked vehicle configuration/i);
+});
+

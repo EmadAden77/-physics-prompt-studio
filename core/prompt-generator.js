@@ -1,7 +1,7 @@
 import { buildRealismPacket, renderRealismGuidance } from './realistic-image-generator.js';
 import { baseSceneTypeFor, sceneMeta } from './scene-type-expansion.js';
 import { clothingSceneCoherence, resolveContextAwareConstraints, getPoseCameraHint } from './scene-compatibility.js';
-import { BEDROOM_ANCHOR, MAJLIS_ANCHOR, LAPTOP_SCENE_CONTEXTS, LAPTOP_SCENE_SEATED_POSES, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_POSES, SAUDI_CULTURAL_DRESS_LOCK, SAUDI_SIGNAGE_RULE, CLOTHING_STYLING, HAND_INTERACTIONS, CLOTHING_CATALOG, HOME_CLOTHING, getFurnitureGeometryForScene, getAvailableProps, getRemainingHands, getPropHandUsage } from './scene-builder.js';
+import { BEDROOM_ANCHOR, MAJLIS_ANCHOR, CAR_ANCHOR, LAPTOP_SCENE_CONTEXTS, LAPTOP_SCENE_SEATED_POSES, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_POSES, SAUDI_CULTURAL_DRESS_LOCK, SAUDI_SIGNAGE_RULE, CLOTHING_STYLING, HAND_INTERACTIONS, CLOTHING_CATALOG, HOME_CLOTHING, getFurnitureGeometryForScene, getAvailableProps, getRemainingHands, getPropHandUsage } from './scene-builder.js';
 import { resolveCameraAngle } from './camera-angle-resolver.js';
 
 export const SCENE_TYPES = [
@@ -118,6 +118,13 @@ function hairDirectionNegatives(hair){
   const direction=resolveHairDirection(hair);
   const directional=HAIR_DIRECTION_NEGATIVES[direction] || '';
   return directional ? `${directional}, ${HAIR_IDENTITY_NEGATIVES}` : '';
+}
+
+function isCarAnchorScene(requestedSceneType=''){
+  const requested=clean(requestedSceneType);
+  return requested.startsWith('inside_car_') ||
+    requested==='door_open_car_selfie' ||
+    requested==='car_group_selfie';
 }
 
 function carSeatRole(requestedSceneType='', poseValue='') {
@@ -452,6 +459,23 @@ export function generateImagePrompt(input={}){
   const autoLaptopContext=laptopSceneContextKey && LAPTOP_SCENE_SEATED_POSES.has(poseValue) && !requestedMacBookHeld && !/^bedroom-laptop-/i.test(poseValue)
     ? LAPTOP_SCENE_CONTEXTS[laptopSceneContextKey] : '';
   if(autoLaptopContext) sceneText=`${sceneText} SCENE-SUPPORTED MACBOOK: ${autoLaptopContext}`;
+
+  if(isCarAnchorScene(requested)){
+    const carAnchorText=[
+      CAR_ANCHOR.model,
+      CAR_ANCHOR.exterior_color,
+      CAR_ANCHOR.interior_seats,
+      CAR_ANCHOR.dashboard,
+      CAR_ANCHOR.steering_wheel,
+      CAR_ANCHOR.center_console,
+      CAR_ANCHOR.roof,
+      CAR_ANCHOR.windows,
+      CAR_ANCHOR.drive,
+      CAR_ANCHOR.cabin_scale,
+      CAR_ANCHOR.fixed_rule
+    ].join(', ');
+    sceneText=`${sceneText} CAR INTERIOR ANCHOR: ${carAnchorText}`;
+  }
 
   const furnitureRules=getFurnitureGeometryForScene(requested,location,poseValue);
   const furnitureText=furnitureRules.length ? `FURNITURE GEOMETRY: ${furnitureRules.join(' ')}` : '';

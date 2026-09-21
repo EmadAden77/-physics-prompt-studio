@@ -785,6 +785,20 @@ export const MAJLIS_ANCHOR = Object.freeze({
   fixed_layout_rule: 'IMPORTANT: This is a locked modern majlis layout. Keep the L-shape sofa on the right wall, the two single sofas on the left wall, the coffee table centered between them, the rug under the table and seating edges, the TV unit on the front wall, and the decor in fixed positions. The two single sofas must remain physically separate from each other and from the L-shape, with independent silhouettes, visible floor or circulation gaps, and no fused cushions, armrests, bases, or legs. Do not move, add, remove, or duplicate these pieces. Camera framing may hide an element but must never relocate it.'
 });
 
+export const CAR_ANCHOR = Object.freeze({
+  model: '2017 Range Rover Sport Autobiography Dynamic L494, Saudi-spec',
+  exterior_color: 'Fuji White',
+  interior_seats: 'Ebony and Ivory luxury interior with Ivory perforated leather seats',
+  dashboard: 'Range Rover Sport dashboard with dual center touchscreen, digital instrument cluster, dark wood trim',
+  steering_wheel: 'black-and-Ivory leather steering wheel',
+  center_console: 'dark wood console',
+  roof: 'panoramic roof with visible glass panel',
+  windows: 'Range Rover Sport tinted windows',
+  drive: 'left-hand drive (Saudi-spec)',
+  cabin_scale: 'full-size luxury SUV cabin',
+  fixed_rule: 'IMPORTANT: This is a locked vehicle configuration. In every inside_car scene, keep the same Range Rover Sport L494 model, the same Fuji White exterior, the same Ebony/Ivory interior, the same dashboard layout with dual touchscreen, the same black-and-Ivory steering wheel, the same dark wood trim, and the same panoramic roof. Do not substitute another car model or color. Do not change the interior configuration between scenes. Camera framing may hide an element but must never replace it.'
+});
+
 export const BEDROOM_ANCHOR = Object.freeze({
   room: 'A single fixed master bedroom, roughly 4m x 5m, with cream-painted walls, a wooden door on the LEFT wall in its existing fixed position, crown molding, recessed ceiling spotlights, a wall-mounted split air conditioner, and glossy light-colored tile flooring. This layout is locked and identical in every image.',
   bed: 'A queen-size bed with a dark tufted headboard, positioned against the LEFT wall, with exactly one nightstand on the bed’s left side. The bed and nightstand always remain in the same positions.',

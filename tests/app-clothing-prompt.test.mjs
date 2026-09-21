@@ -55,3 +55,22 @@ test('clothing UI exposes 209 items in general scenes', async () => {
   const options = randomizationOptionsForScene('front_selfie');
   assert.equal(options.clothing.length, 209);
 });
+
+
+test('PR 14 clothing styling UI is category-driven rather than statically duplicated', async () => {
+  const { clothingStylingOptionsForValue } = await import('../app.js');
+  const shirt=clothingStylingOptionsForValue('look-01');
+  const thobe=clothingStylingOptionsForValue('white_thobe');
+  assert.equal(shirt.length,10);
+  assert.equal(thobe.length,6);
+  assert.equal(shirt.some((item)=>item.value==='french-tuck'),true);
+  assert.equal(thobe.some((item)=>item.value==='sleeves-rolled'),true);
+  const match=html.match(/<select id="clothingStyling">([\s\S]*?)<\/select>/);
+  assert.ok(match);
+  assert.deepEqual([...match[1].matchAll(/<option\s+value="([^"]*)"/g)].map((entry)=>entry[1]),['']);
+});
+
+test('PR 14 unsupported headwear-only styling reports no applicable options', async () => {
+  const { clothingStylingOptionsForValue } = await import('../app.js');
+  assert.deepEqual(clothingStylingOptionsForValue('red_shemagh_agal'),[]);
+});

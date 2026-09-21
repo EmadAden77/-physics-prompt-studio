@@ -61,8 +61,8 @@ const COUNTER_CONTEXT = new Set(['cafe_selfie','barbershop_selfie','clinic_waiti
 const POSE_FURNITURE_SEMANTICS = Object.freeze({
   bed:new Set(['bed-lying-back','bed-lying-side','bed-lying-stomach','bed-reclining-headboard','bed-propped-pillows','bed-lying-partial','bed-lying-diagonal','bed-lying-reading','bed-lying-back-knees-bent','bed-sitting-cross','bed-sitting-edge','bed-sitting-back-wall','bed-sitting-legs-extended','bed-sitting-hugging-pillow','bed-sitting-sideways','bedroom-laptop-bed','bedroom-cup-bed','bedroom-book-bed','bedroom-nightstand-reach','bedroom-mirror-seated']),
   armchair:new Set(['armchair-sit-lean-back','armchair-sit-corner','armchair-sit-one-knee','armchair-sit-crossed','armchair-sit-feet-floor','bedroom-laptop-armchair','bedroom-tea-armchair']),
-  sofa:new Set(['seated_sofa']), chair:new Set(['seated_chair']), counter:new Set(['lean_counter']),
-  none:new Set(['standing_relaxed','standing_one_hand','walking_slow','driver_seat','passenger_seat','door_open_car','bedroom-stand-relaxed','bedroom-floor-cross','bedroom-floor-back-wall','bedroom-floor-knee-up'])
+  sofa:new Set(['seated_sofa']), chair:new Set(['seated_chair','seated_legs_crossed','seated_elbow_on_table','seated_leaning_forward','seated_reading_posture','seated_hands_on_lap','seated_hand_on_knee']), counter:new Set(['lean_counter','lean_railing']),
+  none:new Set(['standing_relaxed','standing_one_hand','walking_slow','driver_seat','passenger_seat','door_open_car','standing_arms_crossed','standing_hands_in_pockets','standing_looking_away','walking_looking_back','standing_stretching','standing_hand_on_hip','standing_hands_clasped_front','standing_thumb_in_pocket','standing_hand_on_neck','standing_neutral_at_side','leaning_against_wall','bedroom-stand-relaxed','bedroom-floor-cross','bedroom-floor-back-wall','bedroom-floor-knee-up'])
 });
 function furnitureSemanticForPose(poseValue){ return Object.entries(POSE_FURNITURE_SEMANTICS).find(([,poses])=>poses.has(poseValue))?.[0] || ''; }
 
@@ -255,14 +255,44 @@ export const CLOTHING_OPTIONS = grouped([
 ['كاجوال','light_jacket','جاكيت خفيف','a simple lightweight casual jacket with realistic shell fabric, zipper structure, cuff tension, and natural folds']
 ]);
 
-export const CLOTHING_STYLING = Object.freeze([
-  { value: 'default', label: 'افتراضي', prompt: '', applicableTo: ['all'] },
-  { value: 'top-buttons-open', label: 'مفتوح من الأعلى', prompt: 'Top 2-3 buttons unbuttoned, revealing collarbone shadow. Fabric stretched across the chest with natural tension lines.', applicableTo: ['buttoned-top'] },
-  { value: 'sleeves-rolled', label: 'مطوي الأكمام', prompt: 'Sleeves neatly rolled up to the elbows, creating tight folded fabric tension at the biceps.', applicableTo: ['sleeved'] },
-  { value: 'untucked', label: 'غير مدخل', prompt: 'Shirt hem untucked, resting naturally over the hips with gravity-driven folds and asymmetric wrinkles.', applicableTo: ['tuckable-top'] },
-  { value: 'french-tuck', label: 'مدخل من الأمام فقط', prompt: 'Shirt front hem tucked into the waistband, back hem left untucked. Fabric gathers naturally at the waist.', applicableTo: ['tuckable-top-with-pants'] },
-  { value: 'fully-open', label: 'مفتوح بالكامل', prompt: 'Outer layer fully unbuttoned or unzipped, worn open with panels hanging loosely with gravity-driven folds. Inner layer visible beneath.', applicableTo: ['layered-top'] }
-]);
+export const CLOTHING_STYLING = Object.freeze({
+  thobe: Object.freeze([
+    { value:'thobe-closed', label:'مغلق', prompt:'Keep the thobe front placket fully closed with natural button alignment and soft fabric tension around the collar and chest.', applicableTo:['buttoned-top'] },
+    { value:'thobe-two-buttons-open', label:'فتح زرين', prompt:'Leave exactly the top two thobe buttons open, with a natural V-shaped collar opening, realistic placket tension, and no exaggerated chest exposure.', applicableTo:['buttoned-top'] },
+    { value:'thobe-three-buttons-open', label:'فتح ثلاثة أزرار', prompt:'Leave exactly the top three thobe buttons open, with realistic placket separation, collarbone shadow, and gravity-driven fabric folds.', applicableTo:['buttoned-top'] },
+    { value:'sleeves-rolled', label:'أكمام مطوية', prompt:'Roll the thobe sleeves neatly to just below the elbows, preserving realistic cuff thickness, layered folds, forearm contact, and fabric tension.', applicableTo:['sleeved'] },
+    { value:'sleeves-raised', label:'أكمام مرفوعة', prompt:'Raise the thobe sleeves naturally to mid-forearm without a tight formal roll, with irregular compressed folds and believable sleeve tension.', applicableTo:['sleeved'] },
+    { value:'thobe_with_shemagh', label:'ثوب مع شماغ', prompt:'a traditional red-and-white shemagh worn properly on the head, symmetrical and neat', applicableTo:['buttoned-top'], garmentTags:['thobe','headwear'] }
+  ]),
+  shirt: Object.freeze([
+    { value:'default', label:'افتراضي', prompt:'', applicableTo:['all'] },
+    { value:'french-tuck', label:'فرنسي تك', prompt:'Tuck only the front section of the shirt into the waistband while leaving the back hem untucked, with natural gathers and asymmetric waist folds.', applicableTo:['tuckable-top-with-pants'] },
+    { value:'untucked', label:'خارج', prompt:'Leave the shirt hem fully untucked over the waistband with gravity-driven folds, realistic side seams, and ordinary asymmetry.', applicableTo:['tuckable-top'] },
+    { value:'shirt-one-button-open', label:'زر واحد مفتوح', prompt:'Leave exactly the top shirt button open, keeping the collar relaxed and the remaining placket naturally aligned.', applicableTo:['buttoned-top'] },
+    { value:'top-buttons-open', label:'زران مفتوحان', prompt:'Leave exactly the top two shirt buttons open, with realistic collarbone shadow, placket separation, and fabric tension across the chest.', applicableTo:['buttoned-top'] },
+    { value:'sleeves-rolled', label:'أكمام مطوية', prompt:'Roll the shirt sleeves neatly to the elbows with layered cuff folds, realistic compression, and natural forearm exposure.', applicableTo:['sleeved'] },
+    { value:'sleeves-raised', label:'أكمام مرفوعة', prompt:'Push the shirt sleeves naturally up to mid-forearm without a formal roll, producing irregular compressed folds and realistic tension.', applicableTo:['sleeved'] },
+    { value:'shirt_fully_buttoned', label:'مغلق بالكامل', prompt:'shirt fully buttoned to the collar, crisp placket, no exposed chest', applicableTo:['buttoned-top'], garmentTags:['shirt'] },
+    { value:'shirt_under_jacket', label:'قميص تحت جاكيت', prompt:'shirt worn under a structured blazer, blazer open at the front showing the shirt', applicableTo:['buttoned-top'], garmentTags:['shirt','jacket'] },
+    { value:'shirt_collar_up', label:'ياقة مرفوعة', prompt:'shirt collar raised naturally, no tie, casual smart-casual', applicableTo:['collared'], garmentTags:['shirt'] }
+  ]),
+  tshirt: Object.freeze([
+    { value:'default', label:'افتراضي', prompt:'', applicableTo:['all'] },
+    { value:'tucked', label:'مطوي', prompt:'Tuck the T-shirt hem into the visible waistband with realistic bunching, seam tension, and a natural uneven waistline.', applicableTo:['tuckable-top'] },
+    { value:'untucked', label:'خارج', prompt:'Leave the T-shirt hem untucked over the waistband with soft gravity-driven folds and natural asymmetry.', applicableTo:['tuckable-top'] },
+    { value:'sleeves-rolled', label:'أكمام مطوية', prompt:'Roll the short T-shirt sleeves once or twice at the upper arm, creating compact jersey folds and believable fabric compression.', applicableTo:['short-sleeve'] },
+    { value:'tshirt_with_overshirt', label:'تيشيرت مع أوفرشيرت', prompt:'t-shirt worn under an unbuttoned overshirt, both layers visible, natural drape', applicableTo:['tuckable-top'], garmentTags:['tshirt','overshirt'] }
+  ]),
+  bisht: Object.freeze([
+    { value:'bisht-open', label:'مفتوح', prompt:'Wear the bisht open at the front, with both panels hanging freely and symmetrically imperfect under gravity while the thobe remains visible beneath.', applicableTo:['long-garment'] },
+    { value:'bisht-half-closed', label:'نصف مغلق', prompt:'Wear the bisht partly drawn together at the front without fully closing it, preserving natural shoulder support, front overlap, and long gravity-driven folds.', applicableTo:['long-garment'] }
+  ]),
+  suit: Object.freeze([
+    { value:'suit-jacket-open', label:'جاكيت مفتوح', prompt:'Wear the suit or jacket open at the front, with lapels falling naturally, the shirt visible beneath, and realistic jacket-panel separation and drape.', applicableTo:['layered-top'] },
+    { value:'suit-jacket-closed', label:'جاكيت مغلق', prompt:'Wear the suit or jacket closed at the front with realistic button tension, lapel roll, waist shaping, and natural creases from posture.', applicableTo:['layered-top'] },
+    { value:'suit_jacket_on_shoulder', label:'الجاكيت على الكتف', prompt:'blazer draped over one shoulder with the hand holding the collar, jacket hangs naturally', applicableTo:['layered-top'], garmentTags:['suit','jacket'] }
+  ])
+});
 
 export const HAND_INTERACTIONS = Object.freeze([
   { value: 'none', label: 'لا يوجد', prompt: '', applicableTo: ['all'] },
@@ -270,7 +300,12 @@ export const HAND_INTERACTIONS = Object.freeze([
   { value: 'roll-sleeve', label: 'رفع الكم', prompt: 'One hand pulling the short sleeve up towards the shoulder, compressing the fabric at the bicep.', applicableTo: ['short-sleeve'] },
   { value: 'wipe-sweat', label: 'مسح العرق', prompt: 'One hand holding a white towel wiping the forehead, while the other hand naturally rests at the side or adjusts clothing. Natural asymmetric posture.', applicableTo: ['all'] },
   { value: 'pocket-hands', label: 'وضع اليد في الجيب', prompt: 'Both hands inserted into the side pockets of the lower garment. The fabric stretches taut across the pelvis with natural compression at the pocket seams.', applicableTo: ['pocketed'] },
-  { value: 'adjust-waistband', label: 'تعديل الخصر', prompt: 'One hand pulling the waistband of the lower garment up, which slightly lifts the bottom of the upper garment. Natural compression of the fabric at the hips.', applicableTo: ['waistband'] }
+  { value: 'adjust-waistband', label: 'تعديل الخصر', prompt: 'One hand pulling the waistband of the lower garment up, which slightly lifts the bottom of the upper garment. Natural compression of the fabric at the hips.', applicableTo: ['waistband'] },
+  { value: 'tuck-shirt', label: 'إدخال القميص', prompt: 'one hand naturally tucking the shirt into the waistband', applicableTo: ['tuckable-top'] },
+  { value: 'touch-watch', label: 'لمس الساعة', prompt: 'free hand lightly touching the wristwatch on the opposite wrist', applicableTo: ['all'] },
+  { value: 'adjust-glasses', label: 'تعديل النظارة', prompt: 'one hand adjusting the glasses frame at the temple', applicableTo: ['all'] },
+  { value: 'hand-on-chest', label: 'يد على الصدر', prompt: 'one hand resting flat on the upper chest, calm and composed', applicableTo: ['all'] },
+  { value: 'scratch-beard', label: 'يد على اللحية', prompt: 'one hand lightly touching the beard along the jawline', applicableTo: ['all'] }
 ]);
 
 
@@ -338,6 +373,11 @@ export const POSE_HAND_USAGE = Object.freeze({
   standing_relaxed:0, standing_one_hand:0, walking_slow:0, holding_basket:1,
   seated_sofa:0, seated_chair:0, lean_wall:0, lean_counter:0, driver_seat:0, passenger_seat:0,
   door_open_car:0, coffee_hand:1, adjust_clothing:1, hand_on_head:1, one_hand_pocket:1, close_relaxed:0,
+  standing_arms_crossed:1, standing_hands_in_pockets:1, seated_legs_crossed:0, seated_elbow_on_table:1,
+  lean_railing:0, standing_looking_away:0, seated_leaning_forward:0, walking_looking_back:0,
+  standing_stretching:0, seated_reading_posture:1, standing_hand_on_hip:1, leaning_against_wall:0,
+  standing_hands_clasped_front:0, standing_thumb_in_pocket:0, standing_hand_on_neck:1,
+  seated_hands_on_lap:0, seated_hand_on_knee:1, standing_neutral_at_side:0,
   'bed-lying-back':0, 'bed-lying-side':1, 'bed-lying-stomach':1, 'bed-reclining-headboard':0,
   'bed-propped-pillows':0, 'bed-lying-partial':1, 'bed-lying-diagonal':1, 'bed-lying-reading':1,
   'bed-lying-back-knees-bent':0, 'bed-sitting-cross':0, 'bed-sitting-edge':0, 'bed-sitting-back-wall':0,
@@ -358,7 +398,8 @@ export const POSE_HAND_USAGE = Object.freeze({
 });
 
 const HAND_INTERACTION_HAND_USAGE = Object.freeze({
-  none:0, 'adjust-collar':1, 'roll-sleeve':1, 'wipe-sweat':1, 'pocket-hands':2, 'adjust-waistband':1
+  none:0, 'adjust-collar':1, 'roll-sleeve':1, 'wipe-sweat':1, 'pocket-hands':2, 'adjust-waistband':1,
+  'tuck-shirt':1, 'touch-watch':1, 'adjust-glasses':1, 'hand-on-chest':1, 'scratch-beard':1
 });
 
 // TODO-MULTI-FLEXIBLE: The current 2-hand cap prevents
@@ -624,8 +665,8 @@ const FORMAL_SUIT_VALUES = new Set(FORMAL_SUITS.map((item) => item.value));
 const FORMAL_LOOK_VALUES = new Set(FORMAL_LOOKS.map((item) => item.value));
 
 const GARMENT_TAG_PROFILES = Object.freeze({
-  thobe: Object.freeze(['buttoned-top', 'collared', 'long-garment']),
-  thobeHeadwear: Object.freeze(['buttoned-top', 'collared', 'long-garment', 'headwear']),
+  thobe: Object.freeze(['buttoned-top', 'collared', 'sleeved', 'long-garment']),
+  thobeHeadwear: Object.freeze(['buttoned-top', 'collared', 'sleeved', 'long-garment', 'headwear']),
   abaya: Object.freeze(['long-garment', 'no-collar']),
   headwear: Object.freeze(['headwear']),
   tshirt: Object.freeze(['tuckable-top', 'sleeved', 'short-sleeve', 'no-collar']),
@@ -695,12 +736,34 @@ function garmentTagsForHomeItem(item) {
   throw new Error(`Missing garmentTags for HOME_CLOTHING item: ${item.value}`);
 }
 
-const normalizeClothingCatalogItem = (item) => ({
-  ...item,
-  group: FORMAL_SUIT_VALUES.has(item.value) ? 'بدلات رسمية كاملة' : item.group,
-  prompt: CLOTHING_PROMPT_OVERRIDES.get(item.value) || item.prompt,
-  garmentTags: garmentTagsForCatalogItem(item)
-});
+export const CLOTHING_STYLING_CATEGORIES = Object.freeze(['thobe','shirt','tshirt','bisht','suit']);
+
+function clothingCategoryForCatalogItem(item, garmentTags) {
+  const value=String(item?.value || '').toLowerCase();
+  if(value==='bisht_thobe') return 'bisht';
+  if(value.includes('abaya')) return 'abaya';
+  if(/thobe|shemagh|ghutra/.test(value)) return 'thobe';
+  if(FORMAL_SUIT_VALUES.has(item.value)) return 'suit';
+  if(FORMAL_LOOK_VALUES.has(item.value)) return 'shirt';
+  const tags=new Set(garmentTags || []);
+  if(tags.has('layered-top') && tags.has('buttoned-top') && tags.has('tuckable-top')) return 'shirt';
+  if(tags.has('layered-top')) return 'suit';
+  if(tags.has('buttoned-top') && tags.has('collared')) return 'shirt';
+  if(tags.has('tuckable-top') || tags.has('short-sleeve') || tags.has('no-collar')) return 'tshirt';
+  if(tags.has('headwear')) return 'thobe';
+  throw new Error(`Missing clothing styling category for CLOTHING_CATALOG item: ${item?.value || 'unknown'}`);
+}
+
+const normalizeClothingCatalogItem = (item) => {
+  const garmentTags=garmentTagsForCatalogItem(item);
+  return {
+    ...item,
+    group: FORMAL_SUIT_VALUES.has(item.value) ? 'بدلات رسمية كاملة' : item.group,
+    prompt: CLOTHING_PROMPT_OVERRIDES.get(item.value) || item.prompt,
+    garmentTags,
+    category: clothingCategoryForCatalogItem(item,garmentTags)
+  };
+};
 
 export const CLOTHING_CATALOG = [
   ...CLOTHING_OPTIONS,
@@ -865,7 +928,25 @@ export const SELFIE_POSES = simple([
 ['adjust_clothing','يعدّل الملابس باليد الحرة','gently adjusting a small section of clothing with the free hand, creating realistic fabric tension and contact folds'],
 ['hand_on_head','اليد الحرة على الرأس','placing the free hand naturally on the head with anatomically correct elbow elevation, wrist orientation, and hair or headwear contact'],
 ['one_hand_pocket','اليد الحرة في الجيب','placing the free hand casually in a pocket with realistic elbow angle, cloth tension, and pocket deformation'],
-['close_relaxed','وقفة قريبة وعفوية','a close relaxed selfie pose with natural neck, shoulder, and upper-torso asymmetry and no influencer-style posing']
+['close_relaxed','وقفة قريبة وعفوية','a close relaxed selfie pose with natural neck, shoulder, and upper-torso asymmetry and no influencer-style posing'],
+['standing_arms_crossed','واقف والذراع الحرة متقاطعة','standing with the free forearm crossed naturally across the torso while the phone-bearing arm remains independently extended, with relaxed shoulders and believable elbow contact'],
+['standing_hands_in_pockets','واقف واليد الحرة في الجيب','standing with the free hand settled naturally in a trouser pocket while the phone-bearing arm remains outside the pocket, with realistic pocket tension and relaxed weight distribution'],
+['seated_legs_crossed','جالس والساقان متقاطعتان','seated naturally on a chair with one leg crossed over the other at the knee, realistic pelvis support, balanced torso posture, and coherent foot placement'],
+['seated_elbow_on_table','جالس والمرفق على الطاولة','seated on a chair with the free elbow resting lightly on an existing table or desk surface, creating believable forearm support, shoulder drop, and contact pressure without inventing a new table'],
+['lean_railing','مستند على درابزين','leaning lightly against an existing railing with restrained forearm or hip contact, believable weight transfer, grounded feet, and no floating support'],
+['standing_looking_away','واقف وينظر بعيدًا','standing naturally while looking slightly away from the phone, with relaxed neck rotation, uneven shoulder height, and ordinary weight distribution'],
+['seated_leaning_forward','جالس ومائل للأمام','seated on a chair while leaning slightly forward from the hips, with forearms relaxed near the thighs, stable pelvis support, and believable spinal posture'],
+['walking_looking_back','يمشي وينظر للخلف','walking through a real gait phase while glancing back over one shoulder, with coherent torso counter-rotation, foot placement, and mild handheld displacement'],
+['standing_stretching','واقف يتمدد بخفة','standing during a small natural upper-body stretch using posture and shoulder extension without theatrical posing, while preserving a feasible phone-bearing arm position'],
+['seated_reading_posture','جالس بوضعية قراءة','seated on a chair in a natural reading posture with the head and upper torso angled slightly downward, one free hand occupied near the lap or existing reading material, and coherent back and pelvis support'],
+['standing_hand_on_hip','واقف واليد الحرة على الخصر','standing with the free hand resting naturally on the hip, elbow angled outward modestly, cloth compressed beneath the hand, and the phone-bearing arm remaining independent'],
+['leaning_against_wall','مستند على الجدار','leaning lightly against a wall with visible shoulder or upper-back contact, subtle body-weight transfer, grounded feet, and no furniture implied'],
+['standing_hands_clasped_front','واقف واليدان متشابكتان أمامًا','standing with both hands loosely clasped in front of the waist at natural hip level, arms relaxed'],
+['standing_thumb_in_pocket','واقف والإبهام في الجيب','standing with the thumb of the free hand hooked into a front pocket while the other hand holds the phone'],
+['standing_hand_on_neck','واقف واليد خلف الرقبة','standing with one hand resting on the back of the neck in a relaxed stretch posture'],
+['seated_hands_on_lap','جالس واليدان على الحضن','seated with both hands resting naturally on the lap, forearms relaxed, posture upright but not stiff'],
+['seated_hand_on_knee','جالس واليد على الركبة','seated with one hand resting on the knee, fingers relaxed, elbow bent naturally'],
+['standing_neutral_at_side','واقف والذراع الحرة بجانبه','standing with the free arm relaxed at the side, natural hand position, no forced pose']
 ]);
 
 export const SELFIE_ANGLES = simple([

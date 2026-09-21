@@ -141,7 +141,7 @@ test('majlis selfie only exposes explicitly mapped majlis locations and lighting
 
 test('walking selfie removes seated and vehicle-only choices', () => {
   const snapshot = compatibilitySnapshot('walking_selfie', catalogs);
-  assert.deepEqual(values(snapshot.pose), ['walking_slow']);
+  assert.deepEqual(values(snapshot.pose), ['walking_slow', 'walking_looking_back']);
   assert.equal(values(snapshot.angle).includes('driver_eye_level'), false);
   assert.equal(values(snapshot.location).includes('modern_saudi_majlis'), false);
   assert.equal(values(snapshot.location).includes('boulevard_walkway'), true);

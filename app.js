@@ -390,19 +390,45 @@ function updateInteractionSelect(select, definitions, garmentTags, fallbackValue
   return supported;
 }
 
+export function clothingStylingOptionsForValue(clothingValue = '') {
+  const selectedClothing = CLOTHING_ITEM_BY_VALUE.get(clothingValue);
+  const category = selectedClothing?.category || '';
+  const garmentTags = new Set(selectedClothing?.garmentTags || []);
+  return (CLOTHING_STYLING[category] || []).filter((option) => optionAppliesToGarment(option, garmentTags));
+}
+
 function updateClothingStylingAvailability() {
   const sceneType = selectedSceneType();
   const selectedClothing = CLOTHING_ITEM_BY_VALUE.get(controls.clothing?.value || '');
   const garmentTags = new Set(selectedClothing?.garmentTags || []);
   const stylingSceneSupported = CLOTHING_STYLING_SCENE_TYPES.includes(sceneType) && sceneType !== 'supermarket_selfie';
-  const stylingSupported = updateInteractionSelect(
-    controls.clothingStyling,
-    CLOTHING_STYLING,
-    garmentTags,
-    'default',
-    stylingSceneSupported,
-    clothingStylingHint
-  );
+  const previous = controls.clothingStyling?.value || '';
+  const options = stylingSceneSupported ? clothingStylingOptionsForValue(controls.clothing?.value || '') : [];
+
+  if (controls.clothingStyling) {
+    controls.clothingStyling.replaceChildren();
+    if (options.length === 0) {
+      controls.clothingStyling.append(makeOption({ value:'', label:'غير متاح', prompt:'' }));
+      controls.clothingStyling.value = '';
+      controls.clothingStyling.disabled = true;
+    } else {
+      for (const option of options) controls.clothingStyling.append(makeOption(option));
+      const preferred = options.some((option) => option.value === previous)
+        ? previous
+        : (options.find((option) => option.value === 'default')?.value || options[0].value);
+      controls.clothingStyling.value = preferred;
+      const defaultOnly = options.length === 1 && options[0].value === 'default';
+      controls.clothingStyling.disabled = defaultOnly;
+    }
+  }
+
+  const defaultOnly = options.length === 1 && options[0].value === 'default';
+  const stylingSupported = options.length > 0 && !defaultOnly;
+  if (clothingStylingHint) {
+    clothingStylingHint.hidden = stylingSupported;
+    clothingStylingHint.textContent = stylingSupported ? '' : 'غير متاح';
+  }
+
   updateInteractionSelect(
     controls.handInteraction,
     HAND_INTERACTIONS,
@@ -411,10 +437,6 @@ function updateClothingStylingAvailability() {
     true,
     handInteractionHint
   );
-  if (clothingStylingHint && !stylingSceneSupported) {
-    clothingStylingHint.hidden = false;
-    clothingStylingHint.textContent = 'غير متاح في هذا المشهد';
-  }
   return stylingSupported;
 }
 

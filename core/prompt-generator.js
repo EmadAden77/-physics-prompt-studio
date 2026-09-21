@@ -471,7 +471,8 @@ export function generateImagePrompt(input={}){
       CAR_ANCHOR.roof,
       CAR_ANCHOR.windows,
       CAR_ANCHOR.drive,
-      CAR_ANCHOR.cabin_scale
+      CAR_ANCHOR.cabin_scale,
+      CAR_ANCHOR.fixed_rule
     ].join(', ');
     sceneText=`${sceneText} CAR INTERIOR ANCHOR: ${carAnchorText}`;
   }

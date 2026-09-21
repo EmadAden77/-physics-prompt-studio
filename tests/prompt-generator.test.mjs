@@ -1900,3 +1900,8 @@ test('PR 18 car anchor precedes furniture geometry and preserves the canonical 2
   }
 });
 
+test('PR 18 CAR_ANCHOR enforces the locked vehicle configuration in SCENE', () => {
+  const scene=sceneSection(generateImagePrompt({ sceneType:'inside_car_selfie' }).prompt);
+  assert.match(scene,/locked vehicle configuration/i);
+});
+

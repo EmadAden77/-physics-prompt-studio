@@ -6,6 +6,7 @@ export const SAUDI_SIGNAGE_RULE = 'SIGNAGE REALISM: If any sign or text appears 
 
 const grouped = (rows) => rows.map(([group, value, label, prompt]) => ({ group, value, label, prompt }));
 const simple = (rows) => rows.map(([value, label, prompt]) => ({ value, label, prompt }));
+const poseCatalog = (rows) => rows.map(([value, label, prompt, requires]) => ({ value, label, prompt, requires }));
 
 const formalLookGroup = (value) => {
   const match = /^look-(\d{2,3})$/.exec(value);
@@ -912,42 +913,58 @@ export const BEDROOM_POSES = [
 { group:'مرآة', value:'bedroom-mirror-seated', label:'أمام المرآة جالس', prompt:'seated in front of the bedroom mirror on the bed edge, phone visible in reflection', cameraHint:'mirror-view camera at eye level while seated, phone visible in reflection' }
 ];
 
-export const SELFIE_POSES = simple([
-['standing_relaxed','واقف باسترخاء','standing naturally with relaxed weight distribution, mild shoulder asymmetry, and no rigid portrait pose'],
-['standing_one_hand','واقف واليد الحرة مرتاحة','standing naturally while the free hand rests casually near the thigh, pocket area, or torso without deliberate posing'],
-['walking_slow','يمشي ببطء','walking slowly while taking the selfie, with subtle gait asymmetry and mild motion consistency appropriate to the shutter'],
-['holding_basket','يمسك سلة تسوق','holding a supermarket shopping basket naturally in the free hand with correct grip, wrist angle, arm load, and gravity while keeping the phone-bearing arm independent'],
-['seated_sofa','جالس على كنبة / مجلس','seated comfortably with realistic pelvis support, cushion compression, mild torso rotation, and anatomically coherent thighs and knees'],
-['seated_chair','جالس على كرسي','seated naturally on a chair with correct hip support, back contact where applicable, feet placement, and relaxed torso posture'],
-['lean_wall','ميل خفيف على جدار','leaning lightly against a wall with visible contact physics, subtle shoulder tilt, and realistic body weight transfer'],
-['lean_counter','ميل خفيف على طاولة / كاونتر','leaning lightly against a counter or table with correct forearm or hip contact and believable body support'],
-['driver_seat','جالس في مقعد السائق','seated naturally in the driver seat of a stationary vehicle, with correct seat compression, steering-wheel relationship, and cabin geometry'],
-['passenger_seat','جالس في مقعد الراكب','seated naturally in the front passenger seat of a stationary vehicle with correct cabin orientation and seat contact'],
-['door_open_car','واقف بجانب باب سيارة مفتوح','standing beside an open vehicle door while personally holding the phone, with correct door clearance, body-car contact spacing, and selfie reach'],
-['coffee_hand','يمسك كوب قهوة باليد الحرة','holding a small coffee cup naturally in the free hand with correct finger contact, wrist angle, and gravity'],
-['adjust_clothing','يعدّل الملابس باليد الحرة','gently adjusting a small section of clothing with the free hand, creating realistic fabric tension and contact folds'],
-['hand_on_head','اليد الحرة على الرأس','placing the free hand naturally on the head with anatomically correct elbow elevation, wrist orientation, and hair or headwear contact'],
-['one_hand_pocket','اليد الحرة في الجيب','placing the free hand casually in a pocket with realistic elbow angle, cloth tension, and pocket deformation'],
-['close_relaxed','وقفة قريبة وعفوية','a close relaxed selfie pose with natural neck, shoulder, and upper-torso asymmetry and no influencer-style posing'],
-['standing_arms_crossed','واقف والذراع الحرة متقاطعة','standing with the free forearm crossed naturally across the torso while the phone-bearing arm remains independently extended, with relaxed shoulders and believable elbow contact'],
-['standing_hands_in_pockets','واقف واليد الحرة في الجيب','standing with the free hand settled naturally in a trouser pocket while the phone-bearing arm remains outside the pocket, with realistic pocket tension and relaxed weight distribution'],
-['seated_legs_crossed','جالس والساقان متقاطعتان','seated naturally on a chair with one leg crossed over the other at the knee, realistic pelvis support, balanced torso posture, and coherent foot placement'],
-['seated_elbow_on_table','جالس والمرفق على الطاولة','seated on a chair with the free elbow resting lightly on an existing table or desk surface, creating believable forearm support, shoulder drop, and contact pressure without inventing a new table'],
-['lean_railing','مستند على درابزين','leaning lightly against an existing railing with restrained forearm or hip contact, believable weight transfer, grounded feet, and no floating support'],
-['standing_looking_away','واقف وينظر بعيدًا','standing naturally while looking slightly away from the phone, with relaxed neck rotation, uneven shoulder height, and ordinary weight distribution'],
-['seated_leaning_forward','جالس ومائل للأمام','seated on a chair while leaning slightly forward from the hips, with forearms relaxed near the thighs, stable pelvis support, and believable spinal posture'],
-['walking_looking_back','يمشي وينظر للخلف','walking through a real gait phase while glancing back over one shoulder, with coherent torso counter-rotation, foot placement, and mild handheld displacement'],
-['standing_stretching','واقف يتمدد بخفة','standing during a small natural upper-body stretch using posture and shoulder extension without theatrical posing, while preserving a feasible phone-bearing arm position'],
-['seated_reading_posture','جالس بوضعية قراءة','seated on a chair in a natural reading posture with the head and upper torso angled slightly downward, one free hand occupied near the lap or existing reading material, and coherent back and pelvis support'],
-['standing_hand_on_hip','واقف واليد الحرة على الخصر','standing with the free hand resting naturally on the hip, elbow angled outward modestly, cloth compressed beneath the hand, and the phone-bearing arm remaining independent'],
-['leaning_against_wall','مستند على الجدار','leaning lightly against a wall with visible shoulder or upper-back contact, subtle body-weight transfer, grounded feet, and no furniture implied'],
-['standing_hands_clasped_front','واقف واليدان متشابكتان أمامًا','standing with both hands loosely clasped in front of the waist at natural hip level, arms relaxed'],
-['standing_thumb_in_pocket','واقف والإبهام في الجيب','standing with the thumb of the free hand hooked into a front pocket while the other hand holds the phone'],
-['standing_hand_on_neck','واقف واليد خلف الرقبة','standing with one hand resting on the back of the neck in a relaxed stretch posture'],
-['seated_hands_on_lap','جالس واليدان على الحضن','seated with both hands resting naturally on the lap, forearms relaxed, posture upright but not stiff'],
-['seated_hand_on_knee','جالس واليد على الركبة','seated with one hand resting on the knee, fingers relaxed, elbow bent naturally'],
-['standing_neutral_at_side','واقف والذراع الحرة بجانبه','standing with the free arm relaxed at the side, natural hand position, no forced pose']
+export const SELFIE_POSES = poseCatalog([
+['standing_relaxed','واقف باسترخاء','standing naturally with relaxed weight distribution, mild shoulder asymmetry, and no rigid portrait pose','neutral'],
+['standing_one_hand','واقف واليد الحرة مرتاحة','standing naturally while the free hand rests casually near the thigh, pocket area, or torso without deliberate posing','neutral'],
+['walking_slow','يمشي ببطء','walking slowly while taking the selfie, with subtle gait asymmetry and mild motion consistency appropriate to the shutter','neutral'],
+['holding_basket','يمسك سلة تسوق','holding a supermarket shopping basket naturally in the free hand with correct grip, wrist angle, arm load, and gravity while keeping the phone-bearing arm independent','neutral'],
+['seated_sofa','جالس على كنبة / مجلس','seated comfortably with realistic pelvis support, cushion compression, mild torso rotation, and anatomically coherent thighs and knees','sofa'],
+['seated_chair','جالس على كرسي','seated naturally on a chair with correct hip support, back contact where applicable, feet placement, and relaxed torso posture','chair'],
+['lean_wall','ميل خفيف على جدار','leaning lightly against a wall with visible contact physics, subtle shoulder tilt, and realistic body weight transfer','wall'],
+['lean_counter','ميل خفيف على طاولة / كاونتر','leaning lightly against a counter or table with correct forearm or hip contact and believable body support','counter'],
+['driver_seat','جالس في مقعد السائق','seated naturally in the driver seat of a stationary vehicle, with correct seat compression, steering-wheel relationship, and cabin geometry','neutral'],
+['passenger_seat','جالس في مقعد الراكب','seated naturally in the front passenger seat of a stationary vehicle with correct cabin orientation and seat contact','neutral'],
+['door_open_car','واقف بجانب باب سيارة مفتوح','standing beside an open vehicle door while personally holding the phone, with correct door clearance, body-car contact spacing, and selfie reach','neutral'],
+['coffee_hand','يمسك كوب قهوة باليد الحرة','holding a small coffee cup naturally in the free hand with correct finger contact, wrist angle, and gravity','neutral'],
+['adjust_clothing','يعدّل الملابس باليد الحرة','gently adjusting a small section of clothing with the free hand, creating realistic fabric tension and contact folds','neutral'],
+['hand_on_head','اليد الحرة على الرأس','placing the free hand naturally on the head with anatomically correct elbow elevation, wrist orientation, and hair or headwear contact','neutral'],
+['one_hand_pocket','اليد الحرة في الجيب','placing the free hand casually in a pocket with realistic elbow angle, cloth tension, and pocket deformation','neutral'],
+['close_relaxed','وقفة قريبة وعفوية','a close relaxed selfie pose with natural neck, shoulder, and upper-torso asymmetry and no influencer-style posing','neutral'],
+['standing_arms_crossed','واقف والذراع الحرة متقاطعة','standing with the free forearm crossed naturally across the torso while the phone-bearing arm remains independently extended, with relaxed shoulders and believable elbow contact','neutral'],
+['standing_hands_in_pockets','واقف واليد الحرة في الجيب','standing with the free hand settled naturally in a trouser pocket while the phone-bearing arm remains outside the pocket, with realistic pocket tension and relaxed weight distribution','neutral'],
+['seated_legs_crossed','جالس والساقان متقاطعتان','seated naturally on a chair with one leg crossed over the other at the knee, realistic pelvis support, balanced torso posture, and coherent foot placement','chair'],
+['seated_elbow_on_table','جالس والمرفق على الطاولة','seated on a chair with the free elbow resting lightly on an existing table or desk surface, creating believable forearm support, shoulder drop, and contact pressure without inventing a new table','table'],
+['lean_railing','مستند على درابزين','leaning lightly against an existing railing with restrained forearm or hip contact, believable weight transfer, grounded feet, and no floating support','railing'],
+['standing_looking_away','واقف وينظر بعيدًا','standing naturally while looking slightly away from the phone, with relaxed neck rotation, uneven shoulder height, and ordinary weight distribution','neutral'],
+['seated_leaning_forward','جالس ومائل للأمام','seated on a chair while leaning slightly forward from the hips, with forearms relaxed near the thighs, stable pelvis support, and believable spinal posture','chair'],
+['walking_looking_back','يمشي وينظر للخلف','walking through a real gait phase while glancing back over one shoulder, with coherent torso counter-rotation, foot placement, and mild handheld displacement','neutral'],
+['standing_stretching','واقف يتمدد بخفة','standing during a small natural upper-body stretch using posture and shoulder extension without theatrical posing, while preserving a feasible phone-bearing arm position','neutral'],
+['seated_reading_posture','جالس بوضعية قراءة','seated on a chair in a natural reading posture with the head and upper torso angled slightly downward, one free hand occupied near the lap or existing reading material, and coherent back and pelvis support','chair'],
+['standing_hand_on_hip','واقف واليد الحرة على الخصر','standing with the free hand resting naturally on the hip, elbow angled outward modestly, cloth compressed beneath the hand, and the phone-bearing arm remaining independent','neutral'],
+['leaning_against_wall','مستند على الجدار','leaning lightly against a wall with visible shoulder or upper-back contact, subtle body-weight transfer, grounded feet, and no furniture implied','wall'],
+['standing_hands_clasped_front','واقف واليدان متشابكتان أمامًا','standing with both hands loosely clasped in front of the waist at natural hip level, arms relaxed','neutral'],
+['standing_thumb_in_pocket','واقف والإبهام في الجيب','standing with the thumb of the free hand hooked into a front pocket while the other hand holds the phone','neutral'],
+['standing_hand_on_neck','واقف واليد خلف الرقبة','standing with one hand resting on the back of the neck in a relaxed stretch posture','neutral'],
+['seated_hands_on_lap','جالس واليدان على الحضن','seated with both hands resting naturally on the lap, forearms relaxed, posture upright but not stiff','chair'],
+['seated_hand_on_knee','جالس واليد على الركبة','seated with one hand resting on the knee, fingers relaxed, elbow bent naturally','chair'],
+['standing_neutral_at_side','واقف والذراع الحرة بجانبه','standing with the free arm relaxed at the side, natural hand position, no forced pose','neutral']
 ]);
+
+const LOCATION_CAPABILITIES = Object.freeze({
+  airport_terminal: ['chair', 'wall'],
+  boulevard_walkway: ['wall', 'counter'],
+  palm_farm: [],
+  saudi_office: ['chair', 'table', 'counter', 'wall'],
+  saudi_cafe: ['chair', 'table', 'counter', 'wall'],
+  modern_saudi_majlis: ['sofa', 'table', 'wall']
+});
+
+export function getAvailablePoses(sceneType, locationValue) {
+  const caps = LOCATION_CAPABILITIES[locationValue];
+  if (caps === undefined) return SELFIE_POSES;
+  if (caps.length === 0) return SELFIE_POSES.filter((pose) => pose.requires === 'neutral');
+  return SELFIE_POSES.filter((pose) => pose.requires === 'neutral' || caps.includes(pose.requires));
+}
 
 export const SELFIE_ANGLES = simple([
 ['eye_centered','مستوى العين — أمامي','front camera at approximately eye level, yaw 0°, pitch 0°, with a tiny natural handheld roll'],

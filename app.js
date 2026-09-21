@@ -1,5 +1,5 @@
 import { compilePrompt, createLedger } from './core/prompt-optimizer.js';
-import { LOCATION_CATALOG, CLOTHING_CATALOG, HOME_CLOTHING, HAIR_STYLES, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES, CLOTHING_STYLING, HAND_INTERACTIONS, getAvailableProps, getRemainingHands, getPropHandUsage } from './core/scene-builder.js';
+import { LOCATION_CATALOG, CLOTHING_CATALOG, HOME_CLOTHING, HAIR_STYLES, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES, CLOTHING_STYLING, HAND_INTERACTIONS, getAvailableProps, getRemainingHands, getPropHandUsage, getAvailablePoses } from './core/scene-builder.js';
 import { enrichClothingPrompt } from './core/expanded-catalogs.js';
 import {
   generateImagePrompt,
@@ -286,6 +286,10 @@ function sceneCompatibilityData(sceneType, locationValue = '') {
     const outdoors = ['desert_campsite_simple', 'wadi_picnic_edge'].includes(locationValue);
     lighting = lighting.filter((item) => outdoors ? item.value === 'day_open_shade' : item.value !== 'day_open_shade');
   }
+  const scenePoses = specializedOptions(sceneType, 'pose', compatible.pose);
+  const locationPoseValues = new Set(getAvailablePoses(sceneType, locationValue).map((item) => item.value));
+  const filteredPoses = scenePoses.filter((item) => locationPoseValues.has(item.value));
+  const poses = filteredPoses.length > 0 ? filteredPoses : scenePoses;
   return {
     baseSceneType,
     compatibilityType,
@@ -294,7 +298,7 @@ function sceneCompatibilityData(sceneType, locationValue = '') {
     options: {
       location: locationCandidates,
       clothing: specializedOptions(sceneType, 'clothing', compatible.clothing),
-      pose: specializedOptions(sceneType, 'pose', compatible.pose),
+      pose: poses,
       angle: specializedOptions(sceneType, 'angle', compatible.angle),
       lighting,
       camera: compatible.camera,
@@ -815,8 +819,7 @@ if (HAS_DOM) {
     await randomizeWithSeed(currentSeed);
   });
   controls.location.addEventListener('change', () => {
-    if (selectedSceneType() === 'floor_seated_selfie') applySceneCompatibility();
-    else updateHeldPropAvailability();
+    applySceneCompatibility();
     scheduleGenerate();
   });
   controls.sceneType.addEventListener('change', () => {

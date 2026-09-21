@@ -1735,3 +1735,64 @@ test('23 sections preserved after heldProp override', () => {
   });
   assert.equal(result.sections.length, 23);
 });
+
+test('PR 13 biological micro-realism keeps stray hairs aligned with the selected hairstyle direction', () => {
+  const result=generateImagePrompt({ hairStyle:'hair combed FORWARD onto the forehead with visible individual strands.' });
+  const biological=result.prompt.split('[BIOLOGICAL_MICRO_REALISM]\n')[1].split('\n\n[CAMERA_METADATA_HINT]')[0];
+  assert.match(biological,/directions consistent with the selected hairstyle direction/i);
+  assert.match(biological,/Do not place stray hairs contradicting the selected direction/i);
+});
+
+test('PR 13 hair negatives follow the five resolved directions without cross-direction leakage', () => {
+  const cases=[
+    ['backward','hair deliberately combed BACKWARD from the forehead, hairline fully visible.','strands falling forward onto the forehead'],
+    ['forward','hair combed FORWARD onto the forehead with visible individual strands.','backward-swept front hair'],
+    ['side','hair parted on the LEFT side with a clear visible parting line. No forward-falling strands.','backward sweep that erases or overrides the selected side parting line'],
+    ['center','hair parted down the CENTER with a clean visible parting line.','backward sweep that erases or overrides the selected center parting line'],
+    ['messy','messy hair with random direction, no combing and natural soft volume.','uniformly slicked or cleanly combed hair that removes the selected disorder']
+  ];
+  const markers=cases.map(([, ,marker])=>marker);
+  for(const [name,hairStyle,expected] of cases){
+    const result=generateImagePrompt({ hairStyle });
+    const negatives=result.prompt.split('[NEGATIVE CONSTRAINTS]\n')[1].split('\n\n[FINAL VERIFICATION]')[0].toLowerCase();
+    assert.ok(negatives.includes(expected.toLowerCase()),`${name}: missing expected hair negative`);
+    for(const other of markers.filter((marker)=>marker!==expected)){
+      assert.equal(negatives.includes(other.toLowerCase()),false,`${name}: leaked another hair negative`);
+    }
+  }
+});
+
+test('PR 13 neutral hair selection adds no directional hair negatives', () => {
+  const result=generateImagePrompt();
+  const negatives=result.prompt.split('[NEGATIVE CONSTRAINTS]\n')[1].split('\n\n[FINAL VERIFICATION]')[0].toLowerCase();
+  for(const marker of [
+    'strands falling forward onto the forehead',
+    'backward-swept front hair',
+    'backward sweep that erases or overrides the selected side parting line',
+    'backward sweep that erases or overrides the selected center parting line',
+    'uniformly slicked or cleanly combed hair that removes the selected disorder'
+  ]) assert.equal(negatives.includes(marker.toLowerCase()),false,marker);
+});
+
+test('PR 13 final verification requires unmistakably visible selected hair direction', () => {
+  const result=generateImagePrompt({ hairStyle:'hair combed FORWARD onto the forehead with visible individual strands.' });
+  const verification=result.prompt.split('[FINAL VERIFICATION]\n')[1];
+  assert.match(verification,/the selected hair direction is unmistakably visible/i);
+  assert.match(verification,/stray hairs \(if visible\) respect the selected direction/i);
+});
+
+test('PR 13 directional prompts contain no double periods and preserve canonical validation', () => {
+  for(const hairStyle of [
+    'hair deliberately combed BACKWARD from the forehead, hairline fully visible.',
+    'hair combed FORWARD onto the forehead with visible individual strands.',
+    'hair parted on the LEFT side with a clear visible parting line. No forward-falling strands.',
+    'hair parted down the CENTER with a clean visible parting line.',
+    'messy hair with random direction, no combing and natural soft volume.'
+  ]){
+    const result=generateImagePrompt({ hairStyle });
+    assert.doesNotMatch(result.prompt,/\.\./);
+    assert.equal(result.sections.length,23);
+    assert.equal(result.validation.valid,true,result.validation.errors.join(' | '));
+  }
+});
+

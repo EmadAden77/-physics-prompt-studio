@@ -85,7 +85,35 @@ const CLOTHING_STYLING_SCENE_TYPES = new Set([
 ]);
 const CANONICAL_SECTIONS = ['GOAL','ACTION-DRIVEN AUTHENTICITY','CAPTURE TYPE LOCK — CRITICAL','IDENTITY / SUBJECT','SCENE','SAUDI CULTURAL DRESS','OBSERVABLE BACKGROUND ELEMENTS','CLOTHING','CONTEXTUAL ACCESSORIES','POSE & BODY MECHANICS','CAMERA GEOMETRY','PHYSICAL LIGHTING','MIRROR RULES','PRODUCT INTEGRATION','PHYSICAL / MATERIAL REALISM','SMARTPHONE IMAGE BEHAVIOR','LENS_PHYSICS','BIOLOGICAL_MICRO_REALISM','CAMERA_METADATA_HINT','AUTHENTIC IMPERFECTIONS','USER CONSTRAINTS','NEGATIVE CONSTRAINTS','FINAL VERIFICATION'];
 const HAIR_LOCK = 'Hair length, density, hairline shape, and hair thickness remain EXACTLY as in the reference image when a reference image is attached. Only the visible direction, part line, clumping, and strand orientation may change. Do not shorten, lengthen, thin, thicken, or recede the hairline. If no reference image is attached, keep the chosen baseline hair length and density stable and do not invent extra length or density solely to satisfy a hairstyle.';
-const HAIR_DIRECTION_LOCK = "HAIR DIRECTION LOCK: The chosen hairstyle direction (backward / forward / side / center / messy) must be unmistakably visible in the final image. If the selected hairstyle says 'combed backward', no strands may fall forward onto the forehead. If 'parted on the left', the parting line must be clearly visible on the left side. Ignore generic 'natural look' instructions that contradict the selected direction.";
+function resolveHairDirection(hair='') {
+  const text=clean(hair).toLowerCase();
+  if(!text) return 'neutral';
+  if(/\bmessy\b|\brandom\b|\bunstyled\b|\btousled\b|\bbreeze\b|no fixed direction/.test(text)) return 'messy';
+  if(/\bbackward\b|slicked back|tied backward|pulled away from the face/.test(text)) return 'backward';
+  if(/\bcenter\b|off-center/.test(text)) return 'center';
+  if(/\bside\b|\blateral\b|subject[’']s left|subject[’']s right|parted deeply on one side|parted on one side/.test(text)) return 'side';
+  if(/\bforward\b|toward the forehead|onto the forehead/.test(text)) return 'forward';
+  return 'neutral';
+}
+const HAIR_DIRECTION_LOCKS=Object.freeze({
+  backward:'Selected direction is BACKWARD. The dominant visible flow must run from the forehead toward the back of the head. No strands may fall forward onto the forehead. Hairline must remain fully visible.',
+  forward:'Selected direction is FORWARD. Visible strands must flow toward and onto the forehead. Hairline may be partially covered. Do not sweep the front hair backward.',
+  side:'Selected direction is SIDE-PARTED. The selected side parting line must be clearly visible and the hair must flow naturally away from that line. Do not replace the selected side part with a backward sweep.',
+  center:'Selected direction is CENTER-PARTED. A visible center or explicitly off-center parting line must remain clear, with hair flowing to both sides. Do not replace the selected center structure with a backward sweep.',
+  messy:'Selected direction is MESSY. Preserve visibly disordered, non-uniform strand flow. Do not convert it into a clean, uniformly combed arrangement.'
+});
+const HAIR_DIRECTION_NEGATIVES=Object.freeze({
+  backward:'forward-combed front hair, strands falling forward onto the forehead',
+  forward:'backward-swept front hair, fully exposed forehead caused by a backward sweep',
+  side:'backward sweep that erases or overrides the selected side parting line',
+  center:'backward sweep that erases or overrides the selected center parting line',
+  messy:'uniformly slicked or cleanly combed hair that removes the selected disorder'
+});
+function hairDirectionLock(hair){
+  const rule=HAIR_DIRECTION_LOCKS[resolveHairDirection(hair)];
+  return `HAIR DIRECTION LOCK: ${rule || 'Keep visible hair naturally arranged without inventing a directional style.'}`;
+}
+function hairDirectionNegatives(hair){ return HAIR_DIRECTION_NEGATIVES[resolveHairDirection(hair)] || ''; }
 const SAUDI_CONTEXT = /(?:^|[^a-z])(saudi(?: arabia)?|riyadh|jeddah|khobar|dammam|makkah|madinah|medina|taif|abha|tabuk|alula|qassim|hail|najran|jazan|alahsa|al ahsa|yanbu|arabian gulf|red sea)(?:$|[^a-z])/i;
 // TODO(location-classification): refine Saudi context detection
 // to prefer structured location values over broad regex matching.
@@ -140,7 +168,8 @@ function captureRules(scene){
 }
 function identityRules(enabled,hair){
   const identity = enabled ? 'If a reference image is attached, use it strictly as the sole identity anchor. Preserve recognizable facial identity, skull and face proportions, natural asymmetry, skin tone, apparent age, hairline, visible hair density and texture, beard density and gaps, and moustache pattern. Do not copy the reference background, pose, clothing, lighting or framing unless separately requested. No beautification, face slimming, jaw sharpening, eye enlargement, de-aging, skin smoothing, symmetry correction, thicker hair or denser beard.' : 'No reference identity is required. Keep the subject anatomically natural and internally consistent across the image.';
-  const hairDirection = hair ? `Selected hair styling direction: ${hair}. ${HAIR_DIRECTION_LOCK}` : 'Hair styling direction: keep the visible hair naturally arranged unless a specific style is selected.';
+  const selectedHair=clean(hair).replace(/\.+$/u,'');
+  const hairDirection = selectedHair ? `Selected hair styling direction: ${selectedHair}. ${hairDirectionLock(selectedHair)}` : 'Hair styling direction: keep the visible hair naturally arranged unless a specific style is selected.';
   return `${identity} ${hairDirection} ${HAIR_LOCK}`;
 }
 function geometryRules(scene,camera,framing,angle,distance,hasExplicitFraming){
@@ -218,14 +247,20 @@ function resolveCameraMetadata(camera,lighting,lightingValue=''){
   const capture=camera.value==='iphone15pm_front' ? 'Shot on iPhone 15 Pro Max front camera with a natural wide selfie field of view' : camera.value==='smartphone_rear' ? 'Shot on a modern smartphone rear camera with a natural wide field of view' : 'Shot on a modern smartphone front camera with a natural wide selfie field of view';
   return `CAPTURE METADATA (for scene fidelity): ${capture}, ${exposure}, handheld.`;
 }
-function negatives(scene, majlisUpholsteryScope = false){
+function negatives(scene,hair,majlisUpholsteryScope = false){
   const capture = scene.capture.includes('third-person') ? 'selfie arm, implied subject-held camera' : scene.capture.includes('mirror') ? 'direct front-camera viewpoint outside the mirror, duplicate phone or hands' : 'third-person viewpoint, floating external camera, mirror capture unless explicitly selected';
   const majlisUpholstery = majlisUpholsteryScope
     ? 'tufted upholstery, button-tufted cushions, quilted fabric, patterned upholstery, contrasting cushion fabrics, nail-head trim, decorative piping on seating, visible buttons on back cushions, dotted upholstery, speckled fabric, checkered weave, grid-textured cushions, knitted-appearance upholstery, visible weft or thread pattern on seating, contrasting-thread weave, slub-like texture on sofa fabric, visible linen grain on upholstery, '
     : '';
-  return `Avoid: plastic skin, waxy or porcelain skin, face reconstruction, artificial symmetry, malformed hands, extra fingers, duplicated limbs, floating objects, impossible body support, incorrect contact shadows, melted textiles, melted fabric, floating clothes, deformed abs, impossible anatomy, morphing sofa, split furniture, merged furniture, disconnected armrest, two sofas merged, ${majlisUpholstery}furniture with disconnected legs, furniture floating above the ground, repeated background people, cloned props, impossible reflections, invisible artificial key lights, fake rim lights, excessive HDR, aggressive orange-teal grading, DSLR-style bokeh, over-sharpening, oversaturated skin, sterile showroom staging, generic static posing, advertisement-style product placement, artificial lens flare, beauty filtering, symmetric face, missing corneal reflections, deformed background people, fused background bodies, cloned background faces, floating background people, mis-scaled background humans, background people without ground contact, gibberish text, pseudo-Arabic script, garbled signs, English-only signage in Saudi scenes, fictional characters on signs. Capture-specific exclusions: ${capture}.`;
+  const hairExclusions=hairDirectionNegatives(hair);
+  return `Avoid: plastic skin, waxy or porcelain skin, face reconstruction, artificial symmetry, malformed hands, extra fingers, duplicated limbs, floating objects, impossible body support, incorrect contact shadows, melted textiles, melted fabric, floating clothes, deformed abs, impossible anatomy, morphing sofa, split furniture, merged furniture, disconnected armrest, two sofas merged, ${majlisUpholstery}furniture with disconnected legs, furniture floating above the ground, repeated background people, cloned props, impossible reflections, invisible artificial key lights, fake rim lights, excessive HDR, aggressive orange-teal grading, DSLR-style bokeh, over-sharpening, oversaturated skin, sterile showroom staging, generic static posing, advertisement-style product placement, artificial lens flare, beauty filtering, symmetric face, missing corneal reflections, deformed background people, fused background bodies, cloned background faces, floating background people, mis-scaled background humans, background people without ground contact, gibberish text, pseudo-Arabic script, garbled signs, English-only signage in Saudi scenes, fictional characters on signs${hairExclusions ? `, ${hairExclusions}` : ''}. Capture-specific exclusions: ${capture}.`;
 }
-function verification(scene,ratio,guidance){ return `Before finalizing, verify: capture type unmistakably matches “${scene.capture}”; the camera position is physically possible; anatomy and contacts are coherent; selected location, clothing, hair direction, pose, angle and lighting are visible and mutually compatible; lighting can be traced to plausible physical sources; materials respond differently according to their properties; background scale and requested activity level make sense; composition is ${ratio.prompt}; and the realism checklist is satisfied: ${guidance.consistency.replace(/^Before finalizing, verify:\s*/i,'')} If a secondary aesthetic choice conflicts with physical causality or capture geometry, preserve physical plausibility.`; }
+function verification(scene,ratio,guidance,hair){
+  const hairCheck=resolveHairDirection(hair)==='neutral'
+    ? 'hair remains naturally arranged without an invented directional lock'
+    : 'the selected hair direction is unmistakably visible; no strands contradict the selected direction; stray hairs (if visible) respect the selected direction';
+  return `Before finalizing, verify: capture type unmistakably matches “${scene.capture}”; the camera position is physically possible; anatomy and contacts are coherent; selected location and clothing are visible and mutually compatible; ${hairCheck}; selected pose, angle and lighting are visible and mutually compatible; lighting can be traced to plausible physical sources; materials respond differently according to their properties; background scale and requested activity level make sense; composition is ${ratio.prompt}; and the realism checklist is satisfied: ${guidance.consistency.replace(/^Before finalizing, verify:\s*/i,'')} If a secondary aesthetic choice conflicts with physical causality or capture geometry, preserve physical plausibility.`;
+}
 
 function splitIntoClauses(text) {
   return String(text || '')
@@ -404,10 +439,10 @@ export function generateImagePrompt(input={}){
     section('PHYSICAL / MATERIAL REALISM',`${realism.prompt}. Enforce correct human anatomy; realistic neck, shoulder, arm, hand and finger structure; natural weight distribution; correct support and contact deformation; coherent gravity; realistic cloth drape and seam tension; material-specific reflectance; physically consistent reflections; and scene-specific scale.`),
     section('SMARTPHONE IMAGE BEHAVIOR','Use broad smartphone focus, restrained computational sharpening, realistic local contrast, modest dynamic range, plausible white balance, mild sensor/noise-reduction texture in darker areas, and natural clipping of strong practical lights when appropriate.'),
     section('LENS_PHYSICS',resolveLensPhysics({ scene:requested, captureType:scene.capture, camera, framing, cameraDistance:input.cameraDistance })),
-    section('BIOLOGICAL_MICRO_REALISM','BIOLOGICAL MICRO-REALISM (mandatory, apply only where resolvable): Preserve visible skin pores with non-uniform spatial distribution. Preserve fine vellus facial hair where the visible cheek, temple or jaw region is close enough and lit enough to register such detail. Preserve 5-12 stray hairs near the silhouette or hairline of the visible hair mass. Preserve source-consistent corneal reflections showing the actual scene. Preserve slight natural asymmetry in eyebrows, eyelids and jawline. Preserve individual CLOTHING fibers only where genuinely resolvable at the captured distance. Do not force visible fibers, thread grids, slub texture, or weave patterns onto smooth upholstery or other materials whose surface specification explicitly forbids visible weave. Do not beautify, smooth, symmetrize or sterilize. If a region is cropped, occluded, too dark, too soft, too distant or out of focus, do not invent micro-detail merely to satisfy this section.'),
+    section('BIOLOGICAL_MICRO_REALISM','BIOLOGICAL MICRO-REALISM (mandatory, apply only where resolvable): Preserve visible skin pores with non-uniform spatial distribution. Preserve fine vellus facial hair where the visible cheek, temple or jaw region is close enough and lit enough to register such detail. Preserve a small number of naturally stray hairs ONLY in directions consistent with the selected hairstyle direction. Do not place stray hairs contradicting the selected direction. Preserve source-consistent corneal reflections showing the actual scene. Preserve slight natural asymmetry in eyebrows, eyelids and jawline. Preserve individual CLOTHING fibers only where genuinely resolvable at the captured distance. Do not force visible fibers, thread grids, slub texture, or weave patterns onto smooth upholstery or other materials whose surface specification explicitly forbids visible weave. Do not beautify, smooth, symmetrize or sterilize. If a region is cropped, occluded, too dark, too soft, too distant or out of focus, do not invent micro-detail merely to satisfy this section.'),
     section('CAMERA_METADATA_HINT',resolveCameraMetadata(camera,lighting,input.lightingValue)),
     section('AUTHENTIC IMPERFECTIONS',`${guidance.imperfections}\n${CAPTURE_IMPERFECTIONS}`),
-    section('USER CONSTRAINTS',custom||'None.'), section('NEGATIVE CONSTRAINTS',negatives(scene,modernMajlisAnchorEnabled)), section('FINAL VERIFICATION',verification(scene,ratio,guidance))
+    section('USER CONSTRAINTS',custom||'None.'), section('NEGATIVE CONSTRAINTS',negatives(scene,hair,modernMajlisAnchorEnabled)), section('FINAL VERIFICATION',verification(scene,ratio,guidance,hair))
   ];
   const prompt=sections.join('\n\n'), realismCheck=validateRealism(prompt), validation=validateGeneratedPrompt(prompt,{sceneType:scene,realismPacket:packet,saudiContext:saudi});
   validation.warnings.push(...contextual.warnings);

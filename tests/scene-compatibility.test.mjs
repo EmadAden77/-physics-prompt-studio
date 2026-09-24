@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { clothingForScene, clothingSceneCoherence, compatibleOptions, compatibilitySnapshot, locationsForScene, recommendedDefaults, resolveCompatibleValue, resolveContextAwareConstraints } from '../core/scene-compatibility.js';
-import { LOCATION_CATALOG, SAUDI_LOCATIONS, CLOTHING_CATALOG, HOME_CLOTHING, BEDROOM_POSES, BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
+import { LOCATION_CATALOG, SAUDI_LOCATIONS, CLOTHING_CATALOG, HOME_CLOTHING, BEDROOM_POSES, BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS, BEDROOM_REALISM_RULES, getBedroomRealismRules, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
 import { CAMERA_PROFILES, FRAMING_OPTIONS, SCENE_TYPES, generateImagePrompt } from '../core/prompt-generator.js';
 import { baseSceneTypeFor, EXTRA_SCENE_TYPES } from '../core/scene-type-expansion.js';
 
@@ -282,7 +282,7 @@ test('recommended defaults switch camera and framing by capture type', () => {
 });
 
 test('BEDROOM_ANCHOR is complete', () => {
-  for (const key of ['room', 'bed', 'wardrobe', 'mirror', 'dresser', 'nightstand', 'curtains', 'rug', 'fixed_layout_rule']) {
+  for (const key of ['room', 'coordinate_frame', 'door', 'bed', 'bedroom_chair', 'wardrobe', 'mirror', 'dresser', 'nightstand', 'curtains', 'air_conditioner', 'ceiling', 'rug', 'circulation', 'fixed_daily_items', 'materials', 'fixed_layout_rule']) {
     assert.ok(BEDROOM_ANCHOR[key], `missing BEDROOM_ANCHOR.${key}`);
     assert.ok(BEDROOM_ANCHOR[key].length > 20, `${key} is too short`);
   }
@@ -325,16 +325,33 @@ test('every bedroom prompt contains the rewritten locked room anchor', () => {
     assert.match(result.prompt, /CURTAINS \/ BACK WALL:/i);
     assert.match(result.prompt, /Fully closed black curtains/i);
     assert.match(result.prompt, /Exactly one nightstand exists/i);
-    assert.match(result.prompt, /Do not add an armchair, a visible window, or a second nightstand/i);
-    assert.doesNotMatch(result.prompt, /ARMCHAIR:|WINDOW:/i);
+    assert.match(result.prompt, /BEDROOM CHAIR:/i);
+    assert.match(result.prompt, /Do not add a second nightstand, second chair, sofa, desk, television, freestanding mirror or visible window/i);
+    assert.match(result.prompt, /BEDROOM PHYSICS \/ CONTINUITY:/i);
+    assert.match(result.prompt, /WARDROBE REFLECTION PHYSICS:/i);
     assert.match(result.prompt, /ROOM CLUTTER:/i);
   }
 });
 
-test('bedroom clutter levels do not reintroduce armchair or window assumptions', () => {
-  for (const level of ['minimal', 'light', 'moderate', 'heavy']) {
-    assert.doesNotMatch(BEDROOM_CLUTTER_LEVELS[level], /armchair|window/i, level);
+test('bedroom clutter levels preserve the fixed furniture model and never invent a visible window', () => {
+  for (const level of ['clean', 'minimal', 'light', 'moderate', 'heavy']) {
+    assert.doesNotMatch(BEDROOM_CLUTTER_LEVELS[level], /visible window|second nightstand|second chair/i, level);
   }
+  assert.match(BEDROOM_CLUTTER_LEVELS.moderate, /fixed bag, two shoe pairs and draped chair garment remain in their locked zones/i);
+});
+
+test('bedroom realism packet is pose-aware without weakening the continuity lock', () => {
+  const bedRules = getBedroomRealismRules('bed-lying-side', 'subject-held front-camera selfie').join(' ');
+  const chairRules = getBedroomRealismRules('armchair-sit-lean-back', 'subject-held front-camera selfie').join(' ');
+  const curtainRules = getBedroomRealismRules('bedroom-curtain-touch', 'subject-held front-camera selfie').join(' ');
+  assert.match(bedRules, /BED PHYSICS:/i);
+  assert.match(chairRules, /CHAIR PHYSICS:/i);
+  assert.match(curtainRules, /CURTAIN PHYSICS:/i);
+  for (const rules of [bedRules, chairRules, curtainRules]) {
+    assert.match(rules, /CONTINUITY LOCK:/i);
+    assert.match(rules, /WARDROBE REFLECTION PHYSICS:/i);
+  }
+  assert.match(BEDROOM_REALISM_RULES.scale, /ROOM SCALE:/i);
 });
 
 test('bedroom selfie exposes 37 non-mirror poses and mirror scene exposes only 3 mirror poses', () => {

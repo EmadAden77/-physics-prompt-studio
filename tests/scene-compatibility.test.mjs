@@ -320,7 +320,7 @@ test('every bedroom prompt contains the rewritten locked room anchor', () => {
     const result = generateImagePrompt({ sceneType });
     assert.match(result.prompt, /ROOM ANCHOR/i);
     assert.match(result.prompt, /bed[^.]*LEFT wall/i);
-    assert.match(result.prompt, /sliding mirrored or glass doors/i);
+    assert.match(result.prompt, /sliding mirrored or reflective glass doors/i);
     assert.match(result.prompt, /DRESSER:/i);
     assert.match(result.prompt, /CURTAINS \/ BACK WALL:/i);
     assert.match(result.prompt, /Fully closed black curtains/i);

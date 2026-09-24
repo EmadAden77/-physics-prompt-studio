@@ -1,7 +1,7 @@
 import { buildRealismPacket, renderRealismGuidance } from './realistic-image-generator.js';
 import { baseSceneTypeFor, sceneMeta } from './scene-type-expansion.js';
 import { clothingSceneCoherence, resolveContextAwareConstraints, getPoseCameraHint } from './scene-compatibility.js';
-import { BEDROOM_ANCHOR, MAJLIS_ANCHOR, CAR_ANCHOR, LAPTOP_SCENE_CONTEXTS, LAPTOP_SCENE_SEATED_POSES, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_POSES, SAUDI_CULTURAL_DRESS_LOCK, SAUDI_SIGNAGE_RULE, CLOTHING_STYLING, HAND_INTERACTIONS, CLOTHING_CATALOG, HOME_CLOTHING, getFurnitureGeometryForScene, getAvailableProps, getRemainingHands, getPropHandUsage } from './scene-builder.js';
+import { BEDROOM_ANCHOR, MAJLIS_ANCHOR, CAR_ANCHOR, LAPTOP_SCENE_CONTEXTS, LAPTOP_SCENE_SEATED_POSES, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_POSES, SAUDI_CULTURAL_DRESS_LOCK, SAUDI_SIGNAGE_RULE, CLOTHING_STYLING, HAND_INTERACTIONS, CLOTHING_CATALOG, HOME_CLOTHING, getFurnitureGeometryForScene, getBedroomRealismRules, getAvailableProps, getRemainingHands, getPropHandUsage } from './scene-builder.js';
 import { resolveCameraAngle } from './camera-angle-resolver.js';
 
 export const SCENE_TYPES = [
@@ -427,17 +427,24 @@ export function generateImagePrompt(input={}){
   if(requested.startsWith('bedroom_')){
     const anchorText=[
       `ROOM ANCHOR (locked layout): ${BEDROOM_ANCHOR.room}`,
+      `COORDINATE FRAME: ${BEDROOM_ANCHOR.coordinate_frame}`,
+      `DOOR: ${BEDROOM_ANCHOR.door}`,
       `BED: ${BEDROOM_ANCHOR.bed}`,
-      `WARDROBE: ${BEDROOM_ANCHOR.wardrobe}`,
-      `MIRROR: ${BEDROOM_ANCHOR.mirror}`,
-      `DRESSER: ${BEDROOM_ANCHOR.dresser}`,
+      `BEDROOM CHAIR: ${BEDROOM_ANCHOR.bedroom_chair}`,
+      `RIGHT-WALL STORAGE: ${BEDROOM_ANCHOR.wardrobe} ${BEDROOM_ANCHOR.dresser}`,
+      `WARDROBE MIRROR: ${BEDROOM_ANCHOR.mirror}`,
       `NIGHTSTAND: ${BEDROOM_ANCHOR.nightstand}`,
       `CURTAINS / BACK WALL: ${BEDROOM_ANCHOR.curtains}`,
-      `RUG: ${BEDROOM_ANCHOR.rug}`,
+      `FRONT WALL / CEILING: ${BEDROOM_ANCHOR.air_conditioner} ${BEDROOM_ANCHOR.ceiling}`,
+      `RUG / CIRCULATION: ${BEDROOM_ANCHOR.rug} ${BEDROOM_ANCHOR.circulation}`,
+      `FIXED DAILY ITEMS: ${BEDROOM_ANCHOR.fixed_daily_items}`,
+      `MATERIAL LOCK: ${BEDROOM_ANCHOR.materials}`,
       BEDROOM_ANCHOR.fixed_layout_rule
     ].join(' ');
     const clutter=BEDROOM_CLUTTER_LEVELS[input.clutterLevel] || BEDROOM_CLUTTER_LEVELS.moderate;
-    sceneText=`${sceneText} ${anchorText} ROOM CLUTTER: ${clutter}`;
+    const bedroomPhysics=getBedroomRealismRules(poseValue,scene.capture);
+    const bedroomPhysicsText=bedroomPhysics.length ? `BEDROOM PHYSICS / CONTINUITY: ${bedroomPhysics.join(' ')}` : '';
+    sceneText=`${sceneText} ${anchorText} ROOM CLUTTER: ${clutter} ${bedroomPhysicsText}`.trim();
   }
   // Canonical location values take precedence; free-text location matching
   // supports direct API callers. Explicit traditional identifiers always

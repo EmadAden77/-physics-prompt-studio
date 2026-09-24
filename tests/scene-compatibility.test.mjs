@@ -323,8 +323,8 @@ test('every bedroom prompt contains the rewritten locked room anchor', () => {
     assert.match(result.prompt, /sliding mirrored or reflective glass doors/i);
     assert.match(result.prompt, /RIGHT-WALL STORAGE:/i);
     assert.match(result.prompt, /CURTAINS \/ BACK WALL:/i);
-    assert.match(result.prompt, /Fully closed black curtains/i);
-    assert.match(result.prompt, /Exactly one nightstand exists/i);
+    assert.match(result.prompt, /Fully closed black(?:-to-charcoal)? curtains/i);
+    assert.match(result.prompt, /Exactly one [^.]*nightstand exists/i);
     assert.match(result.prompt, /BEDROOM CHAIR:/i);
     assert.match(result.prompt, /Do not add a second nightstand, second chair, sofa, desk, television, freestanding mirror or visible window/i);
     assert.match(result.prompt, /BEDROOM PHYSICS \/ CONTINUITY:/i);

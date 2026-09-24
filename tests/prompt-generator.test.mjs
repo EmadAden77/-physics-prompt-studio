@@ -1314,9 +1314,11 @@ test('PR 9 field matrix covers six vehicle and bedroom cases', () => {
     assert.deepEqual(furnitureKinds(result.prompt),expectedFurniture,name);
     if(name.startsWith('bedroom-')){
       assert.match(scene,/bed[^.]*LEFT wall/i,name);
-      assert.match(scene,/sliding mirrored or glass doors/i,name);
+      assert.match(scene,/sliding mirrored or reflective glass doors/i,name);
+      assert.match(scene,/BEDROOM CHAIR:/i,name);
       assert.match(scene,/CURTAINS \/ BACK WALL:/i,name);
-      assert.match(scene,/Do not add an armchair, a visible window, or a second nightstand/i,name);
+      assert.match(scene,/Do not add a second nightstand, second chair, sofa, desk, television, freestanding mirror or visible window/i,name);
+      assert.match(scene,/BEDROOM PHYSICS \/ CONTINUITY:/i,name);
     }
     console.log(`PR9_FIELD ${JSON.stringify({name,furniture:furnitureKinds(result.prompt),scene})}`);
   }

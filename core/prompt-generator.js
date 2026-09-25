@@ -372,7 +372,7 @@ export function generateImagePrompt(input={}){
   const rawPoseValue=clean(input.poseValue);
   const poseValue=(rawPoseValue==='bedroom-stand-window' ? 'bedroom-stand-curtains' : rawPoseValue) || selectedBedroomPose?.value || selectedBedroomThirdPose?.value || selectedGeneralPose?.value || (POSE_HAND_USAGE_FALLBACK.has(poseInput) ? poseInput : '');
   const bedroomHandInteractionFits=!requested.startsWith('bedroom_') ||
-    ((handInteraction.value!=='pocket-hands' || /third-person/i.test(scene.capture)) && getRemainingHands(requested,scene.capture,'none',poseValue)>0);
+    (poseValue!=='bedroom-phone-only' && (handInteraction.value!=='pocket-hands' || /third-person/i.test(scene.capture)) && getRemainingHands(requested,scene.capture,'none',poseValue)>0);
   const handInteractionPrompt=requestedHandInteractionPrompt && bedroomHandInteractionFits ? requestedHandInteractionPrompt : '';
   const poseHint=bedroomPoseCameraEnabled ? getPoseCameraHint(poseInput || pose) : null;
   const angleLockedByPose=bedroomPoseCameraEnabled && Boolean(poseHint);

@@ -459,6 +459,8 @@ export function getRemainingHands(sceneType, captureType, primaryProp = 'none', 
 }
 
 export function getAvailableProps(sceneType, captureType, location = '', pose = '', handInteraction = 'none') {
+  // "Phone only" is an explicit pose choice even though the free hand exists physically.
+  if (sceneType === 'bedroom_selfie' && pose === 'bedroom-phone-only') return [];
   const remaining = getRemainingHands(sceneType, captureType, 'none', pose, handInteraction);
   if (remaining <= 0) return [];
   return HAND_PROPS.filter((prop) => getPropHandUsage(prop, remaining) <= remaining && propMatchesContext(prop, sceneType, location));

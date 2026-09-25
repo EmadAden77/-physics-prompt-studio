@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { compilePrompt, validatePacket } from '../core/prompt-optimizer.js';
-import { SAUDI_LOCATIONS, CLOTHING_OPTIONS, CLOTHING_CATALOG, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES, normalizeSceneContext, BEDROOM_POSES, HAND_PROPS, POSE_HAND_USAGE, getAvailableProps } from '../core/scene-builder.js';
+import { SAUDI_LOCATIONS, CLOTHING_OPTIONS, CLOTHING_CATALOG, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES, normalizeSceneContext, BEDROOM_POSES, HAND_PROPS, POSE_HAND_USAGE, getAvailableProps, getRemainingHands } from '../core/scene-builder.js';
 import { generateImagePrompt } from '../core/prompt-generator.js';
 
 test('scene catalog is broad across requested categories', () => {
@@ -200,9 +200,13 @@ test('POSE_HAND_USAGE covers all selfie and bedroom poses', () => {
   for (const pose of all) assert.ok(Object.hasOwn(POSE_HAND_USAGE, pose.value), `missing hand usage for ${pose.value}`);
 });
 
-test('bedroom laptop on bed does not consume a hand but laptop on lap does', () => {
+test('supported bedroom laptops leave the free hand available', () => {
   assert.equal(POSE_HAND_USAGE['bedroom-laptop-bed'], 0);
-  assert.equal(POSE_HAND_USAGE['bedroom-laptop-armchair'], 1);
+  assert.equal(POSE_HAND_USAGE['bedroom-laptop-armchair'], 0);
+  assert.equal(getRemainingHands('bedroom_selfie','subject-held front-camera smartphone selfie','none','bedroom-laptop-armchair'), 1);
+  for (const pose of ['bedroom-cup-bed','bedroom-tea-armchair','bedroom-book-bed']) {
+    assert.equal(getRemainingHands('bedroom_selfie','subject-held front-camera smartphone selfie','none',pose), 0, pose);
+  }
 });
 
 test('iPhone 15 Pro is available in at least 90 percent of registered scene types at neutral budget', async () => {
@@ -243,4 +247,3 @@ test('PR 12 bedroom anchor keeps one nightstand without legacy wording', async (
   assert.match(BEDROOM_ANCHOR.bed, /exactly one nightstand/i);
   assert.doesNotMatch(BEDROOM_ANCHOR.bed, /two matching nightstands total|old two matching nightstands/i);
 });
-

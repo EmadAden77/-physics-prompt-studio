@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { clothingForScene, clothingSceneCoherence, compatibleOptions, compatibilitySnapshot, locationsForScene, recommendedDefaults, resolveCompatibleValue, resolveContextAwareConstraints } from '../core/scene-compatibility.js';
 import { LOCATION_CATALOG, SAUDI_LOCATIONS, CLOTHING_CATALOG, HOME_CLOTHING, BEDROOM_POSES, BEDROOM_ANCHOR, BEDROOM_CLUTTER_LEVELS, BEDROOM_REALISM_RULES, getBedroomRealismRules, SELFIE_POSES, SELFIE_ANGLES, LIGHTING_PROFILES } from '../core/scene-builder.js';
+import { BEDROOM_THIRD_PERSON_POSES } from '../core/scene-compatibility.js';
 import { CAMERA_PROFILES, FRAMING_OPTIONS, SCENE_TYPES, generateImagePrompt } from '../core/prompt-generator.js';
 import { baseSceneTypeFor, EXTRA_SCENE_TYPES } from '../core/scene-type-expansion.js';
 
@@ -343,25 +344,50 @@ test('bedroom clutter levels preserve the fixed furniture model and never invent
 test('bedroom poses preserve the curtained wall and use only wardrobe reflective panels', () => {
   for (const pose of BEDROOM_POSES) {
     const description = `${pose.prompt} ${pose.cameraHint}`;
-    assert.doesNotMatch(description, /visible window|separate framed mirror|bedroom mirror|window frame|exterior view/i, pose.value);
+    assert.doesNotMatch(description, /(?<!invent a )visible window|separate framed mirror|bedroom mirror|window frame|exterior view/i, pose.value);
   }
-  const curtainPose = BEDROOM_POSES.find((pose) => pose.value === 'bedroom-stand-window');
+  const curtainPose = BEDROOM_POSES.find((pose) => pose.value === 'bedroom-stand-curtains');
   assert.match(curtainPose.prompt, /fully closed back-wall curtains/i);
+  assert.equal(BEDROOM_POSES.some((pose) => pose.value === 'bedroom-stand-window'), false);
+  const legacy=generateImagePrompt({sceneType:'bedroom_selfie',pose:'bedroom-stand-window'});
+  assert.match(legacy.prompt, /standing on the grounded floor near the fully closed back-wall curtains/i);
   for (const pose of BEDROOM_POSES.filter((item) => item.group === 'مرآة')) {
     assert.match(pose.prompt, /RIGHT-wall wardrobe/i, pose.value);
     assert.match(pose.cameraHint, /wardrobe reflective panel/i, pose.value);
   }
 });
 
+test('floor poses and third-person bedroom poses obey the fixed room geometry', () => {
+  for (const pose of BEDROOM_POSES.filter((item) => item.value.startsWith('bedroom-floor-'))) {
+    assert.match(getBedroomRealismRules(pose.value).join(' '), /FLOOR-SEATED PHYSICS:/, pose.value);
+  }
+  assert.equal(BEDROOM_THIRD_PERSON_POSES.length, 6);
+  assert.deepEqual(values(compatibleOptions('bedroom_third_person','pose',[])), values(BEDROOM_THIRD_PERSON_POSES));
+  for (const pose of BEDROOM_THIRD_PERSON_POSES) {
+    assert.match(pose.prompt, /bed|wardrobe|curtain/i, pose.value);
+    const result = generateImagePrompt({sceneType:'bedroom_third_person',pose:pose.value});
+    assert.ok(result.prompt.includes(pose.prompt), pose.value);
+  }
+  assert.match(getBedroomRealismRules('third_seated_relaxed').join(' '), /BED PHYSICS:/);
+  assert.match(getBedroomRealismRules('third_interaction').join(' '), /CURTAIN PHYSICS:/);
+});
+
 test('bedroom object poses allocate the phone hand and preserve body support', () => {
   for (const value of ['bedroom-laptop-bed', 'bedroom-laptop-armchair', 'bedroom-cup-bed', 'bedroom-tea-armchair', 'bedroom-book-bed', 'bed-lying-reading']) {
     const pose = BEDROOM_POSES.find((item) => item.value === value);
     assert.match(pose.prompt, /free hand/i, value);
-    assert.match(pose.prompt, /other hand|other arm/i, value);
+    assert.match(pose.prompt, /other hand|other arm|one hand holds the phone/i, value);
     assert.match(pose.prompt, /compressing (?:the mattress|its seat)/i, value);
   }
   for (const value of ['bedroom-laptop-armchair', 'bedroom-tea-armchair']) {
     assert.match(BEDROOM_POSES.find((item) => item.value === value).prompt, /feet grounded|front-wall bedroom chair/i);
+  }
+});
+
+test('bedroom hand interaction cannot reuse a hand holding a cup or book', () => {
+  for (const pose of ['bedroom-cup-bed','bedroom-book-bed']) {
+    const result=generateImagePrompt({sceneType:'bedroom_selfie',pose,handInteraction:'wipe-sweat'});
+    assert.doesNotMatch(result.prompt, /wip(?:e|ing) sweat with (?:the )?(?:free |one )?hand/i, pose);
   }
 });
 

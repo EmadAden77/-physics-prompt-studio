@@ -1,6 +1,6 @@
 import { buildRealismPacket, renderRealismGuidance } from './realistic-image-generator.js';
 import { baseSceneTypeFor, sceneMeta } from './scene-type-expansion.js';
-import { clothingSceneCoherence, resolveContextAwareConstraints, getPoseCameraHint } from './scene-compatibility.js';
+import { clothingSceneCoherence, resolveContextAwareConstraints, getPoseCameraHint, BEDROOM_THIRD_PERSON_POSES } from './scene-compatibility.js';
 import { BEDROOM_ANCHOR, MAJLIS_ANCHOR, CAR_ANCHOR, LAPTOP_SCENE_CONTEXTS, LAPTOP_SCENE_SEATED_POSES, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_POSES, SAUDI_CULTURAL_DRESS_LOCK, SAUDI_SIGNAGE_RULE, CLOTHING_STYLING, HAND_INTERACTIONS, CLOTHING_CATALOG, HOME_CLOTHING, getFurnitureGeometryForScene, getBedroomRealismRules, getAvailableProps, getRemainingHands, getPropHandUsage } from './scene-builder.js';
 import { resolveCameraAngle } from './camera-angle-resolver.js';
 
@@ -354,17 +354,26 @@ export function generateImagePrompt(input={}){
   const handInteraction=pick(HAND_INTERACTIONS,input.handInteraction,HAND_INTERACTIONS[0]);
   const stylingSceneSupported=CLOTHING_STYLING_SCENE_TYPES.has(requested) && requested!=='supermarket_selfie';
   const clothingStylingPrompt=stylingSceneSupported && clothingStyling && optionAppliesToGarment(clothingStyling,garmentTags) ? clothingStyling.prompt : '';
-  const handInteractionPrompt=optionAppliesToGarment(handInteraction,garmentTags) ? handInteraction.prompt : '';
-  const hair=clean(input.hairStyle), poseInput=clean(input.pose), angleInput=clean(input.angle);
+  const requestedHandInteractionPrompt=optionAppliesToGarment(handInteraction,garmentTags) ? handInteraction.prompt : '';
+  const hair=clean(input.hairStyle), rawPoseInput=clean(input.pose), angleInput=clean(input.angle);
+  const poseInput=requested==='bedroom_selfie' && rawPoseInput==='bedroom-stand-window' ? 'bedroom-stand-curtains' : rawPoseInput;
+  const poseLookup=poseInput || (clean(input.poseValue)==='bedroom-stand-window' ? 'bedroom-stand-curtains' : clean(input.poseValue));
   const bedroomPoseCameraEnabled=requested==='bedroom_selfie' || requested==='bedroom_mirror_selfie';
   const selectedBedroomPose=bedroomPoseCameraEnabled
-    ? BEDROOM_POSES.find((item)=>item.value===poseInput || item.prompt===poseInput)
+    ? BEDROOM_POSES.find((item)=>item.value===poseLookup || item.prompt===poseLookup)
+    : undefined;
+  const selectedBedroomThirdPose=requested==='bedroom_third_person'
+    ? BEDROOM_THIRD_PERSON_POSES.find((item)=>item.value===poseLookup || item.prompt===poseLookup)
     : undefined;
   const selectedGeneralPose=!bedroomPoseCameraEnabled
     ? SELFIE_POSES.find((item)=>item.value===poseInput || item.prompt===poseInput)
     : undefined;
-  const pose=selectedBedroomPose?.prompt || selectedGeneralPose?.prompt || poseInput;
-  const poseValue=clean(input.poseValue) || selectedBedroomPose?.value || selectedGeneralPose?.value || (POSE_HAND_USAGE_FALLBACK.has(poseInput) ? poseInput : '');
+  const pose=selectedBedroomPose?.prompt || selectedBedroomThirdPose?.prompt || selectedGeneralPose?.prompt || poseInput;
+  const rawPoseValue=clean(input.poseValue);
+  const poseValue=(rawPoseValue==='bedroom-stand-window' ? 'bedroom-stand-curtains' : rawPoseValue) || selectedBedroomPose?.value || selectedBedroomThirdPose?.value || selectedGeneralPose?.value || (POSE_HAND_USAGE_FALLBACK.has(poseInput) ? poseInput : '');
+  const bedroomHandInteractionFits=!requested.startsWith('bedroom_') ||
+    (poseValue!=='bedroom-phone-only' && (handInteraction.value!=='pocket-hands' || /third-person/i.test(scene.capture)) && getRemainingHands(requested,scene.capture,'none',poseValue)>0);
+  const handInteractionPrompt=requestedHandInteractionPrompt && bedroomHandInteractionFits ? requestedHandInteractionPrompt : '';
   const poseHint=bedroomPoseCameraEnabled ? getPoseCameraHint(poseInput || pose) : null;
   const angleLockedByPose=bedroomPoseCameraEnabled && Boolean(poseHint);
   const rawCameraGeometryText=resolveCameraAngle({

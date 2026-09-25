@@ -386,7 +386,7 @@ export const POSE_HAND_USAGE = Object.freeze({
   'armchair-sit-lean-back':0, 'armchair-sit-corner':0, 'armchair-sit-one-knee':0, 'armchair-sit-crossed':0,
   'armchair-sit-feet-floor':0, 'bedroom-stand-relaxed':0, 'bedroom-stand-one-hand':0,
   'bedroom-stand-lean-wardrobe':0, 'bedroom-stand-lean-wall':0, 'bedroom-stand-near-bed':0,
-  'bedroom-stand-window':0, 'bedroom-laptop-bed':0, 'bedroom-laptop-armchair':1, 'bedroom-cup-bed':1,
+  'bedroom-stand-curtains':0, 'bedroom-stand-window':0, 'bedroom-laptop-bed':0, 'bedroom-laptop-armchair':0, 'bedroom-cup-bed':1,
   'bedroom-tea-armchair':1, 'bedroom-book-bed':1, 'bedroom-phone-only':0, 'bedroom-floor-cross':0,
   'bedroom-floor-back-wall':0, 'bedroom-floor-knee-up':0, 'bedroom-curtain-touch':1,
   'bedroom-nightstand-reach':1, 'bedroom-mirror-stand-relaxed':0, 'bedroom-mirror-adjust':1,
@@ -420,6 +420,8 @@ export function getPropHandUsage(propOrGrip, availableHands = 1) {
 
 export function getHandBudgetForScene(captureType) {
   const capture = String(captureType || '').toLowerCase();
+  // A subject-held selfie or mirror selfie reserves one hand for the phone.
+  // Pose and prop usage below count only the hands still available afterward.
   if (/third-person/.test(capture)) return 2;
   if (/mirror/.test(capture)) return 1;
   if (/selfie/.test(capture)) return 1;
@@ -457,9 +459,14 @@ export function getRemainingHands(sceneType, captureType, primaryProp = 'none', 
 }
 
 export function getAvailableProps(sceneType, captureType, location = '', pose = '', handInteraction = 'none') {
+  // "Phone only" is an explicit pose choice even though the free hand exists physically.
+  if (sceneType === 'bedroom_selfie' && pose === 'bedroom-phone-only') return [];
   const remaining = getRemainingHands(sceneType, captureType, 'none', pose, handInteraction);
   if (remaining <= 0) return [];
-  return HAND_PROPS.filter((prop) => getPropHandUsage(prop, remaining) <= remaining && propMatchesContext(prop, sceneType, location));
+  return HAND_PROPS.filter((prop) =>
+    !(['bedroom_selfie','bedroom_mirror_selfie'].includes(sceneType) && /^(?:iphone-|galaxy-)/.test(prop.value)) &&
+    getPropHandUsage(prop, remaining) <= remaining && propMatchesContext(prop, sceneType, location)
+  );
 }
 
 export const FORMAL_SUITS = [
@@ -832,6 +839,7 @@ export const BEDROOM_REALISM_RULES = Object.freeze({
   support_contact: 'SUPPORT CONTACT: Every body contact must transfer weight to a real surface. Mattress, pillow, chair cushion, rug pile and clothing compress only where loaded; unloaded areas recover shape. Feet, furniture legs and loose objects produce coherent contact shadows and never float.',
   bed_bedding: 'BED PHYSICS: Body weight creates broad connected mattress sink zones under pelvis, shoulders, thighs or knees according to pose. Pillow compression stays local under the head or back. Sheet and blanket folds radiate from contact, tension and gravity instead of random wrinkle noise, and no limb passes through bedding.',
   chair_contact: 'CHAIR PHYSICS: When the fixed bedroom chair supports the subject, the pelvis visibly loads the seat cushion, the backrest receives contact only where posture requires it, all chair legs remain grounded, and knees, feet and chair scale stay anatomically plausible.',
+  floor_contact: 'FLOOR-SEATED PHYSICS: The pelvis and supporting limbs contact the fixed central rug and compress its pile locally. No body part intersects the rug or tile; maintain clear walking access to the bed and the RIGHT-wall wardrobe. If a pose requires back-to-wall contact beyond the rug edge, the pelvis rests on adjacent tile instead, with real tile contact and no invented rug extension.',
   reflection: 'WARDROBE REFLECTION PHYSICS: Reflective panels preserve straight panel boundaries and a physically possible reflected viewpoint. Reflected subject, phone, bed, rug, dresser and room edges must agree with camera position, occlusion and left-right reversal; never show impossible duplicate people or furniture.',
   curtain_fabric: 'CURTAIN PHYSICS: The fully closed back-wall curtains remain continuous with gravity-driven vertical folds. Touching the fabric may create a small local pull or fold change but must not open a window gap. Indoor air movement is subtle, never wind-blown.',
   floor_rug: 'FLOOR / RUG PHYSICS: Tile grout lines continue through perspective with mild imperfect specular reflections, not a mirror-floor effect. Rug edges stay flat except for tiny local curl or compression; feet and objects occlude the rug correctly and compress pile locally.',
@@ -852,9 +860,10 @@ export function getBedroomRealismRules(poseValue = '', captureType = '') {
     BEDROOM_REALISM_RULES.occlusion,
     BEDROOM_REALISM_RULES.continuity
   ];
-  if (/bed-|bedroom-(laptop-bed|cup-bed|book-bed|nightstand-reach)|mirror-seated/.test(pose)) rules.push(BEDROOM_REALISM_RULES.bed_bedding);
+  if (/bed-|bedroom-(laptop-bed|cup-bed|book-bed|nightstand-reach)|mirror-seated|third_seated_relaxed/.test(pose)) rules.push(BEDROOM_REALISM_RULES.bed_bedding);
   if (/armchair|bedroom-(laptop-armchair|tea-armchair)|mirror-seated/.test(pose)) rules.push(BEDROOM_REALISM_RULES.chair_contact);
-  if (/curtain|stand-window/.test(pose)) rules.push(BEDROOM_REALISM_RULES.curtain_fabric);
+  if (/curtain|stand-window|third_interaction/.test(pose)) rules.push(BEDROOM_REALISM_RULES.curtain_fabric);
+  if (/bedroom-floor-/.test(pose)) rules.push(BEDROOM_REALISM_RULES.floor_contact);
   if (/mirror/.test(pose) || /mirror/.test(capture)) rules.push(BEDROOM_REALISM_RULES.reflection);
   return [...new Set(rules)];
 }
@@ -932,8 +941,8 @@ export const BEDROOM_POSES = [
 { group:'استلقاء على السرير', value:'bed-lying-back-knees-bent', label:'مستلقٍ على الظهر والركبتان مثنيتان', prompt:'lying on his back with both knees comfortably bent and feet resting on the mattress, head supported by a pillow and phone held within arm reach', cameraHint:'front camera held directly above the face while lying on the back, lens pointing downward, bent knees remaining lower in the frame' },
 { group:'جلوس على السرير', value:'bed-sitting-cross', label:'جالس مربع على السرير', prompt:'sitting cross-legged on the bed with visible mattress compression, phone held at arm length', cameraHint:'front camera at eye level while sitting cross-legged' },
 { group:'جلوس على السرير', value:'bed-sitting-edge', label:'جالس على حافة السرير', prompt:'seated on the edge of the bed, feet on the floor, slight forward lean, natural weight on hips', cameraHint:'front camera at eye level while seated on the bed edge' },
-{ group:'جلوس على السرير', value:'bed-sitting-back-wall', label:'جالس مستند على الحائط', prompt:'sitting on the bed with back supported against the wall, one knee raised, phone held naturally', cameraHint:'front camera at eye level against the wall' },
-{ group:'جلوس على السرير', value:'bed-sitting-legs-extended', label:'جالس ومدد ساقيه', prompt:'seated on the bed with legs extended forward, back slightly reclined, phone at arm length', cameraHint:'front camera at eye level with legs extended forward' },
+{ group:'جلوس على السرير', value:'bed-sitting-back-wall', label:'جالس مستند على رأس السرير', prompt:'sitting on the fixed LEFT-wall bed with pelvis compressing the mattress, back supported against the attached tufted headboard through a locally compressed pillow, one knee raised and the other leg supported by the mattress; one hand holds the phone within reach', cameraHint:'front camera held within arm reach near eye level while leaning against the headboard; no bare wall behind the back' },
+{ group:'جلوس على السرير', value:'bed-sitting-legs-extended', label:'جالس ومدد ساقيه', prompt:'seated on the fixed LEFT-wall bed with pelvis and thighs compressing the mattress, both legs extended and supported by the bed; back slightly reclined against a locally compressed pillow at the attached headboard while one hand holds the phone within reach', cameraHint:'front camera held within arm reach near eye level while reclining against the headboard with legs extended' },
 { group:'جلوس على السرير', value:'bed-sitting-hugging-pillow', label:'جالس يحتضن وسادة', prompt:'sitting on the fixed bed with pelvis compressing the mattress, holding a pillow against the chest with the free arm while the other arm alone holds the phone; the pillow compresses locally against the torso', cameraHint:'front camera within arm reach at eye level, pillow visible in the lower frame' },
 { group:'جلوس على السرير', value:'bed-sitting-sideways', label:'جالس جانبيًا على السرير', prompt:'sitting sideways on the bed edge with both feet grounded, torso mildly rotated toward the phone and visible mattress compression under the hips', cameraHint:'front camera at eye level while seated sideways on the bed edge' },
 { group:'جلوس على كرسي الغرفة', value:'armchair-sit-lean-back', label:'متكئ على كرسي غرفة النوم الثابت', prompt:'sitting back in the fixed bedroom chair without moving it, pelvis loading the seat cushion, back contacting the backrest, both feet naturally on the floor', cameraHint:'front camera at eye level with slight downward angle; fixed chair remains against the front wall' },
@@ -946,17 +955,17 @@ export const BEDROOM_POSES = [
 { group:'وقوف', value:'bedroom-stand-lean-wardrobe', label:'متكئ على الخزانة', prompt:'leaning lightly against the wardrobe with visible shoulder contact and natural weight transfer', cameraHint:'front camera at eye level, wardrobe visible behind' },
 { group:'وقوف', value:'bedroom-stand-lean-wall', label:'متكئ على الحائط', prompt:'leaning lightly against the bedroom wall with visible contact physics', cameraHint:'front camera at eye level, wall visible behind' },
 { group:'وقوف', value:'bedroom-stand-near-bed', label:'واقف بجانب السرير', prompt:'standing near the edge of the bed, phone held at arm length', cameraHint:'front camera at eye level, bed visible behind' },
-{ group:'وقوف', value:'bedroom-stand-window', label:'واقف عند الستائر الخلفية', prompt:'standing on the grounded floor near the fully closed back-wall curtains without opening or parting the fabric; the back wall remains covered', cameraHint:'front camera at eye level near the back-wall curtains, with lighting determined only by the selected profile' },
-{ group:'ماسك لابتوب', value:'bedroom-laptop-bed', label:'لابتوب على السرير', prompt:'seated on the fixed bed with pelvis compressing the mattress; an open laptop rests stably on the mattress in front without blocking the legs, the free hand may touch its keyboard and the other hand alone holds the phone', cameraHint:'front camera held at chest height within arm reach while seated on the bed, laptop visible in the lower frame' },
-{ group:'ماسك لابتوب', value:'bedroom-laptop-armchair', label:'لابتوب على الحضن فوق كرسي الغرفة', prompt:'sitting on the fixed front-wall bedroom chair with pelvis compressing its seat and feet grounded; an open laptop rests stably across both thighs at natural scale, the free hand may touch its keyboard while the other hand alone holds the phone', cameraHint:'front camera at eye level within arm reach while seated, laptop visible below chest and chair geometry stable' },
+{ group:'وقوف', value:'bedroom-stand-curtains', label:'واقف عند الستائر الخلفية', prompt:'standing on the grounded floor near the fully closed back-wall curtains without opening or parting the fabric; the back wall remains covered', cameraHint:'front camera at eye level near the back-wall curtains, with lighting determined only by the selected profile' },
+{ group:'ماسك لابتوب', value:'bedroom-laptop-bed', label:'لابتوب على السرير', prompt:'seated on the fixed bed with pelvis compressing the mattress; an open laptop rests stably on the mattress in front without blocking the legs or needing a hand to hold it; one hand holds the phone and the free hand remains available', cameraHint:'front camera held at chest height within arm reach while seated on the bed, laptop visible in the lower frame' },
+{ group:'ماسك لابتوب', value:'bedroom-laptop-armchair', label:'لابتوب على الحضن فوق كرسي الغرفة', prompt:'sitting on the fixed front-wall bedroom chair with pelvis compressing its seat and feet grounded; an open laptop rests stably across both thighs without needing a hand to hold it; one hand holds the phone and the free hand remains available', cameraHint:'front camera at eye level within arm reach while seated, laptop visible below chest and chair geometry stable' },
 { group:'ماسك شيء', value:'bedroom-cup-bed', label:'ماسك كوب قهوة على السرير', prompt:'seated on the fixed bed with pelvis compressing the mattress, feet grounded or legs supported on the bed; the free hand alone holds a small upright coffee cup and the other hand alone holds the phone', cameraHint:'front camera at eye level within arm reach while seated on the bed, cup visible in the free hand' },
 { group:'ماسك شيء', value:'bedroom-tea-armchair', label:'ماسك شاي على كرسي غرفة النوم', prompt:'sitting on the fixed front-wall bedroom chair with pelvis compressing its seat and feet grounded; the free hand alone holds a small upright tea glass below chest level while the other hand alone holds the phone', cameraHint:'front camera at eye level within arm reach while seated on the fixed chair, tea glass below chin' },
 { group:'ماسك شيء', value:'bedroom-book-bed', label:'ماسك كتابًا على السرير', prompt:'seated on the fixed bed with pelvis compressing the mattress and legs supported; an open book rests on the lap and is steadied by the free hand while the other hand alone holds the phone', cameraHint:'front camera at eye level within arm reach while seated on the bed, book visible on the lap' },
-{ group:'ماسك شيء', value:'bedroom-phone-only', label:'ماسك الهاتف فقط', prompt:'holding only the phone with the other hand resting naturally on the thigh or side', cameraHint:'front camera at eye level, free hand resting naturally' },
+{ group:'ماسك شيء', value:'bedroom-phone-only', label:'واقف والهاتف فقط', prompt:'standing on the bedroom tile or central rug with both feet grounded, holding only the selfie phone while the free hand rests naturally at the side; no additional handheld object', cameraHint:'front camera held within arm reach at eye level while standing, free hand resting naturally' },
 { group:'أرضية', value:'bedroom-floor-cross', label:'جالس مربع على الأرض', prompt:'sitting cross-legged on the bedroom rug with natural hip and knee placement', cameraHint:'front camera at chest height while seated cross-legged on the floor' },
-{ group:'أرضية', value:'bedroom-floor-back-wall', label:'جالس مسند على الجدار', prompt:'seated on the bedroom floor with back supported against the wall, one leg bent and one straight', cameraHint:'front camera at chest height against the wall' },
+{ group:'أرضية', value:'bedroom-floor-back-wall', label:'جالس مسند على الجدار', prompt:'seated on the tile beside the fixed central rug with pelvis grounded and back supported against an unobstructed wall section, not against the curtain fabric; one leg bent, one straight, with wardrobe access clear and no rug relocation', cameraHint:'front camera at chest height against the unobstructed wall section' },
 { group:'أرضية', value:'bedroom-floor-knee-up', label:'على الأرض بركبة مرفوعة', prompt:'seated on the bedroom floor with one knee raised and the arm resting on it', cameraHint:'front camera at chest height while seated on the floor' },
-{ group:'تفاعل مع الغرفة', value:'bedroom-curtain-touch', label:'واقف يلمس طرف الستارة', prompt:'standing with feet grounded at the fully closed back-wall curtains, lightly resting the free hand on the fabric so only a small local fold changes while the other hand holds the phone; do not part the curtains', cameraHint:'front camera at eye level beside the curtains; back wall remains fully covered' },
+{ group:'تفاعل مع الغرفة', value:'bedroom-curtain-touch', label:'واقف يلمس طرف الستارة', prompt:'standing with feet grounded at the fully closed back-wall curtains, lightly resting the free hand on the fabric so only a small local fold changes while the other hand holds the phone; touch the fully closed curtains only; do not reveal, open, or invent a visible window behind them', cameraHint:'front camera at eye level beside the curtains; back wall remains fully covered' },
 { group:'تفاعل مع الغرفة', value:'bedroom-nightstand-reach', label:'يمد يده نحو الكومدينو', prompt:'seated at the bed edge while the free hand reaches naturally toward the adjacent fixed nightstand, keeping body weight supported by the mattress and the phone-bearing arm independent', cameraHint:'front camera at eye level while seated on the bed edge, adjacent nightstand visible in the lower side of frame' },
 { group:'مرآة', value:'bedroom-mirror-stand-relaxed', label:'أمام المرآة واقف', prompt:'standing with feet grounded facing the RIGHT-wall wardrobe sliding reflective panels, holding the phone in one hand visible through the physically correct reflection path', cameraHint:'mirror-view camera at eye level in the RIGHT-wall wardrobe reflective panel, with panel seams and phone visible in reflection' },
 { group:'مرآة', value:'bedroom-mirror-adjust', label:'أمام المرآة يعدل ملابسه', prompt:'standing with feet grounded facing the RIGHT-wall wardrobe sliding reflective panels, adjusting clothing with the free hand while the other hand alone holds the phone visible through the physically correct reflection path', cameraHint:'mirror-view camera at eye level in the RIGHT-wall wardrobe reflective panel, with panel seams and phone visible in reflection' },

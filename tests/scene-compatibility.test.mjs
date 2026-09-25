@@ -340,6 +340,31 @@ test('bedroom clutter levels preserve the fixed furniture model and never invent
   assert.match(BEDROOM_CLUTTER_LEVELS.moderate, /fixed bag, two shoe pairs and draped chair garment remain in their locked zones/i);
 });
 
+test('bedroom poses preserve the curtained wall and use only wardrobe reflective panels', () => {
+  for (const pose of BEDROOM_POSES) {
+    const description = `${pose.prompt} ${pose.cameraHint}`;
+    assert.doesNotMatch(description, /visible window|separate framed mirror|bedroom mirror|window frame|exterior view/i, pose.value);
+  }
+  const curtainPose = BEDROOM_POSES.find((pose) => pose.value === 'bedroom-stand-window');
+  assert.match(curtainPose.prompt, /fully closed back-wall curtains/i);
+  for (const pose of BEDROOM_POSES.filter((item) => item.group === 'مرآة')) {
+    assert.match(pose.prompt, /RIGHT-wall wardrobe/i, pose.value);
+    assert.match(pose.cameraHint, /wardrobe reflective panel/i, pose.value);
+  }
+});
+
+test('bedroom object poses allocate the phone hand and preserve body support', () => {
+  for (const value of ['bedroom-laptop-bed', 'bedroom-laptop-armchair', 'bedroom-cup-bed', 'bedroom-tea-armchair', 'bedroom-book-bed', 'bed-lying-reading']) {
+    const pose = BEDROOM_POSES.find((item) => item.value === value);
+    assert.match(pose.prompt, /free hand/i, value);
+    assert.match(pose.prompt, /other hand|other arm/i, value);
+    assert.match(pose.prompt, /compressing (?:the mattress|its seat)/i, value);
+  }
+  for (const value of ['bedroom-laptop-armchair', 'bedroom-tea-armchair']) {
+    assert.match(BEDROOM_POSES.find((item) => item.value === value).prompt, /feet grounded|front-wall bedroom chair/i);
+  }
+});
+
 test('bedroom realism packet is pose-aware without weakening the continuity lock', () => {
   const bedRules = getBedroomRealismRules('bed-lying-side', 'subject-held front-camera selfie').join(' ');
   const chairRules = getBedroomRealismRules('armchair-sit-lean-back', 'subject-held front-camera selfie').join(' ');

@@ -786,17 +786,19 @@ export const MAJLIS_ANCHOR = Object.freeze({
 });
 
 export const CAR_ANCHOR = Object.freeze({
-  model: '2017 Range Rover Sport Autobiography Dynamic L494, Saudi-spec',
-  exterior_color: 'Fuji White',
-  interior_seats: 'Ebony and Ivory luxury interior with Ivory perforated leather seats',
-  dashboard: 'Range Rover Sport dashboard with dual center touchscreen, digital instrument cluster, dark wood trim',
-  steering_wheel: 'black-and-Ivory leather steering wheel',
-  center_console: 'dark wood console',
-  roof: 'panoramic roof with visible glass panel',
-  windows: 'Range Rover Sport tinted windows',
-  drive: 'left-hand drive (Saudi-spec)',
-  cabin_scale: 'full-size luxury SUV cabin',
-  fixed_rule: 'IMPORTANT: This is a locked vehicle configuration. In every inside_car scene, keep the same Range Rover Sport L494 model, the same Fuji White exterior, the same Ebony/Ivory interior, the same dashboard layout with dual touchscreen, the same black-and-Ivory steering wheel, the same dark wood trim, and the same panoramic roof. Do not substitute another car model or color. Do not change the interior configuration between scenes. Camera framing may hide an element but must never replace it.'
+  model: '2018 Range Rover Sport L494 facelift, Saudi-spec',
+  exterior_color: 'Fuji White exterior',
+  interior_seats: 'Ebony/Ivory two-tone cabin with Ivory perforated leather seats in the front row and Ebony upper cabin surfaces',
+  dashboard: 'factory 2018 L494 facelift dashboard with InControl Touch Pro Duo: exactly two 10-inch center touchscreens, an upper infotainment/navigation display and a lower climate/seat/vehicle-control display, plus a 12.3-inch Interactive Driver Display behind the steering wheel',
+  steering_wheel: '2018 L494 facelift black-and-Ivory multifunction steering wheel with RANGE ROVER center badge',
+  center_console: 'dark wood veneer center console with the Range Rover Sport gear-selector lever immediately to the driver’s right, plus the normal cupholder/storage area; no rotary gear dial',
+  roof: 'panoramic glass roof is part of the vehicle geometry, but at night it stays dark and may be partly visible or fully cropped; never brighten or reframe the scene just to reveal the roof',
+  windows: 'factory glazing with physically correct night reflections and exterior-light transmission; the front side glass must not become opaque black or mirror-like',
+  drive: 'left-hand drive (Saudi-spec): driver seat and steering wheel on the left, center console on the driver’s right',
+  cabin_scale: 'Range Rover Sport L494 mid-size SUV cabin proportions; preserve the Sport cabin scale and do not enlarge it into a generic full-size luxury SUV interior',
+  geometry: 'VEHICLE GEOMETRY LOCK: The steering wheel is ahead of the driver. The two center touchscreens are stacked vertically in the center stack. The lower screen sits above the gear-selector and console area. The front passenger seat is across the console on the right. All visible cabin parts must share one coherent 2018 L494 coordinate system.',
+  interior_wear: 'Subtle daily-use evidence only where real illumination reveals it: faint fingerprints near touchscreen edges, mild leather creasing on occupied seat bolsters, one small smudge near the gear selector, and very light dashboard dust. Do not add grime, damage, or exaggerated wear.',
+  fixed_rule: 'IMPORTANT: This is a locked vehicle configuration: one factory-coherent 2018 Range Rover Sport L494 facelift interior. Keep the facelift dual-screen dashboard, matching steering wheel, gear-selector lever, Ebony/Ivory materials, Fuji White exterior and panoramic roof as one consistent configuration. Do not mix pre-facelift single-screen/button-heavy dashboard geometry, another Range Rover cabin family, a rotary shifter, or a newer-generation dashboard. Only show components that fall naturally inside the camera framing and receive enough real light to be visible; cropped, occluded, or dark components may remain unseen.'
 });
 
 export const BEDROOM_ANCHOR = Object.freeze({
@@ -1061,7 +1063,7 @@ export const LIGHTING_PROFILES = grouped([
 ['ليلي داخلي','night_office_led','مكتب — LED أبيض','ordinary office ceiling LED illumination with broad downward light, realistic screen contribution only at close range, restrained shadow contrast, and no studio fill'],
 ['ليلي داخلي','night_home_warm','منزل — إضاءة دافئة','warm residential practical lighting from ceiling and lamp fixtures, realistic wall bounce, local light falloff, and naturally darker corners'],
 ['ليلي داخلي','night_phone_screen','شاشة الهاتف كمصدر قريب ضعيف','very weak near-field light from the phone screen only, strongest on the closest facial planes, rapid falloff after the upper chest, deep lower-torso shadow, and no exposure/HDR creating physical illumination'],
-['ليلي داخلي','night_car_practicals','داخل سيارة ليلًا — إنارة محيطية واقعية','stationary car interior at night lit by real exterior street or parking fixtures plus restrained dashboard/screen emission, correct glazing reflections, and steep falloff into unlit cabin areas'],
+['ليلي داخلي','night_car_practicals','داخل سيارة ليلًا — إنارة محيطية واقعية','stationary car interior at night. The face is lit primarily by ambient light entering through the windshield and side windows from real exterior fixtures. The dashboard and center screens emit only dim light reaching nearby surfaces within 20-30 cm. The upper cabin (ceiling, headliner, rear) and most of the console remain in deep shadow. No fill light. No dashboard glow illuminating the whole cabin. Steep falloff from face to shoulders to chest.'],
 ['ليلي داخلي','night_car_screen_only','داخل سيارة — شاشة فقط تقريبًا','very low-light stationary car interior dominated by dashboard or phone-screen emission at close range, rapid falloff across torso and cabin, deep shadows, sensor noise, and no invented fill'],
 ['ليلي داخلي','screen_flash_only','سطوع شاشة الهاتف فقط','pitch-dark bedroom where the phone screen (facing the subject) is the ONLY light source. Cool bluish-white light on the face, rapid falloff into deep shadow behind the subject. Visible phone edges catching the light. No ambient room light.'],
 ['ليلي داخلي','phone_led_flash_only','فلاش LED فقط','pitch-dark bedroom with the phone rear LED flash as the ONLY light source. Harsh direct frontal light, deep sharp drop-off into shadow behind the subject, visible flash falloff on nearby surfaces. No ambient room light. Acceptable slight overexposure on the face.'],

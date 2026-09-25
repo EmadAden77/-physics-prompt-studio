@@ -210,6 +210,11 @@ test('supported bedroom laptops leave the free hand available', () => {
   }
   assert.equal(getRemainingHands('bedroom_selfie','subject-held front-camera smartphone selfie','none','bedroom-phone-only'), 1);
   assert.deepEqual(getAvailableProps('bedroom_selfie','subject-held front-camera smartphone selfie','saudi_bedroom_livedin','bedroom-phone-only'), []);
+  for (const scene of ['bedroom_selfie','bedroom_mirror_selfie']) {
+    const props=getAvailableProps(scene,'subject-held front-camera smartphone selfie','saudi_bedroom_livedin','bed-sitting-edge');
+    assert.ok(props.length>0,scene);
+    assert.ok(props.every((prop)=>!/^(?:iphone-|galaxy-)/.test(prop.value)),scene);
+  }
 });
 
 test('iPhone 15 Pro is available in at least 90 percent of registered scene types at neutral budget', async () => {

@@ -384,6 +384,20 @@ test('bedroom object poses allocate the phone hand and preserve body support', (
   }
 });
 
+test('bed sitting back support uses the headboard and phone-only stays standing', () => {
+  for (const value of ['bed-sitting-back-wall','bed-sitting-legs-extended']) {
+    const pose=BEDROOM_POSES.find((item)=>item.value===value);
+    assert.match(pose.prompt,/attached.*headboard/i,value);
+    assert.match(pose.prompt,/pillow/i,value);
+    assert.match(pose.prompt,/pelvis.*compressing the mattress/i,value);
+    assert.match(getBedroomRealismRules(value).join(' '),/BED PHYSICS:/,value);
+    assert.ok(generateImagePrompt({sceneType:'bedroom_selfie',pose:value}).prompt.includes(pose.prompt),value);
+  }
+  const only=BEDROOM_POSES.find((item)=>item.value==='bedroom-phone-only');
+  assert.match(only.prompt,/standing.*both feet grounded/i);
+  assert.doesNotMatch(getBedroomRealismRules(only.value).join(' '),/BED PHYSICS:/);
+});
+
 test('bedroom hand interaction cannot reuse a hand holding a cup or book', () => {
   for (const pose of ['bedroom-cup-bed','bedroom-book-bed']) {
     const result=generateImagePrompt({sceneType:'bedroom_selfie',pose,handInteraction:'wipe-sweat'});

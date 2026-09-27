@@ -47,6 +47,14 @@ export const THIRD_PERSON_POSES = [
   { value:'third_one_hand_pocket', label:'شخص ثالث — يد في الجيب', prompt:'standing naturally with one hand casually in a pocket, realistic cloth tension, and relaxed non-selfie body language' },
   { value:'third_interaction', label:'شخص ثالث — تفاعل طبيعي', prompt:'naturally interacting with a nearby context-appropriate object or surface while photographed by another person, preserving realistic hand contact and attention' }
 ];
+export const BEDROOM_THIRD_PERSON_POSES = [
+  { value:'third_standing_relaxed', label:'شخص ثالث — واقف طبيعي', prompt:'standing with both feet grounded beside the fixed LEFT-wall bed, leaving a clear path to the RIGHT-wall wardrobe while another person photographs the subject' },
+  { value:'third_seated_relaxed', label:'شخص ثالث — جالس طبيعي', prompt:'seated on the fixed LEFT-wall bed with pelvis compressing its mattress and feet on the tile or rug, photographed by another person' },
+  { value:'third_walking_candid', label:'شخص ثالث — يمشي بعفوية', prompt:'walking naturally along the clear path between the fixed LEFT-wall bed and RIGHT-wall wardrobe, with a coherent gait and no collision with the chair or nightstand' },
+  { value:'third_lean_wall', label:'شخص ثالث — ميل خفيف على جدار', prompt:'leaning lightly against an unobstructed cream-painted wall section away from the fully closed curtains and RIGHT-wall wardrobe panels, with grounded feet and real shoulder contact' },
+  { value:'third_one_hand_pocket', label:'شخص ثالث — يد في الجيب', prompt:'standing beside the fixed LEFT-wall bed with one hand in a pocket and both feet grounded, keeping the room circulation path open' },
+  { value:'third_interaction', label:'شخص ثالث — تفاعل طبيعي', prompt:'lightly touching the fully closed BACK-wall curtain fabric with one hand while standing with grounded feet; do not part the curtains or reveal a window, and leave the fixed furniture in place' }
+];
 export const THIRD_PERSON_ANGLES = [
   { value:'third_eye_level', label:'شخص ثالث — مستوى العين', prompt:'third-person smartphone camera at natural eye level with believable photographer distance and ordinary handheld composition' },
   { value:'third_three_quarter_left', label:'شخص ثالث — ثلاثة أرباع يسار', prompt:'third-person smartphone viewpoint from a mild left three-quarter angle with realistic perspective and human scale' },
@@ -77,7 +85,7 @@ const PROFILES = {
   military_coffee_selfie: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, pose:['coffee_hand','seated_chair','standing_relaxed'], angle:BASIC_SELFIE_ANGLES, lighting:['night_office_led','day_window','night_cafe_mixed'], camera:FRONT_CAMERAS, framing:['chest_up','waist_up'] },
   bedroom_selfie: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, poseCatalog:BEDROOM_POSES.filter((item)=>item.group!=='مرآة'), angle:BASIC_SELFIE_ANGLES, lighting:['day_window','night_home_warm','night_phone_screen','screen_flash_only','low_key_bedroom'], camera:FRONT_CAMERAS, framing:['close','chest_up','waist_up'] },
   bedroom_mirror_selfie: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, poseCatalog:BEDROOM_POSES.filter((item)=>item.group==='مرآة'), angleCatalog:MIRROR_ANGLES, lighting:['day_window','night_home_warm','night_phone_screen'], camera:['xiaomi15_front','smartphone_rear'], framing:['waist_up','three_quarter','full_body'] },
-  bedroom_third_person: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, poseCatalog:THIRD_PERSON_POSES, angleCatalog:THIRD_PERSON_ANGLES, lighting:['day_window','night_home_warm','night_phone_screen','phone_led_flash_only','low_key_bedroom'], camera:['smartphone_rear'], framing:['chest_up','waist_up','three_quarter'] }
+  bedroom_third_person: { backgroundActivityAllowed:PRIVATE_BACKGROUND_ACTIVITY, poseCatalog:BEDROOM_THIRD_PERSON_POSES, angleCatalog:THIRD_PERSON_ANGLES, lighting:['day_window','night_home_warm','night_phone_screen','phone_led_flash_only','low_key_bedroom'], camera:['smartphone_rear'], framing:['chest_up','waist_up','three_quarter'] }
 };
 
 export function homeClothingForScene(sceneType) {

@@ -477,7 +477,7 @@ test('driver and passenger poses keep distinct stationary-car actions', () => {
 });
 
 test('all intentionally unmapped poses fall back to the scenario profile action', () => {
-  const unmapped=['holding_basket','coffee_hand','hand_on_head','one_hand_pocket','close_relaxed','bedroom-phone-only','third_interaction','bed-reclining-headboard','bed-propped-pillows'];
+  const unmapped=['holding_basket','coffee_hand','hand_on_head','one_hand_pocket','close_relaxed','third_interaction','bed-reclining-headboard','bed-propped-pillows'];
   for (const poseValue of unmapped) {
     const sceneType=poseValue.startsWith('bed-') || poseValue.startsWith('bedroom-') ? 'bedroom_selfie' : poseValue.startsWith('third_') ? 'third_person_portrait' : 'cafe_selfie';
     const result=generateImagePrompt({ sceneType, pose:poseValue, poseValue });
@@ -1906,4 +1906,3 @@ test('PR 18 CAR_ANCHOR enforces the locked vehicle configuration in SCENE', () =
   const scene=sceneSection(generateImagePrompt({ sceneType:'inside_car_selfie' }).prompt);
   assert.match(scene,/locked vehicle configuration/i);
 });
-

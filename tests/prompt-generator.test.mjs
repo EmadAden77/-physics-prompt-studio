@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateImagePrompt, validateGeneratedPrompt, validateRealism } from '../core/prompt-generator.js';
-import { CLOTHING_CATALOG, HOME_CLOTHING, CLOTHING_STYLING, HAND_INTERACTIONS, HAND_PROPS, LIGHTING_PROFILES, POSE_HAND_USAGE, FURNITURE_GEOMETRY_RULES, MAJLIS_ANCHOR, LAPTOP_SCENE_CONTEXTS, LAPTOP_SCENE_SEATED_POSES, getAvailableProps, getRemainingHands } from '../core/scene-builder.js';
+import { CLOTHING_CATALOG, HOME_CLOTHING, CLOTHING_STYLING, HAND_INTERACTIONS, HAND_PROPS, LIGHTING_PROFILES, POSE_HAND_USAGE, FURNITURE_GEOMETRY_RULES, MAJLIS_ANCHOR, CAR_ANCHOR, LAPTOP_SCENE_CONTEXTS, LAPTOP_SCENE_SEATED_POSES, getAvailableProps, getRemainingHands } from '../core/scene-builder.js';
 import { MIRROR_POSES, THIRD_PERSON_POSES } from '../core/scene-compatibility.js';
 import { buildRealismPacket } from '../core/realistic-image-generator.js';
 
@@ -1281,27 +1281,30 @@ test('lean_counter preserves counter furniture in canonical cafe context', () =>
 
 test('driver_seat bypasses legacy office-parking furniture matching', () => {
   const result=generateImagePrompt({ sceneType:'inside_car_driver_selfie', location:'office_parking_outdoor', poseValue:'driver_seat' });
-  assert.deepEqual(furnitureKinds(result.prompt),['generic']);
+  assert.deepEqual(furnitureKinds(result.prompt),[]);
+  assert.match(sceneSection(result.prompt),/VEHICLE GEOMETRY LOCK:/i);
   assert.doesNotMatch(sceneSection(result.prompt),/The (?:desk|chair|counter)\b/i);
 });
 
 test('passenger_seat bypasses legacy office-parking furniture matching', () => {
   const result=generateImagePrompt({ sceneType:'inside_car_passenger_selfie', location:'office_parking_outdoor', poseValue:'passenger_seat' });
-  assert.deepEqual(furnitureKinds(result.prompt),['generic']);
+  assert.deepEqual(furnitureKinds(result.prompt),[]);
+  assert.match(sceneSection(result.prompt),/VEHICLE GEOMETRY LOCK:/i);
   assert.doesNotMatch(sceneSection(result.prompt),/The (?:desk|chair|counter)\b/i);
 });
 
 test('door_open_car bypasses legacy office-parking furniture matching', () => {
   const result=generateImagePrompt({ sceneType:'door_open_car_selfie', location:'office_parking_outdoor', poseValue:'door_open_car' });
-  assert.deepEqual(furnitureKinds(result.prompt),['generic']);
+  assert.deepEqual(furnitureKinds(result.prompt),[]);
+  assert.match(sceneSection(result.prompt),/VEHICLE GEOMETRY LOCK:/i);
   assert.doesNotMatch(sceneSection(result.prompt),/The (?:desk|chair|counter)\b/i);
 });
 
 test('PR 9 field matrix covers six vehicle and bedroom cases', () => {
   const cases=[
-    ['door-villa-garage',{ sceneType:'door_open_car_selfie',location:'villa_garage',poseValue:'door_open_car' },['generic']],
-    ['door-office-parking',{ sceneType:'door_open_car_selfie',location:'office_parking_outdoor',poseValue:'door_open_car' },['generic']],
-    ['driver-office-parking',{ sceneType:'inside_car_driver_selfie',location:'office_parking_outdoor',poseValue:'driver_seat' },['generic']],
+    ['door-villa-garage',{ sceneType:'door_open_car_selfie',location:'villa_garage',poseValue:'door_open_car' },[]],
+    ['door-office-parking',{ sceneType:'door_open_car_selfie',location:'office_parking_outdoor',poseValue:'door_open_car' },[]],
+    ['driver-office-parking',{ sceneType:'inside_car_driver_selfie',location:'office_parking_outdoor',poseValue:'driver_seat' },[]],
     ['bedroom-selfie',{ sceneType:'bedroom_selfie',location:'saudi_bedroom_livedin' },['bed']],
     ['bedroom-mirror',{ sceneType:'bedroom_mirror_selfie',location:'saudi_bedroom_livedin' },['bed']],
     ['bedroom-third-person',{ sceneType:'bedroom_third_person',location:'saudi_bedroom_livedin' },['bed']]
@@ -1695,13 +1698,19 @@ test('negative constraints include furniture grounding bans', () => {
   assert.match(result.prompt, /furniture floating above the ground/i);
 });
 
-test('every base and expanded scene emits furniture geometry guidance', async () => {
+test('every base and expanded scene emits geometry guidance appropriate to its scene family', async () => {
   const { SCENE_TYPES } = await import('../core/prompt-generator.js');
   const { EXTRA_SCENE_TYPES } = await import('../core/scene-type-expansion.js');
+  const carScenes=new Set(['inside_car_selfie','inside_car_driver_selfie','inside_car_passenger_selfie','door_open_car_selfie','car_group_selfie']);
   for (const scene of [...SCENE_TYPES, ...EXTRA_SCENE_TYPES]) {
     const result = generateImagePrompt({ sceneType: scene.value });
-    const sceneSection = result.prompt.split('[SCENE]\n')[1].split('\n\n[SAUDI CULTURAL DRESS]')[0];
-    assert.match(sceneSection, /FURNITURE GEOMETRY:/i, scene.value);
+    const sceneBody = result.prompt.split('[SCENE]\n')[1].split('\n\n[SAUDI CULTURAL DRESS]')[0];
+    if(carScenes.has(scene.value)){
+      assert.match(sceneBody,/VEHICLE GEOMETRY LOCK:/i,scene.value);
+      assert.doesNotMatch(sceneBody,/FURNITURE GEOMETRY:/i,scene.value);
+    }else{
+      assert.match(sceneBody,/FURNITURE GEOMETRY:/i,scene.value);
+    }
   }
 });
 
@@ -1822,7 +1831,7 @@ test('PR 17 forward direction changes only the front section without volumetric 
   const identity=pr17Section(result.prompt,'IDENTITY / SUBJECT','SCENE');
   assert.match(identity,/ONLY the front section changes direction so strands fall forward onto the upper forehead/i);
   assert.match(identity,/Top volume, curl pattern, and total hair mass remain unchanged from the reference/i);
-  assert.match(identity,/The change is directional, not volumetric/i);
+  assert.match(identity,/The change is ONLY directional/i);
 });
 
 test('PR 17 directional hair negatives reject inflated volume and exaggerated curls only when direction is specified', () => {
@@ -1862,9 +1871,9 @@ test('PR 18 inside_car_selfie injects the fixed Range Rover Sport CAR_ANCHOR', (
   const result=generateImagePrompt({ sceneType:'inside_car_selfie' });
   const scene=sceneSection(result.prompt);
   assert.match(scene,/CAR INTERIOR ANCHOR:/i);
-  assert.match(scene,/2017 Range Rover Sport Autobiography Dynamic L494, Saudi-spec/i);
+  assert.match(scene,/2018 Range Rover Sport L494 facelift, Saudi-spec/i);
   assert.match(scene,/Fuji White/i);
-  assert.match(scene,/Ivory perforated leather seats/i);
+  assert.match(scene,/Ivory perforated leather seats in the front row/i);
   assert.match(scene,/left-hand drive \(Saudi-spec\)/i);
 });
 
@@ -1875,7 +1884,7 @@ test('PR 18 inside_car_driver_selfie injects CAR_ANCHOR', () => {
 
 test('PR 18 inside_car_passenger_selfie injects CAR_ANCHOR', () => {
   const scene=sceneSection(generateImagePrompt({ sceneType:'inside_car_passenger_selfie' }).prompt);
-  assert.match(scene,/CAR INTERIOR ANCHOR:.*panoramic roof with visible glass panel/is);
+  assert.match(scene,/CAR INTERIOR ANCHOR:.*panoramic glass roof.*may be partly visible or fully cropped/is);
 });
 
 test('PR 18 door-open and group car selfies both inject CAR_ANCHOR', () => {
@@ -1891,12 +1900,13 @@ test('PR 18 non-car scenes do not inject CAR_ANCHOR', () => {
   }
 });
 
-test('PR 18 car anchor precedes furniture geometry and preserves the canonical 23-section invariant', () => {
+test('PR 18 car anchor preserves the canonical 23-section invariant without generic furniture geometry', () => {
   for(const sceneType of ['inside_car_selfie','inside_car_driver_selfie','inside_car_passenger_selfie','door_open_car_selfie','car_group_selfie']){
     const result=generateImagePrompt({ sceneType });
     const scene=sceneSection(result.prompt);
-    assert.ok(scene.indexOf('CAR INTERIOR ANCHOR:')>=0,sceneType);
-    assert.ok(scene.indexOf('CAR INTERIOR ANCHOR:') < scene.indexOf('FURNITURE GEOMETRY:'),sceneType);
+    assert.match(scene,/CAR INTERIOR ANCHOR:/i,sceneType);
+    assert.match(scene,/VEHICLE GEOMETRY LOCK:/i,sceneType);
+    assert.doesNotMatch(scene,/FURNITURE GEOMETRY:/i,sceneType);
     assert.equal(result.sections.length,23,sceneType);
     assert.equal(result.validation.valid,true,`${sceneType}: ${result.validation.errors.join(' | ')}`);
   }
@@ -1907,3 +1917,103 @@ test('PR 18 CAR_ANCHOR enforces the locked vehicle configuration in SCENE', () =
   assert.match(scene,/locked vehicle configuration/i);
 });
 
+
+
+test('PR 19 CAR_ANCHOR moves to the 2018 facelift and removes the 2017 contradiction', () => {
+  assert.match(CAR_ANCHOR.model,/2018/i);
+  assert.match(CAR_ANCHOR.model,/facelift/i);
+  assert.doesNotMatch(CAR_ANCHOR.model,/2017/i);
+});
+
+test('PR 19 CAR_ANCHOR dashboard explicitly locks the coherent 2018 Touch Pro Duo layout', () => {
+  assert.match(CAR_ANCHOR.dashboard,/Touch Pro Duo/i);
+  assert.match(CAR_ANCHOR.dashboard,/exactly two 10-inch center touchscreens/i);
+  assert.match(CAR_ANCHOR.dashboard,/upper infotainment\/navigation display/i);
+  assert.match(CAR_ANCHOR.dashboard,/lower climate\/seat\/vehicle-control display/i);
+  assert.match(CAR_ANCHOR.dashboard,/12\.3-inch Interactive Driver Display/i);
+});
+
+test('PR 19 car anchor uses Sport-scale cabin geometry and the correct gear-selector family', () => {
+  assert.match(CAR_ANCHOR.cabin_scale,/mid-size SUV cabin proportions/i);
+  assert.doesNotMatch(CAR_ANCHOR.cabin_scale,/full-size luxury SUV cabin$/i);
+  assert.match(CAR_ANCHOR.center_console,/gear-selector lever/i);
+  assert.match(CAR_ANCHOR.center_console,/no rotary gear dial/i);
+  assert.match(CAR_ANCHOR.geometry,/two center touchscreens are stacked vertically/i);
+});
+
+test('PR 19 rendered car anchor contains no competing 2017 model year or generic furniture geometry', () => {
+  const result=generateImagePrompt({ sceneType:'inside_car_driver_selfie', poseValue:'driver_seat', pose:'driver_seat' });
+  const scene=sceneSection(result.prompt);
+  assert.doesNotMatch(scene,/\b2017\b/i);
+  assert.doesNotMatch(scene,/FURNITURE GEOMETRY:/i);
+  assert.match(scene,/VEHICLE GEOMETRY LOCK:/i);
+  assert.match(scene,/Only show components that fall naturally inside the camera framing/i);
+});
+
+test('PR 19 car observable background uses cabin and glazing language rather than furniture', () => {
+  const result=generateImagePrompt({ sceneType:'inside_car_driver_selfie', backgroundActivity:'quiet' });
+  const observable=observableBackground(result.prompt);
+  assert.match(observable,/vehicle cabin surfaces and controls/i);
+  assert.match(observable,/visible through real glazing/i);
+  assert.doesNotMatch(observable,/context-appropriate furniture/i);
+});
+
+test('PR 19 backward hair identity text contains no forward-strand exception', () => {
+  const result=generateImagePrompt({ hairStyle:'hair wet and slicked BACKWARD from the forehead, visible clumping from moisture, slight sheen. Every visible strand points backward. Hairline fully visible.' });
+  const identity=pr17Section(result.prompt,'IDENTITY / SUBJECT','SCENE');
+  assert.match(identity,/whether the hairline is visible or covered must follow only the selected hairstyle direction/i);
+  assert.doesNotMatch(identity,/allowing selected forward-falling strands/i);
+});
+
+test('PR 19 CAR_ANCHOR adds restrained daily-use cabin micro-wear', () => {
+  assert.ok(CAR_ANCHOR.interior_wear);
+  assert.match(CAR_ANCHOR.interior_wear,/faint fingerprints/i);
+  assert.match(CAR_ANCHOR.interior_wear,/mild leather creasing/i);
+  assert.match(CAR_ANCHOR.interior_wear,/very light dashboard dust/i);
+});
+
+test('PR 19 inside-car SCENE renders interior_wear as part of the car anchor', () => {
+  const scene=sceneSection(generateImagePrompt({ sceneType:'inside_car_selfie' }).prompt);
+  assert.match(scene,/faint fingerprints near touchscreen edges/i);
+  assert.match(scene,/one small smudge near the gear selector/i);
+});
+
+test('PR 19 night car physical lighting forbids fill and enforces steep cabin falloff', () => {
+  const lighting=LIGHTING_PROFILES.find((item)=>item.value==='night_car_practicals').prompt;
+  const result=generateImagePrompt({ sceneType:'inside_car_selfie',lighting });
+  const physical=pr17Section(result.prompt,'PHYSICAL LIGHTING','MIRROR RULES');
+  assert.match(physical,/No fill light/i);
+  assert.match(physical,/Steep falloff from face to shoulders to chest/i);
+  assert.match(physical,/upper cabin .* remain in deep shadow/i);
+});
+
+test('PR 19 car negatives reject uniform cabin fill and excessive screen spill', () => {
+  const result=generateImagePrompt({ sceneType:'inside_car_selfie' });
+  const negative=pr17Section(result.prompt,'NEGATIVE CONSTRAINTS','FINAL VERIFICATION');
+  assert.match(negative,/uniform cabin illumination/i);
+  assert.match(negative,/fill light on the face/i);
+  assert.match(negative,/screen light spilling beyond arm's length/i);
+  assert.match(negative,/pre-facelift single-screen center stack/i);
+  assert.match(negative,/rotary gear selector/i);
+  assert.match(negative,/forced panoramic-roof visibility/i);
+});
+
+test('PR 19 forward hair is directional only and explicitly rejects crown inflation', () => {
+  const result=generateImagePrompt({ hairStyle:PR17_FORWARD_HAIR });
+  const identity=pr17Section(result.prompt,'IDENTITY / SUBJECT','SCENE');
+  const negative=pr17Section(result.prompt,'NEGATIVE CONSTRAINTS','FINAL VERIFICATION');
+  assert.match(identity,/The change is ONLY directional/i);
+  assert.match(identity,/SAME height and SAME curl definition as the reference/i);
+  assert.match(negative,/volume added at the top of the head/i);
+  assert.match(negative,/curl definition enhanced beyond reference/i);
+  assert.match(negative,/added hair mass at crown/i);
+});
+
+test('PR 19 driver and passenger prompts preserve the canonical 23-section invariant', () => {
+  const lighting=LIGHTING_PROFILES.find((item)=>item.value==='night_car_practicals').prompt;
+  for(const sceneType of ['inside_car_driver_selfie','inside_car_passenger_selfie']){
+    const result=generateImagePrompt({ sceneType,lighting,hairStyle:PR17_FORWARD_HAIR });
+    assert.equal(result.sections.length,23,sceneType);
+    assert.equal(result.validation.valid,true,`${sceneType}: ${result.validation.errors.join(' | ')}`);
+  }
+});

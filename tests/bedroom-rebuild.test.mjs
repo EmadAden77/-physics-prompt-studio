@@ -19,18 +19,49 @@ function laptopBedroom(overrides = {}) {
   });
 }
 
-test('bedroom rebuild uses a physically wider room and a full-width king-size bed', () => {
+test('bedroom rebuild follows the supplied room reference instead of invented exact dimensions', () => {
   const { prompt, validation } = laptopBedroom();
 
   assert.equal(validation.valid, true);
-  assert.match(prompt, /5\.4 m LEFT-to-RIGHT by 6\.2 m FRONT-to-BACK/i);
-  assert.match(prompt, /king-size bed/i);
-  assert.match(prompt, /180 x 200 cm/i);
-  assert.match(prompt, /at least about 1\.4 m of clear usable walking width/i);
+  assert.match(prompt, /supplied room reference/i);
+  assert.match(prompt, /longer FRONT-to-BACK than it is wide/i);
+  assert.match(prompt, /large open central floor zone/i);
   assert.match(prompt, /never as a narrow corridor or tunnel/i);
-  assert.match(prompt, /never as a narrow bench, daybed, elongated strip/i);
-  assert.doesNotMatch(prompt, /roughly 4m x 5m/i);
-  assert.doesNotMatch(prompt, /queen-size bed/i);
+  assert.match(prompt, /Do not invent exact metric room dimensions/i);
+  assert.match(prompt, /Do not rely on unverified exact metric room or mattress dimensions/i);
+  assert.match(prompt, /broad full-width adult mattress/i);
+  assert.match(prompt, /rather than a narrow bench or endless strip/i);
+});
+
+test('reference layout corrects legacy wall placement and ceiling inventory', () => {
+  const { prompt } = laptopBedroom();
+
+  assert.match(prompt, /LEFT wall = the bed\/headboard zone plus the high wall-mounted split air conditioner/i);
+  assert.match(prompt, /chair positioned near the BACK curtains slightly right of center/i);
+  assert.match(prompt, /multiple small recessed circular downlights/i);
+  assert.match(prompt, /rather than a fixed six-light grid/i);
+  assert.match(prompt, /placing the air conditioner on the FRONT wall/i);
+  assert.match(prompt, /the chair on the FRONT wall/i);
+  assert.match(prompt, /treat that legacy wording as obsolete/i);
+});
+
+test('right-wall storage preserves reflective panels plus open hanging and drawer sections', () => {
+  const { prompt } = laptopBedroom();
+
+  assert.match(prompt, /long dark-wood built-in storage system/i);
+  assert.match(prompt, /reflective or mirrored panels together with open hanging bays, shelves and drawers/i);
+  assert.match(prompt, /Do not simplify the entire run into featureless black glass/i);
+  assert.match(prompt, /physically correct left-right reversal/i);
+});
+
+test('rug, glossy tile and lived-in clutter preserve the observed room character', () => {
+  const { prompt } = laptopBedroom();
+
+  assert.match(prompt, /large broad rectangular beige-to-greige low-pile rug/i);
+  assert.match(prompt, /surrounded by visible glossy tile on all sides/i);
+  assert.match(prompt, /several naturally scattered footwear pairs/i);
+  assert.match(prompt, /dark soft bag near the back\/right storage-curtain area/i);
+  assert.match(prompt, /lived-in and imperfect, not showroom-clean/i);
 });
 
 test('bedroom laptop pose locks the laptop onto both thighs with usable hinge and hand geometry', () => {
@@ -56,15 +87,6 @@ test('bedroom laptop selfie uses true eye-level camera geometry and limits arm d
   assert.match(prompt, /never stretch the forearm, inflate its width/i);
 });
 
-test('wardrobe remains a genuine mirror and the rug remains broad rather than a runner', () => {
-  const { prompt } = laptopBedroom();
-
-  assert.match(prompt, /genuine clear reflective mirrors/i);
-  assert.match(prompt, /not smoked glass, black glass, transparent glazing/i);
-  assert.match(prompt, /approximately 2\.2 x 3\.0 m/i);
-  assert.match(prompt, /never rendered as a thin runner/i);
-});
-
 test('reference identity does not copy the reference expression', () => {
   const { prompt } = laptopBedroom({ expression: 'neutral-calm' });
 
@@ -74,11 +96,12 @@ test('reference identity does not copy the reference expression', () => {
   assert.match(prompt, /no deliberate smile/i);
 });
 
-test('bedroom lighting retains source-driven asymmetry and mixed white balance', () => {
+test('bedroom lighting preserves practical-source causality and phone-screen-only override', () => {
   const { prompt } = laptopBedroom();
 
-  assert.match(prompt, /must not equalize both sides into invisible frontal fill/i);
-  assert.match(prompt, /Preserve their different local white-balance contributions/i);
+  assert.match(prompt, /most fixtures are dark while only a small subset is illuminated/i);
+  assert.match(prompt, /bright specular reflections on the glossy tile/i);
+  assert.match(prompt, /Do not invent frontal fill, ring light, studio softbox light/i);
+  assert.match(prompt, /Phone-screen-only scenes must override all room practical lights/i);
   assert.match(prompt, /Do not cosmetically equalize illumination across the face/i);
-  assert.match(prompt, /local noise and mixed white-balance differences/i);
 });

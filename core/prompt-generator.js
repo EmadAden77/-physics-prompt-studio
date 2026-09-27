@@ -3,6 +3,7 @@ import { baseSceneTypeFor, sceneMeta } from './scene-type-expansion.js';
 import { clothingSceneCoherence, resolveContextAwareConstraints, getPoseCameraHint, BEDROOM_THIRD_PERSON_POSES } from './scene-compatibility.js';
 import { BEDROOM_ANCHOR, MAJLIS_ANCHOR, CAR_ANCHOR, LAPTOP_SCENE_CONTEXTS, LAPTOP_SCENE_SEATED_POSES, BEDROOM_CLUTTER_LEVELS, BEDROOM_POSES, SELFIE_POSES, SAUDI_CULTURAL_DRESS_LOCK, SAUDI_SIGNAGE_RULE, CLOTHING_STYLING, HAND_INTERACTIONS, CLOTHING_CATALOG, HOME_CLOTHING, getFurnitureGeometryForScene, getBedroomRealismRules, getAvailableProps, getRemainingHands, getPropHandUsage } from './scene-builder.js';
 import { resolveCameraAngle } from './camera-angle-resolver.js';
+import { BEDROOM_REBUILD_ANCHOR, REFERENCE_EXPRESSION_RULE, bedroomPoseOverride, bedroomCameraOverride, bedroomPhysicsOverrides } from './bedroom-rebuild.js';
 
 export const SCENE_TYPES = [
   { value:'front_selfie', label:'سيلفي عادي', capture:'subject-held front-camera smartphone selfie', prompt:'a casual subject-held front-camera smartphone selfie with physically feasible arm-reach geometry', framing:'chest-up to mid-torso framing' },
@@ -200,7 +201,7 @@ function captureDeviceRule(capture=''){
 }
 function captureRules(scene){
   if (/mirror selfie/i.test(scene.capture)) return 'Capture type is locked to a true mirror selfie. The phone must exist inside the mirror reflection, reflection geometry must be consistent, and the image must not silently become a direct front-camera selfie or a third-person photograph.';
-  if (/selfie/i.test(scene.capture)) return 'Capture type is locked to a subject-held smartphone selfie. Camera position must remain reachable by the subject at ordinary arm length; shoulder, elbow, wrist, torso rotation and perspective must agree with the phone position. Never silently convert the shot into a third-person camera, floating camera, mirror shot or telephoto portrait.';
+  if (/selfie/i.test(scene.capture)) return 'Capture type is locked to a subject-held smartphone selfie. Camera position must remain reachable by the subject at ordinary arm length; shoulder, elbow, wrist, torso rotation and perspective must agree with the phone position. The phone-bearing arm may show mild wide-angle foreshortening but must not become grossly enlarged, elongated or anatomically wider than plausible. Never silently convert the shot into a third-person camera, floating camera, mirror shot or telephoto portrait.';
   return 'Capture type is locked to a third-person smartphone photograph. The subject is not holding the camera. Preserve a physically plausible photographer viewpoint, distance and perspective; do not introduce a selfie arm or mirror logic.';
 }
 function identityRules(enabled,hair){
@@ -211,7 +212,10 @@ function identityRules(enabled,hair){
 }
 function geometryRules(scene,camera,framing,angle,distance,hasExplicitFraming){
   const d = clean(distance) || (scene.capture.includes('selfie') ? 'natural arm-reach distance, approximately 40–60 cm unless the selected angle requires a minor physically plausible adjustment' : 'a natural third-person smartphone shooting distance appropriate to the framing');
-  return `${camera.prompt}. ${hasExplicitFraming ? framing.prompt : scene.framing}. ${angle || 'Use a natural eye-level or slightly off-axis camera angle.'} Camera distance: ${d}. Preserve realistic wide-angle perspective and human scale; no impossible camera placement.`;
+  const armPerspective = /selfie/i.test(scene.capture) && !/mirror/i.test(scene.capture)
+    ? ' Keep the phone-bearing arm within normal anatomical proportions: mild near-lens enlargement is acceptable, but never stretch the forearm, inflate its width, or let it dominate the frame as an ultra-wide artifact.'
+    : '';
+  return `${camera.prompt}. ${hasExplicitFraming ? framing.prompt : scene.framing}. ${angle || 'Use a natural eye-level or slightly off-axis camera angle.'} Camera distance: ${d}. Preserve realistic wide-angle perspective and human scale; no impossible camera placement.${armPerspective}`;
 }
 export function resolveLensPhysics({ scene = '', captureType = '', camera = '', framing = '', cameraDistance = '' } = {}) {
   const sceneValue = clean(typeof scene === 'string' ? scene : scene?.value).toLowerCase();
@@ -368,24 +372,27 @@ export function generateImagePrompt(input={}){
   const selectedGeneralPose=!bedroomPoseCameraEnabled
     ? SELFIE_POSES.find((item)=>item.value===poseInput || item.prompt===poseInput)
     : undefined;
-  const pose=selectedBedroomPose?.prompt || selectedBedroomThirdPose?.prompt || selectedGeneralPose?.prompt || poseInput;
   const rawPoseValue=clean(input.poseValue);
   const poseValue=(rawPoseValue==='bedroom-stand-window' ? 'bedroom-stand-curtains' : rawPoseValue) || selectedBedroomPose?.value || selectedBedroomThirdPose?.value || selectedGeneralPose?.value || (POSE_HAND_USAGE_FALLBACK.has(poseInput) ? poseInput : '');
+  const basePose=selectedBedroomPose?.prompt || selectedBedroomThirdPose?.prompt || selectedGeneralPose?.prompt || poseInput;
+  const pose=requested.startsWith('bedroom_') ? bedroomPoseOverride(poseValue,basePose) : basePose;
   const bedroomHandInteractionFits=!requested.startsWith('bedroom_') ||
     (poseValue!=='bedroom-phone-only' && (handInteraction.value!=='pocket-hands' || /third-person/i.test(scene.capture)) && getRemainingHands(requested,scene.capture,'none',poseValue)>0);
   const handInteractionPrompt=requestedHandInteractionPrompt && bedroomHandInteractionFits ? requestedHandInteractionPrompt : '';
-  const poseHint=bedroomPoseCameraEnabled ? getPoseCameraHint(poseInput || pose) : null;
+  const catalogPoseHint=bedroomPoseCameraEnabled ? getPoseCameraHint(poseInput || basePose) : null;
+  const poseHint=requested.startsWith('bedroom_') ? bedroomCameraOverride(poseValue,catalogPoseHint || '') : catalogPoseHint;
   const angleLockedByPose=bedroomPoseCameraEnabled && Boolean(poseHint);
   const rawCameraGeometryText=resolveCameraAngle({
     sceneType:scene.value,
     requestedSceneType:requested,
     captureType:scene.capture,
-    pose:poseInput || pose,
+    pose:poseInput || basePose,
     angle:angleInput,
     seed:input.seed,
     time:input.time
   });
-  const cameraGeometryText=normalizeInsideCarCameraGeometry(rawCameraGeometryText,requested,poseValue);
+  const normalizedCameraGeometryText=normalizeInsideCarCameraGeometry(rawCameraGeometryText,requested,poseValue);
+  const cameraGeometryText=requested.startsWith('bedroom_') ? bedroomCameraOverride(poseValue,normalizedCameraGeometryText) : normalizedCameraGeometryText;
   const contextual=resolveContextAwareConstraints({
     sceneType:scene.value,
     requestedSceneType:requested,
@@ -435,24 +442,24 @@ export function generateImagePrompt(input={}){
   let sceneText=`Location: ${location}. Maintain believable architecture, furniture, roads, vehicles, landscape, circulation space, object scale and environmental depth appropriate to the selected location.`;
   if(requested.startsWith('bedroom_')){
     const anchorText=[
-      `ROOM ANCHOR (locked layout): ${BEDROOM_ANCHOR.room}`,
-      `COORDINATE FRAME: ${BEDROOM_ANCHOR.coordinate_frame}`,
+      `ROOM ANCHOR (locked layout): ${BEDROOM_REBUILD_ANCHOR.room}`,
+      `COORDINATE FRAME: ${BEDROOM_REBUILD_ANCHOR.coordinate_frame}`,
       `DOOR: ${BEDROOM_ANCHOR.door}`,
-      `BED: ${BEDROOM_ANCHOR.bed}`,
+      `BED: ${BEDROOM_REBUILD_ANCHOR.bed}`,
       `BEDROOM CHAIR: ${BEDROOM_ANCHOR.bedroom_chair}`,
       `RIGHT-WALL STORAGE: ${BEDROOM_ANCHOR.wardrobe} ${BEDROOM_ANCHOR.dresser}`,
-      `WARDROBE MIRROR: ${BEDROOM_ANCHOR.mirror}`,
+      `WARDROBE MIRROR: ${BEDROOM_REBUILD_ANCHOR.wardrobe_mirror}`,
       `NIGHTSTAND: ${BEDROOM_ANCHOR.nightstand}`,
       `CURTAINS / BACK WALL: ${BEDROOM_ANCHOR.curtains}`,
       `FRONT WALL / CEILING: ${BEDROOM_ANCHOR.air_conditioner} ${BEDROOM_ANCHOR.ceiling}`,
-      `RUG / CIRCULATION: ${BEDROOM_ANCHOR.rug} ${BEDROOM_ANCHOR.circulation}`,
+      `RUG / CIRCULATION: ${BEDROOM_REBUILD_ANCHOR.rug} ${BEDROOM_REBUILD_ANCHOR.circulation}`,
       `FIXED DAILY ITEMS: ${BEDROOM_ANCHOR.fixed_daily_items}`,
       `MATERIAL LOCK: ${BEDROOM_ANCHOR.materials}`,
-      BEDROOM_ANCHOR.fixed_layout_rule
+      BEDROOM_REBUILD_ANCHOR.fixed_layout_rule
     ].join(' ');
     const clutter=BEDROOM_CLUTTER_LEVELS[input.clutterLevel] || BEDROOM_CLUTTER_LEVELS.moderate;
-    const bedroomPhysics=getBedroomRealismRules(poseValue,scene.capture);
-    const bedroomPhysicsText=bedroomPhysics.length ? `BEDROOM PHYSICS / CONTINUITY: ${bedroomPhysics.join(' ')}` : '';
+    const bedroomPhysics=[...getBedroomRealismRules(poseValue,scene.capture),...bedroomPhysicsOverrides(poseValue)];
+    const bedroomPhysicsText=bedroomPhysics.length ? `BEDROOM PHYSICS / CONTINUITY: ${[...new Set(bedroomPhysics)].join(' ')}` : '';
     sceneText=`${sceneText} ${anchorText} ROOM CLUTTER: ${clutter} ${bedroomPhysicsText}`.trim();
   }
   // Canonical location values take precedence; free-text location matching
@@ -512,7 +519,7 @@ export function generateImagePrompt(input={}){
   const sections=[
     section('GOAL',`Generate ONE highly photorealistic ${ratio.prompt} image. ${description?`User scene intent: ${description}. `:''}The result must look like a genuine smartphone photograph rather than advertising, polished commercial photography, CGI or AI-stylized imagery.`),
     section('ACTION-DRIVEN AUTHENTICITY',actionText), section('CAPTURE TYPE LOCK — CRITICAL',captureRules(scene)),
-    section('IDENTITY / SUBJECT',`${identityRules(identity,hair)} Expression: ${expression.prompt}. ${packet.subject.face}`),
+    section('IDENTITY / SUBJECT',`${identityRules(identity,hair)} ${identity ? REFERENCE_EXPRESSION_RULE : ''} Expression: ${expression.prompt}. ${packet.subject.face}`),
     section('SCENE',sceneText),
     section('SAUDI CULTURAL DRESS',saudi?`${SAUDI_CULTURAL_DRESS_LOCK} ${SAUDI_SIGNAGE_RULE}`:'Not applicable: the selected scene is outside Saudi context.'),
     section('OBSERVABLE BACKGROUND ELEMENTS',backgroundText),
@@ -521,7 +528,7 @@ export function generateImagePrompt(input={}){
     section('CAMERA GEOMETRY',geometryRules(scene,camera,effectiveFraming,cameraGeometryText,input.cameraDistance,hasExplicitFraming)), section('PHYSICAL LIGHTING',lightingRules(lighting,input.lightingNotes,realism.value)),
     section('MIRROR RULES',mirrorSection), section('PRODUCT INTEGRATION',productText),
     section('PHYSICAL / MATERIAL REALISM',`${realism.prompt}. Enforce correct human anatomy; realistic neck, shoulder, arm, hand and finger structure; natural weight distribution; correct support and contact deformation; coherent gravity; realistic cloth drape and seam tension; material-specific reflectance; physically consistent reflections; and scene-specific scale.`),
-    section('SMARTPHONE IMAGE BEHAVIOR','Use broad smartphone focus, restrained computational sharpening, realistic local contrast, modest dynamic range, plausible white balance, mild sensor/noise-reduction texture in darker areas, and natural clipping of strong practical lights when appropriate.'),
+    section('SMARTPHONE IMAGE BEHAVIOR','Use broad smartphone focus, restrained computational sharpening, realistic local contrast, modest dynamic range, plausible white balance, mild sensor/noise-reduction texture in darker areas, and natural clipping of strong practical lights when appropriate. Do not cosmetically equalize illumination across the face; if practical sources leave one side darker, retain physically plausible shadow depth, local noise and mixed white-balance differences instead of inventing frontal fill.'),
     section('LENS_PHYSICS',resolveLensPhysics({ scene:requested, captureType:scene.capture, camera, framing, cameraDistance:input.cameraDistance })),
     section('BIOLOGICAL_MICRO_REALISM','BIOLOGICAL MICRO-REALISM (mandatory, apply only where resolvable): Preserve visible skin pores with non-uniform spatial distribution. Preserve fine vellus facial hair where the visible cheek, temple or jaw region is close enough and lit enough to register such detail. Preserve a small number of naturally stray hairs ONLY in directions consistent with the selected hairstyle direction. Do not place stray hairs contradicting the selected direction. Preserve source-consistent corneal reflections showing the actual scene. Preserve slight natural asymmetry in eyebrows, eyelids and jawline. Preserve individual CLOTHING fibers only where genuinely resolvable at the captured distance. Do not force visible fibers, thread grids, slub texture, or weave patterns onto smooth upholstery or other materials whose surface specification explicitly forbids visible weave. Do not beautify, smooth, symmetrize or sterilize. If a region is cropped, occluded, too dark, too soft, too distant or out of focus, do not invent micro-detail merely to satisfy this section.'),
     section('CAMERA_METADATA_HINT',resolveCameraMetadata(camera,lighting,input.lightingValue)),
